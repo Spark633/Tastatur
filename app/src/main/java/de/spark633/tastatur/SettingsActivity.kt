@@ -486,11 +486,11 @@ class SettingsActivity : Activity() {
         val colorNames = Theme.COLOR_CHOICES.map { it.first }
         val colorValues = Theme.COLOR_CHOICES.map { it.second }
         root.addView(info("Tastenfarbe"))
-        root.addView(dropdown(colorNames, colorValues.indexOf(prefs.keyColor).coerceAtLeast(0)) {
+        root.addView(colorDropdown(colorNames, colorValues, colorValues.indexOf(prefs.keyColor).coerceAtLeast(0)) {
             prefs.keyColor = colorValues[it]
         })
         root.addView(info("Schriftfarbe"))
-        root.addView(dropdown(colorNames, colorValues.indexOf(prefs.keyTextColor).coerceAtLeast(0)) {
+        root.addView(colorDropdown(colorNames, colorValues, colorValues.indexOf(prefs.keyTextColor).coerceAtLeast(0)) {
             prefs.keyTextColor = colorValues[it]
         })
         root.addView(slider("Deckkraft der Tasten", 0, 100, prefs.keyOpacity, "%") { prefs.keyOpacity = it })
@@ -590,6 +590,50 @@ class SettingsActivity : Activity() {
         sliders.forEach { (group, bar) -> bar.isEnabled = !isLocked(group) }
         preview?.locked = prefs.lockImage
     }
+
+    /** Runder Farbpunkt; Weiß/Schwarz mit grauem Rand, "Automatisch" aus den Farben des Farbschemas. */
+    private fun colorDot(color: Int): android.graphics.drawable.Drawable {
+        val size = (20 * dp).toInt()
+        val d = if (color == 0) {
+            val t = Theme.byId(prefs.theme)
+            android.graphics.drawable.GradientDrawable().apply {
+                gradientType = android.graphics.drawable.GradientDrawable.SWEEP_GRADIENT
+                colors = intArrayOf(t.accent, t.accent, android.graphics.Color.WHITE, t.background, t.accent)
+            }
+        } else {
+            android.graphics.drawable.GradientDrawable().apply { setColor(color) }
+        }
+        d.shape = android.graphics.drawable.GradientDrawable.OVAL
+        d.setStroke((2 * dp).toInt(), android.graphics.Color.rgb(0x88, 0x88, 0x88))
+        d.setSize(size, size)
+        d.setBounds(0, 0, size, size)
+        return d
+    }
+
+    /** Aufklapp-Liste mit Farbpunkt vor jedem Eintrag. */
+    private fun colorDropdown(names: List<String>, values: List<Int>, selected: Int, onSelect: (Int) -> Unit) =
+        android.widget.Spinner(this).apply {
+            adapter = object : android.widget.ArrayAdapter<String>(
+                this@SettingsActivity, android.R.layout.simple_spinner_item, names
+            ) {
+                private fun withDot(v: View, pos: Int): View {
+                    (v as? TextView)?.apply {
+                        setCompoundDrawablesRelative(colorDot(values[pos]), null, null, null)
+                        compoundDrawablePadding = (14 * dp).toInt()
+                    }
+                    return v
+                }
+                override fun getView(pos: Int, convert: View?, parent: ViewGroup) =
+                    withDot(super.getView(pos, convert, parent), pos)
+                override fun getDropDownView(pos: Int, convert: View?, parent: ViewGroup) =
+                    withDot(super.getDropDownView(pos, convert, parent), pos)
+            }.also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+            setSelection(selected.coerceIn(0, names.lastIndex), false)
+            onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(p: android.widget.AdapterView<*>?, v: View?, pos: Int, id: Long) = onSelect(pos)
+                override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
+            }
+        }
 
     /** Aufklapp-Liste (braucht weniger Platz als Auswahlknöpfe). */
     private fun dropdown(options: List<String>, selected: Int, onSelect: (Int) -> Unit) =

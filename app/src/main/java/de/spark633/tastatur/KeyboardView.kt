@@ -281,6 +281,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     private val clearMessage = Runnable { message = null; invalidate() }
 
+    private fun inSubPage() = mode == Mode.EMOTICONS || mode == Mode.CLIPBOARD || mode == Mode.FORMAT
+
     /** Android-Zurück: aus Menüs und Unterseiten zurück zu den Buchstaben. true = erledigt. */
     fun handleBack(): Boolean {
         if (resizing) {
@@ -830,7 +832,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         listener.onKeyFeedback()
         val k = kr.key
         when (k.action) {
-            Action.DELETE -> {
+            Action.DELETE -> if (!inSubPage()) {
                 listener.onDelete()
                 postDelayed(t.repeat, 400)
             }
@@ -1015,7 +1017,9 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 setMode(Mode.LETTERS)
                 listener.onFormat(k.text)
             }
-            Action.DELETE, Action.TO_CLIPBOARD -> {}
+            // In Emoticons, Zwischenablage und Formatieren: ⌫ führt zurück zur Tastatur
+            Action.DELETE -> if (inSubPage()) setMode(Mode.LETTERS)
+            Action.TO_CLIPBOARD -> {}
         }
         invalidate()
     }

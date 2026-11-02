@@ -135,10 +135,14 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("space_cursor", true)
         set(v) = sp.edit().putBoolean("space_cursor", v).apply()
 
-    /** Regler unter "Aussehen" gesperrt. */
-    var slidersLocked: Boolean
-        get() = sp.getBoolean("sliders_locked", false)
-        set(v) = sp.edit().putBoolean("sliders_locked", v).apply()
+    /** Regler unter "Aussehen" gesperrt: Bild-Gruppe und Tasten-Gruppe (früher eine gemeinsame Sperre). */
+    var lockImage: Boolean
+        get() = sp.getBoolean("lock_image", sp.getBoolean("sliders_locked", false))
+        set(v) = sp.edit().putBoolean("lock_image", v).apply()
+
+    var lockKeys: Boolean
+        get() = sp.getBoolean("lock_keys", sp.getBoolean("sliders_locked", false))
+        set(v) = sp.edit().putBoolean("lock_keys", v).apply()
 
     /** Kleine Zeichen über/unter den Buchstaben anzeigen. */
     var showHints: Boolean

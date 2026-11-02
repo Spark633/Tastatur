@@ -381,13 +381,8 @@ class SettingsActivity : Activity() {
 
     private fun buildDesign() {
         title = "Aussehen"
-        preview = KeyboardPreview(this, prefs).also { it.locked = prefs.slidersLocked }
+        preview = KeyboardPreview(this, prefs).also { it.locked = prefs.lockImage }
         root.addView(info("Die Vorschau oben zeigt jede Änderung sofort. Bild darin ziehen = verschieben, mit zwei Fingern = zoomen."))
-
-        root.addView(switch("🔒 Regler sperren (nichts verstellt sich aus Versehen)", prefs.slidersLocked) {
-            prefs.slidersLocked = it
-            applySliderLock()
-        })
 
         root.addView(header("Farbschema"))
         val themes = Theme.ALL
@@ -422,6 +417,11 @@ class SettingsActivity : Activity() {
         gallery = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         root.addView(android.widget.HorizontalScrollView(this).apply { addView(gallery) })
         renderGallery()
+        root.addView(switch("🔒 Bild-Regler sperren (auch Verschieben/Zoomen in der Vorschau)", prefs.lockImage) {
+            prefs.lockImage = it
+            applySliderLock()
+        })
+        sliderGroup = GROUP_IMAGE
         root.addView(slider("Bild abdunkeln", 0, 90, prefs.bgDim, "%") { prefs.bgDim = it })
         root.addView(slider("Zoom", 100, 300, prefs.bgZoom, "%") { prefs.bgZoom = it }
             .also { zoomBar = it.getChildAt(1) as android.widget.SeekBar })
@@ -432,6 +432,11 @@ class SettingsActivity : Activity() {
         }.also { positionXBar = it.getChildAt(1) as android.widget.SeekBar })
 
         root.addView(header("Tasten"))
+        root.addView(switch("🔒 Tasten-Regler sperren", prefs.lockKeys) {
+            prefs.lockKeys = it
+            applySliderLock()
+        })
+        sliderGroup = GROUP_KEYS
         root.addView(slider("Deckkraft der Tasten", 0, 100, prefs.keyOpacity, "%") { prefs.keyOpacity = it })
         root.addView(slider("Eckenrundung", 0, 24, prefs.cornerRadiusDp, " dp") { prefs.cornerRadiusDp = it })
         root.addView(slider("Schriftgröße", 70, 150, prefs.textScale, "%") { prefs.textScale = it })
@@ -514,13 +519,20 @@ class SettingsActivity : Activity() {
         }.start()
     }
 
-    private val sliders = ArrayList<android.widget.SeekBar>()
+    /** Regler nach Gruppe (Bild / Tasten), jede Gruppe lässt sich einzeln sperren. */
+    private val sliders = ArrayList<Pair<String, android.widget.SeekBar>>()
+    private var sliderGroup = ""
 
-    /** Gesperrt: Regler und Vorschau reagieren nicht. */
+    private fun isLocked(group: String) = when (group) {
+        GROUP_IMAGE -> prefs.lockImage
+        GROUP_KEYS -> prefs.lockKeys
+        else -> false
+    }
+
+    /** Gesperrt: Regler (und beim Bild die Vorschau) reagieren nicht. */
     private fun applySliderLock() {
-        val locked = prefs.slidersLocked
-        sliders.forEach { it.isEnabled = !locked }
-        preview?.locked = locked
+        sliders.forEach { (group, bar) -> bar.isEnabled = !isLocked(group) }
+        preview?.locked = prefs.lockImage
     }
 
     /** Aufklapp-Liste (braucht weniger Platz als Auswahlknöpfe). */
@@ -544,8 +556,9 @@ class SettingsActivity : Activity() {
             show(value)
             addView(text)
             addView(android.widget.SeekBar(this@SettingsActivity).apply {
-                sliders.add(this)
-                isEnabled = !prefs.slidersLocked
+                val group = sliderGroup
+                sliders.add(group to this)
+                isEnabled = !isLocked(group)
                 this.max = max - min
                 progress = (value - min).coerceIn(0, max - min)
                 setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
@@ -843,6 +856,8 @@ class SettingsActivity : Activity() {
     companion object {
         const val EXTRA_SECTION = "section"
         private const val REQ_IMAGE = 41
+        private const val GROUP_IMAGE = "bild"
+        private const val GROUP_KEYS = "tasten"
         private const val REQ_EXPORT = 42
         private const val REQ_IMPORT = 43
     }

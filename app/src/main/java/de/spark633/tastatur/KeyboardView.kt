@@ -1023,7 +1023,13 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                     setMode(Mode.CLIPBOARD)
                 }
             } else if (settingsRect.contains(t.lastX, t.lastY) && settingsRect.contains(t.x0, t.y0)) {
-                setMode(if (mode == Mode.MENU) Mode.LETTERS else Mode.MENU)
+                when (mode) {
+                    // Aus einer Unterseite direkt in ihre Einstellungen
+                    Mode.CLIPBOARD -> { setMode(Mode.LETTERS); listener.onMenu("clipboard") }
+                    Mode.EMOTICONS -> { setMode(Mode.LETTERS); listener.onMenu("emoticons") }
+                    Mode.MENU -> setMode(Mode.LETTERS)
+                    else -> setMode(Mode.MENU)
+                }
             } else if (styleLabel != null && message == null && mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT) {
                 listener.onFormat("off")
             } else if (mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT && message == null) {

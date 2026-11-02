@@ -43,7 +43,9 @@ class SettingsActivity : Activity() {
             val p = (16 * dp).toInt()
             setPadding(p, p, p, p * 3)
         }
-        when (intent.getStringExtra(EXTRA_SECTION)) {
+        val section = intent.getStringExtra(EXTRA_SECTION)
+        actionBar?.setDisplayHomeAsUpEnabled(section != null) // ← zurück zu den Haupteinstellungen
+        when (section) {
             "general" -> buildGeneral()
             "languages" -> buildLanguages()
             "dictionary" -> buildDictionary()
@@ -74,6 +76,16 @@ class SettingsActivity : Activity() {
     override fun onDestroy() {
         if (preview != null) prefs.unregisterListener(previewListener)
         super.onDestroy()
+    }
+
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            // Auch wenn der Bereich aus der Tastatur geöffnet wurde: zur Startseite
+            startActivity(Intent(this, SettingsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
+            finish()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onNewIntent(intent: Intent) {

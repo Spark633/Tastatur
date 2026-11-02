@@ -144,7 +144,7 @@ object Layouts {
     fun menu(): List<List<Key>> = listOf(
         listOf(Key("⚙  Allgemein", Action.MENU, text = "general", width = 5f),
             Key("📖  Wörterbuch", Action.MENU, text = "dictionary", width = 5f)),
-        listOf(Key("📋  Zwischenablage", Action.MENU, text = "clipboard", width = 5f),
+        listOf(Key("💾  Profile", Action.MENU, text = "profiles", width = 5f),
             Key("↕  Größe anpassen", Action.MENU, text = "resize", width = 5f)),
         listOf(Key("🌍  Sprachen", Action.MENU, text = "languages", width = 5f),
             Key("🎨  Aussehen", Action.MENU, text = "design", width = 5f)),

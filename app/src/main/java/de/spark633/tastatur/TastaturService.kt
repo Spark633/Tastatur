@@ -574,10 +574,44 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             onPunctuation(text)
             return
         }
+        if (text.length == 1 && text[0] in CLOSING_QUOTES && onQuote(text)) return
         lastCorrection = null
         autoSpacePending = false
         forgetDeleted(false)
         ic.commitText(text, 1)
+    }
+
+    /**
+     * Anführungszeichen direkt nach einem Wort (oder nach . ! ?) schließt es:
+     * Wort korrigieren, danach automatisch ein Leerzeichen. Öffnende Zeichen
+     * (nach einem Leerzeichen) laufen normal. true = erledigt.
+     */
+    private fun onQuote(q: String): Boolean {
+        val ic = currentInputConnection ?: return false
+        // Nach "Hallo. " das automatische Leerzeichen wieder entfernen: Hallo."
+        var before = ic.getTextBeforeCursor(2, 0)?.toString().orEmpty()
+        if (autoSpacePending && before.length == 2 && before[1] == ' ' && before[0] in ".!?") {
+            ic.deleteSurroundingText(1, 0)
+            before = before.dropLast(1)
+        }
+        autoSpacePending = false
+        val prev = before.lastOrNull()
+        if (prev == null || !(prev.isLetterOrDigit() || prev in ".!?")) return false // öffnend
+        val word = currentWord()
+        forgetDeleted(true)
+        if (!correctAndCommit(q)) {
+            noteWordEnd(word)
+            lastCorrection = null
+            ic.commitText(q, 1)
+        }
+        if (word != null) learnPair()
+        val nextIsSpace = ic.getTextAfterCursor(1, 0)?.toString()?.firstOrNull()?.isWhitespace() == true
+        if (prefs.autoSpacePunct && isTextField && !nextIsSpace) {
+            ic.commitText(" ", 1)
+            autoSpacePending = true
+            lastCorrection = lastCorrection?.let { Triple(it.first, it.second, it.third + " ") }
+        }
+        return true
     }
 
     /** Satzzeichen: Wort davor korrigieren, danach ggf. automatisch ein Leerzeichen. */
@@ -928,6 +962,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     companion object {
         private const val PUNCTUATION = ".,!?;:"
+        private const val CLOSING_QUOTES = "\"“”»"
         private const val RESTORE_MIN_CHARS = 15
         private const val CLIP_OFFER_MS = 3 * 60 * 1000L
         const val RESTORE_LABEL = "↶ Wiederherstellen"

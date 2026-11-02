@@ -1,0 +1,11 @@
+Die Wortlisten de.txt, en.txt und nl.txt stammen aus den Wörterbüchern des
+Android Open Source Project (packages/inputmethods/LatinIME/dictionaries)
+und stehen unter der Apache License 2.0:
+http://www.apache.org/licenses/LICENSE-2.0
+
+Aufbereitet: nur Wort und Häufigkeit, ohne Abkürzungen und anstößige Einträge.
+
+Die Häufigkeiten wurden mit den Listen aus FrequencyWords (Hermit Dave,
+auf Basis von OpenSubtitles) ergänzt, damit Alltagswörter wie „ich“ oder
+„hallo“ passend gewichtet sind. Lizenz der Daten: CC BY-SA 4.0
+https://github.com/hermitdave/FrequencyWords

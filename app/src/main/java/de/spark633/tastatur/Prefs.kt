@@ -44,6 +44,19 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("auto_caps", true)
         set(v) = sp.edit().putBoolean("auto_caps", v).apply()
 
+    var suggestions: Boolean
+        get() = sp.getBoolean("suggestions", true)
+        set(v) = sp.edit().putBoolean("suggestions", v).apply()
+
+    var autocorrect: Boolean
+        get() = sp.getBoolean("autocorrect", true)
+        set(v) = sp.edit().putBoolean("autocorrect", v).apply()
+
+    /** ⌫ direkt nach einer Korrektur stellt das getippte Wort wieder her. */
+    var undoCorrection: Boolean
+        get() = sp.getBoolean("undo_correction", true)
+        set(v) = sp.edit().putBoolean("undo_correction", v).apply()
+
     /** Zusätzlicher Abstand unter der Tastatur (für die Systemknöpfe). */
     var bottomPaddingDp: Int
         get() = sp.getInt("bottom_padding", 0)

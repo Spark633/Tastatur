@@ -71,6 +71,18 @@ class SettingsActivity : Activity() {
             }.apply { setPadding((32 * dp).toInt(), 0, 0, 0) })
         }
 
+        // --- Wortvorschläge ---
+        root.addView(header("Wortvorschläge"))
+        root.addView(info(
+            "Die Mitte der Leiste (fett) wird beim Leerzeichen eingesetzt. Links steht bei einer Korrektur " +
+            "dein Wort in Anführungszeichen. Antippen behält es. Richtig geschriebene Wörter werden nie geändert."
+        ))
+        root.addView(switch("Wortvorschläge anzeigen", prefs.suggestions) { prefs.suggestions = it })
+        root.addView(switch("Tippfehler beim Leerzeichen korrigieren", prefs.autocorrect) { prefs.autocorrect = it })
+        root.addView(switch("⌫ direkt danach macht die Korrektur rückgängig", prefs.undoCorrection) {
+            prefs.undoCorrection = it
+        })
+
         // --- Leiste ---
         root.addView(header("Zwischenablage-Knopf"))
         val group = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL }

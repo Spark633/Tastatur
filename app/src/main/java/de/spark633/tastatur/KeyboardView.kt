@@ -32,6 +32,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         fun onLanguageSwipe(direction: Int)
         /** Zwischenablage wird geöffnet: aktuellen Inhalt in den Verlauf übernehmen. */
         fun onClipboardOpen()
+        /** Vorschlag angetippt: 0 = links, 1 = Mitte, 2 = rechts. */
+        fun onSuggestion(index: Int)
         fun onKeyFeedback()
     }
 
@@ -58,6 +60,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var lastShiftTap = 0L
     private var emoticonPage = 0
     private var message: String? = null
+    private var slots: List<String> = emptyList()
     private var lettersMode = Mode.LETTERS
 
     // Zwischenablage-Ansicht
@@ -143,6 +146,13 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         val new = if (on) Shift.ON else Shift.OFF
         if (new != shift) {
             shift = new
+            invalidate()
+        }
+    }
+
+    fun setSuggestions(list: List<String>) {
+        if (list != slots) {
+            slots = list
             invalidate()
         }
     }
@@ -396,9 +406,31 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
         if (mode == Mode.CLIPBOARD) canvas.drawCircle(cx, cy, barHeight * 0.42f, funcPaint)
         val text = message ?: if (mode == Mode.CLIPBOARD) "Zwischenablage" else null
-        text?.let {
-            canvas.drawText(it, width / 2f, centerY(barTextPaint, barHeight / 2f), barTextPaint)
+        if (text != null) {
+            canvas.drawText(text, width / 2f, centerY(barTextPaint, barHeight / 2f), barTextPaint)
+            return
         }
+        // Vorschläge: Mitte fett (wird beim Leerzeichen eingesetzt)
+        val rects = slotRects()
+        slots.forEachIndexed { i, word ->
+            if (word.isEmpty() || i >= rects.size) return@forEachIndexed
+            val r = rects[i]
+            val base = if (i == 1) boldBarPaint else barTextPaint
+            val p = fitPaint(base, word, r.width() - 8 * dp)
+            canvas.drawText(word, r.centerX(), centerY(p, r.centerY()), p)
+        }
+    }
+
+    private val boldBarPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE; textAlign = Paint.Align.CENTER; textSize = sp(20f)
+        typeface = android.graphics.Typeface.DEFAULT_BOLD
+    }
+
+    /** Drei gleich breite Felder zwischen Zwischenablage-Knopf und gegenüberliegendem Rand. */
+    private fun slotRects(): List<RectF> {
+        val cs = barHeight
+        val w = (width - 2 * cs) / 3f
+        return (0 until 3).map { RectF(cs + it * w, 0f, cs + (it + 1) * w, barHeight) }
     }
 
     private fun centerY(p: Paint, cy: Float) = cy - (p.descent() + p.ascent()) / 2f
@@ -651,6 +683,13 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                     lettersMode = if (mode == Mode.SYMBOLS || mode == Mode.SYMBOLS2) mode else Mode.LETTERS
                     listener.onClipboardOpen()
                     setMode(Mode.CLIPBOARD)
+                }
+            } else if (mode != Mode.CLIPBOARD && message == null) {
+                val rects = slotRects()
+                val i = rects.indexOfFirst { it.contains(t.lastX, t.lastY) }
+                if (i >= 0 && rects[i].contains(t.x0, t.y0) && slots.getOrNull(i)?.isNotEmpty() == true) {
+                    listener.onKeyFeedback()
+                    listener.onSuggestion(i)
                 }
             }
             invalidate()

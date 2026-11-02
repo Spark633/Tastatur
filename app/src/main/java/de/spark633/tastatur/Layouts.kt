@@ -135,4 +135,24 @@ object Layouts {
         )
         return rows
     }
+
+    /** Welche Buchstaben auf der Tastatur nebeneinander liegen (für die Tippfehler-Erkennung). */
+    fun neighbors(qwertz: Boolean): Map<Char, Set<Char>> {
+        val rows = listOf(
+            (if (qwertz) "qwertzuiop" else "qwertyuiop") to 0f,
+            "asdfghjkl" to 0.5f,
+            (if (qwertz) "yxcvbnm" else "zxcvbnm") to 1.5f,
+        )
+        val pos = HashMap<Char, Pair<Float, Float>>()
+        rows.forEachIndexed { r, (letters, offset) ->
+            letters.forEachIndexed { i, c -> pos[c] = (i + offset) to r.toFloat() }
+        }
+        val map = HashMap<Char, Set<Char>>()
+        for ((c, p) in pos) {
+            map[c] = pos.filter { (o, q) ->
+                o != c && kotlin.math.abs(q.second - p.second) <= 1f && kotlin.math.abs(q.first - p.first) <= 1.01f
+            }.keys
+        }
+        return map
+    }
 }

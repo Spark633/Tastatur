@@ -4,6 +4,8 @@ import android.content.ClipboardManager
 import android.content.SharedPreferences
 import android.inputmethodservice.InputMethodService
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -13,6 +15,7 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.WindowInsets
 import android.view.inputmethod.EditorInfo
+import java.util.concurrent.Executors
 
 /** Der eigentliche Tastatur-Dienst, den Android in jeder App einblendet. */
 class TastaturService : InputMethodService(), KeyboardView.Listener {
@@ -23,6 +26,23 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     private var language = Language.DE
     private var isTextField = true
     private var lastSpaceTime = 0L
+
+    // --- Wortvorschläge ---
+    private var dict: Dictionary? = null
+    private var dictLang: Language? = null
+    private val worker = Executors.newSingleThreadExecutor()
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var neighbors = Layouts.neighbors(true)
+    private var current: Dictionary.Suggestions? = null
+    private var suggestSeq = 0
+    private var suggestOn = true
+    private var autocorrectOn = true
+
+    /** Letzte Korrektur: getippt, ersetzt durch, Trennzeichen danach. */
+    private var lastCorrection: Triple<String, String, String>? = null
+
+    /** Wörter, deren Korrektur du abgelehnt hast (bleiben in dieser Sitzung unverändert). */
+    private val ignored = HashSet<String>()
 
     private val vibrator: Vibrator? by lazy {
         if (Build.VERSION.SDK_INT >= 31) {
@@ -54,6 +74,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDestroy() {
+        worker.shutdownNow()
         clipboard?.removePrimaryClipChangedListener(clipListener)
         prefs.unregisterListener(prefListener)
         super.onDestroy()
@@ -130,6 +151,13 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD,
         )
 
+        val noSuggestFlag = (info.inputType and InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS) != 0
+        suggestOn = isTextField && prefs.suggestions
+        autocorrectOn = suggestOn && prefs.autocorrect && !noSuggestFlag &&
+            variation != InputType.TYPE_TEXT_VARIATION_PERSON_NAME
+        lastCorrection = null
+        languageChanged()
+
         v.setEnterLabel(enterLabel(info))
         updateSystemInset(window?.window?.decorView?.rootWindowInsets)
         updateAutoCaps()
@@ -150,6 +178,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     ) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
         updateAutoCaps()
+        updateSuggestions()
     }
 
     private fun enterLabel(info: EditorInfo): String {
@@ -178,14 +207,143 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     // ------------------------------------------------------------------
+    // Wortvorschläge und Korrektur
+    // ------------------------------------------------------------------
+
+    private fun languageChanged() {
+        neighbors = Layouts.neighbors(prefs.isQwertz(language))
+        if (dictLang != language) {
+            val lang = language
+            dictLang = lang
+            dict = null // altes Wörterbuch freigeben
+            current = null
+            worker.execute {
+                val d = try { Dictionary.load(this, lang) } catch (_: Throwable) { null }
+                mainHandler.post {
+                    if (dictLang == lang) {
+                        dict = d
+                        updateSuggestions()
+                    }
+                }
+            }
+        }
+        updateSuggestions()
+    }
+
+    private fun isWordChar(c: Char) = c.isLetter() || c == '\'' || c == '-'
+
+    /** Das Wort direkt vor dem Cursor, oder null (z. B. mitten im Wort, in Links, nach Ziffern). */
+    private fun currentWord(): String? {
+        val ic = currentInputConnection ?: return null
+        if (!ic.getSelectedText(0).isNullOrEmpty()) return null
+        val before = ic.getTextBeforeCursor(48, 0)?.toString() ?: return null
+        var i = before.length
+        while (i > 0 && isWordChar(before[i - 1])) i--
+        val word = before.substring(i).trimStart('\'', '-')
+        if (word.isEmpty() || !word[0].isLetter() || word.last() == '-') return null
+        val start = before.length - word.length
+        if (start > 0 && before[start - 1].let { it.isDigit() || it in "@/._#\\" }) return null
+        val after = ic.getTextAfterCursor(1, 0)
+        if (!after.isNullOrEmpty() && isWordChar(after[0])) return null
+        return word
+    }
+
+    private fun isKnown(word: String) = ignored.contains(word.lowercase())
+
+    private fun updateSuggestions() {
+        val v = keyboard ?: return
+        val d = dict
+        val word = if (suggestOn) currentWord() else null
+        if (word == null || d == null) {
+            current = null
+            suggestSeq++
+            v.setSuggestions(emptyList())
+            return
+        }
+        if (current?.typed == word) return
+        val seq = ++suggestSeq
+        val nb = neighbors
+        val ign = HashSet(ignored)
+        worker.execute {
+            val s = try { d.suggest(word, nb) { ign.contains(it.lowercase()) } } catch (_: Throwable) { null }
+            mainHandler.post {
+                if (seq == suggestSeq && s != null) {
+                    current = s
+                    v.setSuggestions(s.slots)
+                }
+            }
+        }
+    }
+
+    /** Korrigiert das Wort vor dem Cursor und fügt das Trennzeichen an. true = erledigt. */
+    private fun correctAndCommit(separator: String): Boolean {
+        if (!autocorrectOn) return false
+        val d = dict ?: return false
+        val word = currentWord() ?: return false
+        val s = current?.takeIf { it.typed == word } ?: d.suggest(word, neighbors, ::isKnown)
+        val corr = s.correction ?: return false
+        if (corr == word) return false
+        val ic = currentInputConnection ?: return false
+        ic.beginBatchEdit()
+        ic.deleteSurroundingText(word.length, 0)
+        ic.commitText(corr + separator, 1)
+        ic.endBatchEdit()
+        lastCorrection = Triple(word, corr, separator)
+        current = null
+        return true
+    }
+
+    /** ⌫ direkt nach einer Korrektur: getipptes Wort wiederherstellen. */
+    private fun undoCorrection(): Boolean {
+        val lc = lastCorrection ?: return false
+        lastCorrection = null
+        if (!prefs.undoCorrection) return false
+        val (original, corrected, sep) = lc
+        val ic = currentInputConnection ?: return false
+        val expected = corrected + sep
+        val before = ic.getTextBeforeCursor(expected.length, 0)?.toString()
+        if (before != expected) return false
+        ic.beginBatchEdit()
+        ic.deleteSurroundingText(expected.length, 0)
+        ic.commitText(original, 1)
+        ic.endBatchEdit()
+        ignored.add(original.lowercase())
+        current = null
+        return true
+    }
+
+    // ------------------------------------------------------------------
     // KeyboardView.Listener
     // ------------------------------------------------------------------
 
     override fun onText(text: String) {
+        if (text.length == 1 && text[0] in ".,!?;:" && correctAndCommit(text)) return
+        lastCorrection = null
         currentInputConnection?.commitText(text, 1)
     }
 
+    override fun onSuggestion(index: Int) {
+        val s = current ?: return
+        val word = currentWord() ?: return
+        if (s.typed != word) return
+        val chosen = if (index == 0 && s.correction != null) {
+            ignored.add(word.lowercase()) // eigenes Wort behalten
+            word
+        } else {
+            s.slots.getOrNull(index)?.takeIf { it.isNotEmpty() } ?: return
+        }
+        val ic = currentInputConnection ?: return
+        ic.beginBatchEdit()
+        ic.deleteSurroundingText(word.length, 0)
+        ic.commitText("$chosen ", 1)
+        ic.endBatchEdit()
+        lastCorrection = null
+        current = null
+        lastSpaceTime = SystemClock.uptimeMillis()
+    }
+
     override fun onDelete() {
+        if (undoCorrection()) return
         val ic = currentInputConnection ?: return
         val selected = ic.getSelectedText(0)
         if (!selected.isNullOrEmpty()) ic.commitText("", 1)
@@ -193,6 +351,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onEnter() {
+        lastCorrection = null
         val ic = currentInputConnection ?: return
         val info = currentInputEditorInfo
         val action = info?.imeOptions?.and(EditorInfo.IME_MASK_ACTION) ?: EditorInfo.IME_ACTION_NONE
@@ -216,6 +375,11 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
                 return
             }
         }
+        if (correctAndCommit(" ")) {
+            lastSpaceTime = now
+            return
+        }
+        lastCorrection = null
         ic.commitText(" ", 1)
         lastSpaceTime = now
     }
@@ -230,6 +394,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         language = langs[(idx + direction + langs.size) % langs.size]
         prefs.currentLanguage = language
         keyboard?.configure(prefs, language)
+        languageChanged()
         keyboard?.showMessage(language.displayName)
     }
 

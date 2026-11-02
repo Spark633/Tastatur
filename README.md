@@ -10,7 +10,7 @@ Eigene Android-Tastatur, angepasst an meine Wünsche.
 
 Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update über die alte installieren.
 
-## Funktionen (Schritt 1)
+## Funktionen
 
 - QWERTZ-Layout (pro Sprache auf QWERTY umschaltbar)
 - Nach oben wischen: Zahlen und Zeichen auf den oberen beiden Reihen
@@ -21,10 +21,14 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Zwischenablage-Verlauf (letzte 30 Einträge, anheften, löschen, leeren), Knopf links oder rechts
 - Größe direkt auf der Tastatur durch Ziehen anpassen, Abstand zu den Systemknöpfen
 - Automatische Großschreibung, doppeltes Leerzeichen → Punkt
+- Wortvorschläge (Deutsch, Englisch, Niederländisch) mit Vervollständigung
+- Tippfehler-Korrektur beim Leerzeichen oder Satzzeichen, richtige Wörter bleiben immer unverändert
+- ⌫ direkt nach einer Korrektur stellt das getippte Wort wieder her
+
+Wörterbücher: siehe `app/src/main/assets/dict/LIZENZ.txt`.
 
 ## Geplant
 
-2. Wortvorschläge, Korrektur beim Leerzeichen, Rückgängig mit ⌫
 4. Eigene Wörter (lernen, hinzufügen, bearbeiten)
 5. Hintergrundbild und Design
 6. Nächstes Wort vorhersagen, gelöschten Text wiederherstellen

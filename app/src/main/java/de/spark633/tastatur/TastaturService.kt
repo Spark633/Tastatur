@@ -462,12 +462,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val v = keyboard ?: return
         val d = dict
         clipShown = false
-        if (restoreAvailable()) {
-            current = null
-            suggestSeq++
-            v.setSuggestions(listOf("", RESTORE_LABEL, ""))
-            return
-        }
+        v.setRestoreVisible(restoreAvailable()) // ↶ neben den Vorschlägen, Vorschläge laufen weiter
         // Gerade etwas kopiert und nicht mitten im Wort: zum Einfügen anbieten
         clipOffer()?.let { label ->
             if (currentWord() == null) {
@@ -645,10 +640,6 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onSuggestion(index: Int) {
-        if (restoreAvailable()) {
-            if (index == 1) restoreDeleted()
-            return
-        }
         if (clipShown) {
             if (index == 1) {
                 recentClip?.let { currentInputConnection?.commitText(it, 1) }
@@ -687,6 +678,17 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         autoSpacePending = false
         current = null
         lastSpaceTime = SystemClock.uptimeMillis()
+    }
+
+    override fun onRestore() {
+        if (restoreAvailable()) restoreDeleted()
+        updateSuggestions()
+    }
+
+    override fun onRestoreDismiss() {
+        clearDeleted()
+        keyboard?.showMessage("Wiederherstellen verworfen")
+        updateSuggestions()
     }
 
     override fun onSuggestionLongPress(index: Int) {
@@ -965,7 +967,6 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         private const val CLOSING_QUOTES = "\"“”»"
         private const val RESTORE_MIN_CHARS = 15
         private const val CLIP_OFFER_MS = 3 * 60 * 1000L
-        const val RESTORE_LABEL = "↶ Wiederherstellen"
 
         /** Name → Such-URL (der Begriff wird angehängt). */
         val SEARCH_ENGINES = linkedMapOf(

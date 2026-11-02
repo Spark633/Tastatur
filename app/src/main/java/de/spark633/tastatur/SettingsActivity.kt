@@ -825,7 +825,7 @@ class SettingsActivity : Activity() {
                 "• Zwei Leerzeichen: Punkt am Satzende\n" +
                 "• Vorschlag antippen: einsetzen. Lange drücken: nicht mehr vorschlagen\n" +
                 "• ⌫ direkt nach einer Korrektur: dein Wort zurück\n" +
-                "• Versehentlich viel gelöscht: „↶ Wiederherstellen“ in der Leiste antippen\n" +
+                "• Versehentlich gelöscht oder übertippt: ↶ rechts neben den Vorschlägen antippen (lange drücken = verwerfen)\n" +
                 "• Nach einem Leerzeichen: Vorschläge fürs nächste Wort (lernt aus deinem Schreiben)\n" +
                 "• zb → z.B., oä → o.Ä., idr → i.d.R.\n" +
                 "• 📋 Zwischenablage, ⚙ Menü mit Einstellungen, Größe und Aussehen\n" +

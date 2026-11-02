@@ -38,6 +38,9 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         fun onMenu(section: String)
         /** Vorschlag lange gedrückt: nicht mehr vorschlagen. */
         fun onSuggestionLongPress(index: Int)
+        /** ↶ neben den Vorschlägen: gelöschten Text wiederherstellen bzw. Angebot verwerfen. */
+        fun onRestore()
+        fun onRestoreDismiss()
         /** Formatieren: "bold", "strike", "bullet", "wa_bold" … oder "off" (Stil beenden). */
         fun onFormat(code: String)
         /** Vorschlag angetippt: 0 = links, 1 = Mitte, 2 = rechts. */
@@ -72,6 +75,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var emoticonList: List<String> = Layouts.EMOTICONS
     private var message: String? = null
     private var slots: List<String> = emptyList()
+    private var restoreVisible = false
     private var styleLabel: String? = null
 
     /** Rückfrage in der Leiste (z. B. Vorschlag entfernen). */
@@ -236,6 +240,14 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         val new = if (on) Shift.ON else Shift.OFF
         if (new != shift) {
             shift = new
+            invalidate()
+        }
+    }
+
+    /** ↶-Knopf rechts neben den Vorschlägen ein-/ausblenden. */
+    fun setRestoreVisible(on: Boolean) {
+        if (on != restoreVisible) {
+            restoreVisible = on
             invalidate()
         }
     }
@@ -613,6 +625,11 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         if (mode == Mode.CLIPBOARD) canvas.drawCircle(cx, cy, barHeight * 0.42f, funcPaint)
         if (mode == Mode.MENU) canvas.drawCircle(settingsRect.centerX(), settingsRect.centerY(), barHeight * 0.42f, funcPaint)
         drawGear(canvas, settingsRect.centerX(), settingsRect.centerY())
+        if (restoreVisible && mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT) {
+            val r = restoreRect
+            canvas.drawCircle(r.centerX(), r.centerY(), barHeight * 0.38f, accentPaint)
+            canvas.drawText("↶", r.centerX(), centerY(barTextPaint, r.centerY()), barTextPaint)
+        }
         val text = message ?: when (mode) {
             Mode.CLIPBOARD -> "Zwischenablage"
             Mode.MENU -> "Einstellungen"
@@ -640,11 +657,16 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     }
 
     /** Drei gleich breite Felder zwischen Zwischenablage-Knopf und gegenüberliegendem Rand. */
+    /** Drei gleich breite Felder zwischen den Knöpfen; rechts ggf. Platz für ↶. */
     private fun slotRects(): List<RectF> {
         val cs = barHeight
-        val w = (width - 2 * cs) / 3f
+        val right = width - cs - if (restoreVisible) cs else 0f
+        val w = (right - cs) / 3f
         return (0 until 3).map { RectF(cs + it * w, 0f, cs + (it + 1) * w, barHeight) }
     }
+
+    /** ↶ sitzt rechts neben den Vorschlägen, vor dem rechten Knopf. */
+    private val restoreRect: RectF get() = RectF(width - 2 * barHeight, 0f, width - barHeight, barHeight)
 
     /** Zahnrad: Ring mit acht Zähnen. */
     private fun drawGear(canvas: Canvas, cx: Float, cy: Float) {
@@ -864,6 +886,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 styleLabel == null) {
                 val i = slotRects().indexOfFirst { it.contains(x, y) }
                 if (i >= 0 && slots.getOrNull(i)?.isNotEmpty() == true) postDelayed(t.longPress, 500)
+                if (restoreVisible && restoreRect.contains(x, y)) postDelayed(t.longPress, 500)
             }
             return
         }
@@ -970,6 +993,12 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             }
             return
         }
+        if (t.onBar && restoreVisible && restoreRect.contains(t.lastX, t.lastY)) {
+            t.barLong = true
+            listener.onKeyFeedback()
+            listener.onRestoreDismiss()
+            return
+        }
         if (t.onBar) {
             val i = slotRects().indexOfFirst { it.contains(t.lastX, t.lastY) }
             if (i >= 0) {
@@ -1022,6 +1051,10 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                     listener.onClipboardOpen()
                     setMode(Mode.CLIPBOARD)
                 }
+            } else if (restoreVisible && mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT &&
+                restoreRect.contains(t.lastX, t.lastY) && restoreRect.contains(t.x0, t.y0)) {
+                listener.onKeyFeedback()
+                listener.onRestore()
             } else if (settingsRect.contains(t.lastX, t.lastY) && settingsRect.contains(t.x0, t.y0)) {
                 when (mode) {
                     // Aus einer Unterseite direkt in ihre Einstellungen

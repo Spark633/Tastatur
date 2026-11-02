@@ -38,12 +38,14 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         fun onMenu(section: String)
         /** Vorschlag lange gedrückt: nicht mehr vorschlagen. */
         fun onSuggestionLongPress(index: Int)
+        /** Formatieren: "bold", "strike", "bullet", "wa_bold" … oder "off" (Stil beenden). */
+        fun onFormat(code: String)
         /** Vorschlag angetippt: 0 = links, 1 = Mitte, 2 = rechts. */
         fun onSuggestion(index: Int)
         fun onKeyFeedback()
     }
 
-    enum class Mode { LETTERS, SYMBOLS, SYMBOLS2, EMOTICONS, CLIPBOARD, MENU }
+    enum class Mode { LETTERS, SYMBOLS, SYMBOLS2, EMOTICONS, CLIPBOARD, MENU, FORMAT }
     enum class Shift { OFF, ON, LOCK }
 
     private val dp = resources.displayMetrics.density
@@ -67,6 +69,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var emoticonPage = 0
     private var message: String? = null
     private var slots: List<String> = emptyList()
+    private var styleLabel: String? = null
     private var lettersMode = Mode.LETTERS
 
     // Zwischenablage-Ansicht
@@ -172,6 +175,12 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         }
     }
 
+    /** Aktiver Schreibstil, wird in der Leiste angezeigt (antippen beendet ihn). */
+    fun setStyleIndicator(label: String?) {
+        styleLabel = label
+        invalidate()
+    }
+
     fun showMessage(text: String) {
         message = text
         invalidate()
@@ -234,6 +243,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         Mode.EMOTICONS -> Layouts.emoticons(emoticonPage)
         Mode.CLIPBOARD -> Layouts.clipboard()
         Mode.MENU -> Layouts.menu()
+        Mode.FORMAT -> Layouts.format()
     }
 
     private fun layoutKeys() {
@@ -486,7 +496,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         val text = message ?: when (mode) {
             Mode.CLIPBOARD -> "Zwischenablage"
             Mode.MENU -> "Einstellungen"
-            else -> null
+            Mode.FORMAT -> "Text markieren oder Stil wählen"
+            else -> styleLabel?.let { "✎ $it  –  hier tippen zum Beenden" }
         }
         if (text != null) {
             canvas.drawText(text, width / 2f, centerY(barTextPaint, barHeight / 2f), barTextPaint)
@@ -682,7 +693,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         if (y < barHeight) {
             val t = Touch(id, null, true, x, y)
             touches[id] = t
-            if (mode != Mode.CLIPBOARD && mode != Mode.MENU && message == null) {
+            if (mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT && message == null && styleLabel == null) {
                 val i = slotRects().indexOfFirst { it.contains(x, y) }
                 if (i >= 0 && slots.getOrNull(i)?.isNotEmpty() == true) postDelayed(t.longPress, 500)
             }
@@ -813,7 +824,9 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 }
             } else if (settingsRect.contains(t.lastX, t.lastY) && settingsRect.contains(t.x0, t.y0)) {
                 setMode(if (mode == Mode.MENU) Mode.LETTERS else Mode.MENU)
-            } else if (mode != Mode.CLIPBOARD && mode != Mode.MENU && message == null) {
+            } else if (styleLabel != null && message == null && mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT) {
+                listener.onFormat("off")
+            } else if (mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT && message == null) {
                 val rects = slotRects()
                 val i = rects.indexOfFirst { it.contains(t.lastX, t.lastY) }
                 if (i >= 0 && rects[i].contains(t.x0, t.y0) && slots.getOrNull(i)?.isNotEmpty() == true) {
@@ -870,9 +883,15 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 setMode(Mode.EMOTICONS)
             }
             Action.CLIP_CLEAR -> clipClear()
-            Action.MENU -> {
+            Action.MENU -> if (k.text == "format") {
+                setMode(Mode.FORMAT)
+            } else {
                 setMode(Mode.LETTERS)
                 listener.onMenu(k.text)
+            }
+            Action.FORMAT -> {
+                setMode(Mode.LETTERS)
+                listener.onFormat(k.text)
             }
             Action.DELETE, Action.TO_CLIPBOARD -> {}
         }

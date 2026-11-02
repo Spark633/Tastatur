@@ -6,7 +6,7 @@ enum class Action {
     TO_LETTERS, TO_SYMBOLS, TO_SYMBOLS2, TO_EMOTICONS,
     PAGE_PREV, PAGE_NEXT,
     TO_CLIPBOARD, CLIP_CLEAR,
-    MENU,
+    MENU, FORMAT,
 }
 
 /**
@@ -63,7 +63,7 @@ object Layouts {
         Key("^.^", Action.TO_EMOTICONS),
         Key(",", down = "!", longPress = listOf(",", "!", ";")),
         Key(" ", Action.SPACE, width = 4f),
-        Key(".", down = "?", longPress = listOf(".", "?", "!", "…", ":", ";", "-", "'", "\"")),
+        Key(".", up = "!", down = "?", longPress = listOf("?", "!")),
         Key("↵", Action.ENTER, width = 1.5f),
     )
 
@@ -119,7 +119,25 @@ object Layouts {
             Key("↕  Größe anpassen", Action.MENU, text = "resize", width = 5f)),
         listOf(Key("🌍  Sprachen", Action.MENU, text = "languages", width = 5f),
             Key("❓  Hilfe", Action.MENU, text = "help", width = 5f)),
-        listOf(Key("ABC", Action.TO_LETTERS, width = 10f)),
+        listOf(Key("ABC", Action.TO_LETTERS, width = 4f),
+            Key("✎  Formatieren", Action.MENU, text = "format", width = 6f)),
+    )
+
+    /** Formatieren: Listen, Unicode-Stile (überall sichtbar) und WhatsApp-Zeichen. */
+    fun format(): List<List<Key>> = listOf(
+        listOf(Key("•  Aufzählung", Action.FORMAT, text = "bullet", width = 5f),
+            Key("1.  Nummeriert", Action.FORMAT, text = "number", width = 5f)),
+        listOf(Key("𝗙𝗲𝘁𝘁", Action.FORMAT, text = "bold", width = 2.5f),
+            Key("𝘒𝘶𝘳𝘴𝘪𝘷", Action.FORMAT, text = "italic", width = 2.5f),
+            Key("D̶u̶r̶c̶h̶", Action.FORMAT, text = "strike", width = 2.5f),
+            Key("U̲n̲t̲e̲r̲", Action.FORMAT, text = "underline", width = 2.5f)),
+        listOf(Key("*fett*", Action.FORMAT, text = "wa_bold", width = 2.5f),
+            Key("_kursiv_", Action.FORMAT, text = "wa_italic", width = 2.5f),
+            Key("~durch~", Action.FORMAT, text = "wa_strike", width = 2.5f),
+            Key("```mono```", Action.FORMAT, text = "wa_mono", width = 2.5f)),
+        listOf(Key("ABC", Action.TO_LETTERS, width = 3f),
+            Key(" ", Action.SPACE, width = 4f),
+            Key("⌫", Action.DELETE, width = 3f)),
     )
 
     /** Untere Reihe der Zwischenablage-Ansicht; darüber liegt die Liste. */

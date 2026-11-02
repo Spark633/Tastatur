@@ -23,6 +23,8 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Eigene Wörter: werden gelernt (2× getippt oder Korrektur abgelehnt), in der App bearbeiten
 - Vorschlag lange drücken: wird nicht mehr vorgeschlagen
 - Optional: Leerzeichen nach . , ! ? automatisch, Enter übernimmt den Vorschlag
+- Punkt-Taste: hoch wischen !, runter wischen ?, lange drücken ? und !
+- Formatieren (⚙ → ✎): Listen (• und 1.), die bei Enter weiterlaufen; 𝗳𝗲𝘁𝘁, 𝘬𝘶𝘳𝘴𝘪𝘷, d̶u̶r̶c̶h̶, u̲n̲t̲e̲r̲ als Unicode; WhatsApp *fett* _kursiv_ ~durch~ ```mono```
 - Größe direkt auf der Tastatur durch Ziehen anpassen, Abstand zu den Systemknöpfen
 - Automatische Großschreibung, doppeltes Leerzeichen → Punkt
 - Wortvorschläge (Deutsch, Englisch, Niederländisch) mit Vervollständigung

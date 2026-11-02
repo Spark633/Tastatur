@@ -48,6 +48,9 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     /** Nach einem Satzzeichen wurde automatisch ein Leerzeichen gesetzt. */
     private var autoSpacePending = false
 
+    /** Aktiver Unicode-Stil ("bold", "strike" …) oder null. */
+    private var activeStyle: String? = null
+
     private val vibrator: Vibrator? by lazy {
         if (Build.VERSION.SDK_INT >= 31) {
             getSystemService(VibratorManager::class.java)?.defaultVibrator
@@ -162,6 +165,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             variation != InputType.TYPE_TEXT_VARIATION_PERSON_NAME
         lastCorrection = null
         autoSpacePending = false
+        activeStyle = null
+        v.setStyleIndicator(null)
         current = null // eigene Wörter könnten sich in den Einstellungen geändert haben
         languageChanged()
 
@@ -367,6 +372,10 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     override fun onText(text: String) {
         val ic = currentInputConnection ?: return
+        activeStyle?.let {
+            ic.commitText(Formatter.apply(it, text), 1)
+            return
+        }
         if (text.length == 1 && text[0] in PUNCTUATION) {
             onPunctuation(text)
             return
@@ -484,7 +493,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val noEnterAction = info != null && (info.imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION) != 0
         if (!noEnterAction && action != EditorInfo.IME_ACTION_NONE && action != EditorInfo.IME_ACTION_UNSPECIFIED) {
             ic.performEditorAction(action)
-        } else {
+        } else if (!continueList()) {
             sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
         }
     }
@@ -500,6 +509,12 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
                 lastSpaceTime = 0
                 return
             }
+        }
+        activeStyle?.let {
+            // Durch- und Unterstreichen läuft über Leerzeichen hinweg
+            ic.commitText(if (it == "strike" || it == "underline") Formatter.apply(it, " ") else " ", 1)
+            lastSpaceTime = now
+            return
         }
         // Leerzeichen kam schon automatisch nach dem Satzzeichen
         if (autoSpacePending) {
@@ -530,6 +545,79 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         keyboard?.configure(prefs, language)
         languageChanged()
         keyboard?.showMessage(language.displayName)
+    }
+
+    // ------------------------------------------------------------------
+    // Formatieren
+    // ------------------------------------------------------------------
+
+    override fun onFormat(code: String) {
+        val ic = currentInputConnection ?: return
+        val selected = ic.getSelectedText(0)?.toString().orEmpty()
+        when (code) {
+            "off" -> setStyle(null)
+            "bold", "italic", "strike", "underline" -> {
+                if (selected.isNotEmpty()) {
+                    ic.commitText(Formatter.apply(code, selected), 1)
+                } else {
+                    setStyle(if (activeStyle == code) null else code)
+                }
+            }
+            "wa_bold", "wa_italic", "wa_strike", "wa_mono" -> {
+                val mark = when (code) {
+                    "wa_bold" -> "*"
+                    "wa_italic" -> "_"
+                    "wa_strike" -> "~"
+                    else -> "```"
+                }
+                if (selected.isNotEmpty()) {
+                    ic.commitText(mark + selected + mark, 1)
+                } else {
+                    // Zeichen paarweise einfügen, Cursor dazwischen
+                    ic.beginBatchEdit()
+                    ic.commitText(mark, 1)
+                    ic.commitText(mark, 0)
+                    ic.endBatchEdit()
+                }
+            }
+            "bullet" -> startList("• ")
+            "number" -> startList("1. ")
+        }
+    }
+
+    private fun setStyle(style: String?) {
+        activeStyle = style
+        keyboard?.setStyleIndicator(style?.let { Formatter.LABELS[it] })
+    }
+
+    /** Liste beginnen: am Zeilenanfang direkt, sonst in einer neuen Zeile. */
+    private fun startList(prefix: String) {
+        val ic = currentInputConnection ?: return
+        val before = ic.getTextBeforeCursor(1, 0)?.toString().orEmpty()
+        ic.commitText(if (before.isEmpty() || before == "\n") prefix else "\n$prefix", 1)
+    }
+
+    /**
+     * Enter in einer Liste: nächster Punkt ("• " oder "2. "). Enter auf einem
+     * leeren Punkt beendet die Liste. true = erledigt.
+     */
+    private fun continueList(): Boolean {
+        val ic = currentInputConnection ?: return false
+        val before = ic.getTextBeforeCursor(400, 0)?.toString() ?: return false
+        val line = before.substringAfterLast('\n')
+        val bullet = Regex("^(\\s*)([•\\-*–]) ").find(line)
+        val number = Regex("^(\\s*)(\\d+)\\. ").find(line)
+        val (prefix, next) = when {
+            bullet != null -> bullet.value to bullet.value
+            number != null -> number.value to "${number.groupValues[1]}${number.groupValues[2].toInt() + 1}. "
+            else -> return false
+        }
+        if (line == prefix) {
+            ic.deleteSurroundingText(line.length, 0) // leerer Punkt: Liste beenden
+        } else {
+            ic.commitText("\n$next", 1)
+        }
+        return true
     }
 
     override fun onMenu(section: String) {

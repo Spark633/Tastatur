@@ -378,17 +378,21 @@ class SettingsActivity : Activity() {
     private var bgStatus: TextView? = null
     private var preview: KeyboardPreview? = null
     private var positionBar: android.widget.SeekBar? = null
+    private var positionXBar: android.widget.SeekBar? = null
+    private var zoomBar: android.widget.SeekBar? = null
 
     /** Vorschau und Ausschnitt-Regler bei jeder Änderung aktualisieren. */
     private val previewListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         preview?.refresh()
         if (key == "bg_position") positionBar?.progress = prefs.bgPosition
+        if (key == "bg_position_x") positionXBar?.progress = prefs.bgPositionX
+        if (key == "bg_zoom") zoomBar?.progress = prefs.bgZoom - 100
     }
 
     private fun buildDesign() {
         title = "Aussehen"
         preview = KeyboardPreview(this, prefs)
-        root.addView(info("Die Vorschau oben zeigt jede Änderung sofort. Bild darin nach oben/unten ziehen wählt den Ausschnitt."))
+        root.addView(info("Die Vorschau oben zeigt jede Änderung sofort. Bild darin ziehen = verschieben, mit zwei Fingern = zoomen."))
 
         root.addView(header("Farbschema"))
         val themes = Theme.ALL
@@ -410,8 +414,13 @@ class SettingsActivity : Activity() {
         root.addView(android.widget.HorizontalScrollView(this).apply { addView(gallery) })
         renderGallery()
         root.addView(slider("Bild abdunkeln", 0, 90, prefs.bgDim, "%") { prefs.bgDim = it })
-        root.addView(slider("Bildausschnitt (0 = oben, 100 = unten)", 0, 100, prefs.bgPosition, "") { prefs.bgPosition = it }
+        root.addView(slider("Zoom", 100, 300, prefs.bgZoom, "%") { prefs.bgZoom = it }
+            .also { zoomBar = it.getChildAt(1) as android.widget.SeekBar })
+        root.addView(slider("Ausschnitt senkrecht (0 = oben, 100 = unten)", 0, 100, prefs.bgPosition, "") { prefs.bgPosition = it }
             .also { positionBar = it.getChildAt(1) as android.widget.SeekBar })
+        root.addView(slider("Ausschnitt waagerecht (0 = links, 100 = rechts)", 0, 100, prefs.bgPositionX, "") {
+            prefs.bgPositionX = it
+        }.also { positionXBar = it.getChildAt(1) as android.widget.SeekBar })
 
         root.addView(header("Tasten"))
         root.addView(slider("Deckkraft der Tasten", 0, 100, prefs.keyOpacity, "%") { prefs.keyOpacity = it })

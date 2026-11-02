@@ -140,6 +140,16 @@ class Prefs(context: Context) {
         get() = sp.getInt("bg_position", 50)
         set(v) = sp.edit().putInt("bg_position", v).apply()
 
+    /** Waagerechter Ausschnitt: 0 = links, 100 = rechts (wichtig beim Zoomen). */
+    var bgPositionX: Int
+        get() = sp.getInt("bg_position_x", 50)
+        set(v) = sp.edit().putInt("bg_position_x", v).apply()
+
+    /** Zoom des Hintergrundbilds in Prozent (100 = passt genau). */
+    var bgZoom: Int
+        get() = sp.getInt("bg_zoom", 100)
+        set(v) = sp.edit().putInt("bg_zoom", v).apply()
+
     /** Dateiname des aktiven Hintergrundbilds im Verlauf ("" = keins). */
     var bgFile: String
         get() = sp.getString("bg_file", "") ?: ""

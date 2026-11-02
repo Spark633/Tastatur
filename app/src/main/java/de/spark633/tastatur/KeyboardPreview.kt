@@ -72,13 +72,9 @@ class KeyboardPreview(context: Context, private val prefs: Prefs) : View(context
         fill.color = t.background
         canvas.drawRect(0f, 0f, w, h, fill)
         bitmap?.let { bmp ->
-            val scale = max(w / bmp.width, h / bmp.height)
-            val srcW = w / scale
-            val srcH = h / scale
-            val left = (bmp.width - srcW) / 2f
-            val top = (bmp.height - srcH) * (prefs.bgPosition / 100f)
-            canvas.drawBitmap(bmp, Rect(left.toInt(), top.toInt(), (left + srcW).toInt(), (top + srcH).toInt()),
-                RectF(0f, 0f, w, h), bmpPaint)
+            val src = Background.sourceRect(bmp.width, bmp.height, w, h,
+                prefs.bgZoom / 100f, prefs.bgPositionX / 100f, prefs.bgPosition / 100f)
+            canvas.drawBitmap(bmp, src, RectF(0f, 0f, w, h), bmpPaint)
             fill.color = alpha(if (t.light) Color.WHITE else Color.BLACK, prefs.bgDim / 100f)
             canvas.drawRect(0f, 0f, w, h, fill)
         }
@@ -145,34 +141,73 @@ class KeyboardPreview(context: Context, private val prefs: Prefs) : View(context
 
         if (bitmap != null) {
             hint.color = t.text
-            canvas.drawText("↕ Bild ziehen = Ausschnitt", w / 2f, h - 2 * dp, hint)
+            canvas.drawText("Bild ziehen = verschieben · zwei Finger = zoomen", w / 2f, h - 2 * dp, hint)
         }
     }
 
-    private var startY = 0f
-    private var startPos = 0
+    private var lastX = 0f
+    private var lastY = 0f
+
+    // Genaue Werte während der Geste (Einstellungen speichern nur ganze Prozent)
+    private var zoomF = 100f
+    private var posXF = 50f
+    private var posYF = 50f
+
+    /** Zwei Finger: zoomen. */
+    private val pinch = android.view.ScaleGestureDetector(context,
+        object : android.view.ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            override fun onScale(d: android.view.ScaleGestureDetector): Boolean {
+                zoomF = (zoomF * d.scaleFactor).coerceIn(100f, 300f)
+                val z = zoomF.toInt()
+                if (z != prefs.bgZoom) {
+                    prefs.bgZoom = z
+                    invalidate()
+                }
+                return true
+            }
+        })
+
+    /** Ein Finger: Bild verschieben (waagerecht und senkrecht). */
+    private fun pan(dx: Float, dy: Float) {
+        val bmp = bitmap ?: return
+        val scale = max(width.toFloat() / bmp.width, height.toFloat() / bmp.height) * (zoomF / 100f)
+        val hiddenX = bmp.width * scale - width
+        val hiddenY = bmp.height * scale - height
+        if (hiddenX > 1f) {
+            posXF = (posXF - dx / hiddenX * 100f).coerceIn(0f, 100f)
+            val x = Math.round(posXF)
+            if (x != prefs.bgPositionX) prefs.bgPositionX = x
+        }
+        if (hiddenY > 1f) {
+            posYF = (posYF - dy / hiddenY * 100f).coerceIn(0f, 100f)
+            val y = Math.round(posYF)
+            if (y != prefs.bgPosition) prefs.bgPosition = y
+        }
+        invalidate()
+    }
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(e: MotionEvent): Boolean {
-        val bmp = bitmap ?: return false
+        if (bitmap == null) return false
+        pinch.onTouchEvent(e)
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                startY = e.y
-                startPos = prefs.bgPosition
+                lastX = e.x
+                lastY = e.y
+                zoomF = prefs.bgZoom.toFloat()
+                posXF = prefs.bgPositionX.toFloat()
+                posYF = prefs.bgPosition.toFloat()
                 parent?.requestDisallowInterceptTouchEvent(true)
             }
-            MotionEvent.ACTION_MOVE -> {
-                // Wie viel vom Bild ist unsichtbar? Daraus ergibt sich, wie weit man ziehen kann.
-                val scale = max(width.toFloat() / bmp.width, height.toFloat() / bmp.height)
-                val hidden = bmp.height * scale - height
-                if (hidden > 1f) {
-                    val delta = ((startY - e.y) / hidden * 100f).toInt()
-                    val pos = (startPos + delta).coerceIn(0, 100)
-                    if (pos != prefs.bgPosition) {
-                        prefs.bgPosition = pos
-                        invalidate()
-                    }
-                }
+            MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_POINTER_UP -> {
+                // Nach dem Zoomen nicht springen
+                lastX = e.getX(0)
+                lastY = e.getY(0)
+            }
+            MotionEvent.ACTION_MOVE -> if (e.pointerCount == 1 && !pinch.isInProgress) {
+                pan(e.x - lastX, e.y - lastY)
+                lastX = e.x
+                lastY = e.y
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> parent?.requestDisallowInterceptTouchEvent(false)
         }

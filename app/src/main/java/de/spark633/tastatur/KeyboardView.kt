@@ -157,6 +157,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var bgBitmap: android.graphics.Bitmap? = null
     private var bgVersionLoaded = -1L
     private var bgPos = 0.5f
+    private var bgPosX = 0.5f
+    private var bgZoom = 1f
     private val bitmapPaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
     private val dimPaint = Paint()
 
@@ -188,6 +190,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         showHints = prefs.showHints
 
         bgPos = prefs.bgPosition.coerceIn(0, 100) / 100f
+        bgPosX = prefs.bgPositionX.coerceIn(0, 100) / 100f
+        bgZoom = prefs.bgZoom.coerceIn(100, 300) / 100f
         dimPaint.color = withAlpha(if (t.light) Color.WHITE else Color.BLACK, prefs.bgDim.coerceIn(0, 90) / 100f)
         if (prefs.bgVersion != bgVersionLoaded) {
             bgVersionLoaded = prefs.bgVersion
@@ -199,12 +203,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private fun drawBackground(canvas: Canvas) {
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
         val bmp = bgBitmap ?: return
-        val scale = max(width.toFloat() / bmp.width, height.toFloat() / bmp.height)
-        val srcW = width / scale
-        val srcH = height / scale
-        val left = (bmp.width - srcW) / 2f
-        val top = (bmp.height - srcH) * bgPos
-        val src = android.graphics.Rect(left.toInt(), top.toInt(), (left + srcW).toInt(), (top + srcH).toInt())
+        val src = Background.sourceRect(bmp.width, bmp.height, width.toFloat(), height.toFloat(), bgZoom, bgPosX, bgPos)
         canvas.drawBitmap(bmp, src, RectF(0f, 0f, width.toFloat(), height.toFloat()), bitmapPaint)
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), dimPaint)
     }

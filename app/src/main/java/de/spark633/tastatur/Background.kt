@@ -125,6 +125,19 @@ object Background {
 
     fun load(context: Context): Bitmap? = current(context)?.let { BitmapFactory.decodeFile(it.path) }
 
+    /**
+     * Sichtbarer Bildausschnitt: füllt die Fläche (wie "centerCrop"), mit Zoom
+     * und Position (0..1 waagerecht/senkrecht).
+     */
+    fun sourceRect(bmpW: Int, bmpH: Int, w: Float, h: Float, zoom: Float, posX: Float, posY: Float): android.graphics.Rect {
+        val scale = max(w / bmpW, h / bmpH) * zoom.coerceAtLeast(1f)
+        val srcW = w / scale
+        val srcH = h / scale
+        val left = (bmpW - srcW) * posX.coerceIn(0f, 1f)
+        val top = (bmpH - srcH) * posY.coerceIn(0f, 1f)
+        return android.graphics.Rect(left.toInt(), top.toInt(), (left + srcW).toInt(), (top + srcH).toInt())
+    }
+
     /** Kleines Vorschaubild für die Auswahl. */
     fun thumbnail(context: Context, name: String, targetPx: Int): Bitmap? {
         val f = file(context, name)

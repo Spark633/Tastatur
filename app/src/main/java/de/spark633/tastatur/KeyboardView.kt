@@ -43,6 +43,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         /** Vorschlag angetippt: 0 = links, 1 = Mitte, 2 = rechts. */
         fun onSuggestion(index: Int)
         fun onKeyFeedback()
+        /** Cursor um ein Zeichen bewegen: -1 = links, 1 = rechts. */
+        fun onMoveCursor(direction: Int)
     }
 
     enum class Mode { LETTERS, SYMBOLS, SYMBOLS2, EMOTICONS, CLIPBOARD, MENU, FORMAT }
@@ -152,6 +154,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     // --- Aussehen ---
     private var keyRadius = 6 * dp
+    private var keyPreview = true
+    private var spaceCursor = true
     private var showHints = true
     private var themeLight = false
     private var bgBitmap: android.graphics.Bitmap? = null
@@ -188,6 +192,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         hintPaint.textSize = sp(12f) * scale
         keyRadius = prefs.cornerRadiusDp.coerceIn(0, 24) * dp
         showHints = prefs.showHints
+        keyPreview = prefs.keyPreview
+        spaceCursor = prefs.spaceCursor
 
         bgPos = prefs.bgPosition.coerceIn(0, 100) / 100f
         bgPosX = prefs.bgPositionX.coerceIn(0, 100) / 100f
@@ -401,6 +407,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         for (kr in keyRects) drawKey(canvas, kr, kr in pressed)
         if (mode == Mode.CLIPBOARD) drawClipboard(canvas)
         touches.values.firstOrNull { it.popup != null }?.let { drawPopup(canvas, it) }
+        if (keyPreview) touches.values.filter { it.popup == null }.forEach { drawKeyPreview(canvas, it) }
         if (resizing) drawResizeOverlay(canvas)
     }
 
@@ -740,6 +747,32 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         return fitPaintCache
     }
 
+    private val previewPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
+
+    /** Großer Buchstabe über dem Finger (beim Wischen das Zeichen, das gleich kommt). */
+    private fun drawKeyPreview(canvas: Canvas, t: Touch) {
+        val kr = t.target ?: return
+        val k = kr.key
+        if (k.action != Action.CHAR || mode == Mode.EMOTICONS) return
+        val text = when {
+            t.swipe == 1 && k.up != null -> k.up
+            t.swipe == -1 && k.down != null -> k.down
+            else -> displayText(k)
+        }
+        if (text.length > 3) return
+        val r = kr.rect
+        val w = max(r.width() * 1.25f, 44 * dp)
+        val h = rowHeight * 1.05f
+        var left = r.centerX() - w / 2f
+        left = left.coerceIn(0f, width - w)
+        val top = max(0f, r.top - h + 4 * dp)
+        val box = RectF(left, top, left + w, top + h - 8 * dp)
+        canvas.drawRoundRect(box, keyRadius + 4 * dp, keyRadius + 4 * dp, popupPaint)
+        previewPaint.color = labelPaint.color
+        previewPaint.textSize = labelPaint.textSize * 1.35f
+        canvas.drawText(text, box.centerX(), centerY(previewPaint, box.centerY()), previewPaint)
+    }
+
     private fun popupRects(t: Touch): List<RectF> {
         val options = t.popup ?: return emptyList()
         val key = t.target?.rect ?: return emptyList()
@@ -777,6 +810,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         var popup: List<String>? = null
         var popupIndex = 0
         var languageSwitched = false
+        var cursorMode = false
+        var cursorLastX = 0f
         var inClipList = false
         var barLong = false
         var dragging = false
@@ -847,6 +882,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 postDelayed(t.repeat, 400)
             }
             Action.CHAR -> if (k.longPress.isNotEmpty()) postDelayed(t.longPress, 320)
+            Action.SPACE -> if (spaceCursor && mode != Mode.EMOTICONS && mode != Mode.FORMAT) postDelayed(t.longPress, 350)
             else -> {}
         }
         invalidate()
@@ -884,9 +920,26 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         }
 
         when (k.action) {
-            Action.SPACE -> if (!t.languageSwitched && mode != Mode.EMOTICONS && abs(dx) > spaceSwipeThreshold && abs(dx) > abs(dy)) {
-                t.languageSwitched = true
-                listener.onLanguageSwipe(if (dx > 0) 1 else -1)
+            Action.SPACE -> when {
+                // Gedrückt gehalten: Cursor folgt dem Finger
+                t.cursorMode -> {
+                    val step = 11 * dp
+                    while (x - t.cursorLastX >= step) {
+                        listener.onMoveCursor(1)
+                        t.cursorLastX += step
+                    }
+                    while (t.cursorLastX - x >= step) {
+                        listener.onMoveCursor(-1)
+                        t.cursorLastX -= step
+                    }
+                }
+                !t.languageSwitched && mode != Mode.EMOTICONS && abs(dx) > spaceSwipeThreshold && abs(dx) > abs(dy) -> {
+                    removeCallbacks(t.longPress)
+                    t.languageSwitched = true
+                    listener.onLanguageSwipe(if (dx > 0) 1 else -1)
+                }
+                // Schnell losgewischt: das ist der Sprachwechsel, kein Cursor
+                abs(dx) > 14 * dp -> removeCallbacks(t.longPress)
             }
             Action.CHAR -> {
                 // Zur Seite ziehen: Auswahl sofort öffnen (ohne langes Drücken)
@@ -908,6 +961,15 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     }
 
     private fun startPopup(t: Touch) {
+        if (t.target?.key?.action == Action.SPACE) {
+            if (!t.languageSwitched) {
+                t.cursorMode = true
+                t.cursorLastX = t.lastX
+                listener.onKeyFeedback()
+                showMessage("◀  Cursor bewegen  ▶")
+            }
+            return
+        }
         if (t.onBar) {
             val i = slotRects().indexOfFirst { it.contains(t.lastX, t.lastY) }
             if (i >= 0) {
@@ -997,7 +1059,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 }
                 if (mode == Mode.EMOTICONS) setMode(Mode.LETTERS) // nach dem Emoticon zurück zur Tastatur
             }
-            Action.SPACE -> if (!t.languageSwitched) listener.onSpace()
+            Action.SPACE -> if (!t.languageSwitched && !t.cursorMode) listener.onSpace()
             Action.ENTER -> listener.onEnter()
             Action.SHIFT -> onShiftTap()
             Action.TO_LETTERS -> setMode(Mode.LETTERS)

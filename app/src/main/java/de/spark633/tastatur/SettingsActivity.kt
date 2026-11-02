@@ -148,6 +148,10 @@ class SettingsActivity : Activity() {
         root.addView(switch("Vibration beim Tippen", prefs.vibrate) { prefs.vibrate = it })
         root.addView(switch("Automatisch großschreiben am Satzanfang", prefs.autoCaps) { prefs.autoCaps = it })
         root.addView(switch("Leerzeichen nach . , ! ? automatisch", prefs.autoSpacePunct) { prefs.autoSpacePunct = it })
+        root.addView(switch("Buchstabe beim Drücken groß anzeigen", prefs.keyPreview) { prefs.keyPreview = it })
+        root.addView(switch("Leertaste gedrückt halten und ziehen bewegt den Cursor", prefs.spaceCursor) {
+            prefs.spaceCursor = it
+        })
         root.addView(switch("Doppeltes Leerzeichen setzt einen Punkt", prefs.doubleSpacePeriod) {
             prefs.doubleSpacePeriod = it
         })
@@ -733,6 +737,7 @@ class SettingsActivity : Activity() {
                 "• Untere Reihe nach unten wischen: Zeichen unter dem Buchstaben (z. B. x → €)\n" +
                 "• Lange drücken: Umlaute und Akzente (a → ä, s → ß)\n" +
                 "• Leertaste seitlich wischen: Sprache wechseln\n" +
+                "• Leertaste kurz halten, dann ziehen: Cursor bewegen\n" +
                 "• Shift zweimal schnell: Feststelltaste\n" +
                 "• ⌫ gedrückt halten: ganze Wörter löschen\n" +
                 "• Zwei Leerzeichen: Punkt am Satzende\n" +

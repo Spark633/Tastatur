@@ -125,6 +125,16 @@ class Prefs(context: Context) {
         get() = sp.getInt("text_scale", 100)
         set(v) = sp.edit().putInt("text_scale", v).apply()
 
+    /** Beim Drücken den Buchstaben groß über dem Finger zeigen. */
+    var keyPreview: Boolean
+        get() = sp.getBoolean("key_preview", true)
+        set(v) = sp.edit().putBoolean("key_preview", v).apply()
+
+    /** Leertaste gedrückt halten und ziehen bewegt den Cursor. */
+    var spaceCursor: Boolean
+        get() = sp.getBoolean("space_cursor", true)
+        set(v) = sp.edit().putBoolean("space_cursor", v).apply()
+
     /** Kleine Zeichen über/unter den Buchstaben anzeigen. */
     var showHints: Boolean
         get() = sp.getBoolean("show_hints", true)

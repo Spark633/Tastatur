@@ -912,6 +912,12 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         captureClip()
     }
 
+    override fun onMoveCursor(direction: Int) {
+        lastCorrection = null
+        autoSpacePending = false
+        sendDownUpKeyEvents(if (direction < 0) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT)
+    }
+
     override fun onKeyFeedback() {
         if (!prefs.vibrate) return
         try {

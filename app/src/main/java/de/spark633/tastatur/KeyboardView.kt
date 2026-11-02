@@ -71,6 +71,11 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var message: String? = null
     private var slots: List<String> = emptyList()
     private var styleLabel: String? = null
+
+    /** Rückfrage in der Leiste (z. B. Vorschlag entfernen). */
+    private var confirmText: String? = null
+    private var confirmAction: (() -> Unit)? = null
+    private val confirmYesRect = RectF()
     private var lettersMode = Mode.LETTERS
 
     // Zwischenablage-Ansicht
@@ -90,6 +95,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private val gapH = 3 * dp
     private val gapV = 4 * dp
     private val swipeThreshold = 22 * dp
+    private val sideThreshold = 26 * dp
     private val spaceSwipeThreshold = 40 * dp
 
     private class KeyRect(val key: Key, val rect: RectF, val row: Int)
@@ -234,6 +240,30 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             slots = list
             invalidate()
         }
+    }
+
+    fun askConfirm(text: String, yes: () -> Unit) {
+        confirmText = text
+        confirmAction = yes
+        invalidate()
+    }
+
+    private fun clearConfirm() {
+        if (confirmText != null) {
+            confirmText = null
+            confirmAction = null
+            invalidate()
+        }
+    }
+
+    private fun drawConfirm(canvas: Canvas, text: String) {
+        val btnW = 110 * dp
+        confirmYesRect.set(width - btnW - 6 * dp, 6 * dp, width - 6 * dp, barHeight - 6 * dp)
+        canvas.drawRoundRect(confirmYesRect, confirmYesRect.height() / 2, confirmYesRect.height() / 2, accentPaint)
+        canvas.drawText("Entfernen", confirmYesRect.centerX(), centerY(barTextPaint, confirmYesRect.centerY()), barTextPaint)
+        val avail = confirmYesRect.left - 16 * dp
+        val p = fitPaint(barTextPaint, "$text   ✕", avail)
+        canvas.drawText("$text   ✕", avail / 2f + 8 * dp, centerY(p, barHeight / 2f), p)
     }
 
     /** Aktiver Schreibstil, wird in der Leiste angezeigt (antippen beendet ihn). */
@@ -541,6 +571,10 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     }
 
     private fun drawBar(canvas: Canvas) {
+        confirmText?.let {
+            drawConfirm(canvas, it)
+            return
+        }
         // Zwischenablage-Symbol
         val cx = clipRect.centerX()
         val cy = clipRect.centerY()
@@ -758,10 +792,11 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         touches.values.filter { it.target?.key?.action == Action.CHAR && it.popup == null && it.swipe == 0 }
             .toList().forEach { finish(it) }
 
+        if (y >= barHeight) clearConfirm() // Tippen auf der Tastatur bricht die Rückfrage ab
         if (y < barHeight) {
             val t = Touch(id, null, true, x, y)
             touches[id] = t
-            if (mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT && message == null &&
+            if (confirmText == null && mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT && message == null &&
                 styleLabel == null) {
                 val i = slotRects().indexOfFirst { it.contains(x, y) }
                 if (i >= 0 && slots.getOrNull(i)?.isNotEmpty() == true) postDelayed(t.longPress, 500)
@@ -825,6 +860,14 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 listener.onLanguageSwipe(if (dx > 0) 1 else -1)
             }
             Action.CHAR -> {
+                // Zur Seite ziehen: Auswahl sofort öffnen (ohne langes Drücken)
+                if (k.longPress.isNotEmpty() && abs(dx) > sideThreshold && abs(dx) > abs(dy)) {
+                    removeCallbacks(t.longPress)
+                    t.swipe = 0
+                    startPopup(t)
+                    pointerMove(id, x, y) // Auswahl gleich der Fingerposition folgen lassen
+                    return
+                }
                 val newSwipe = if (abs(dy) > swipeThreshold && abs(dy) > abs(dx)) {
                     if (dy < 0 && k.up != null) 1 else if (dy > 0 && k.down != null) -1 else 0
                 } else 0
@@ -873,6 +916,13 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
         if (t.onBar) {
             if (t.barLong) return
+            if (confirmText != null) {
+                val action = confirmAction
+                val yes = confirmYesRect.contains(t.lastX, t.lastY)
+                clearConfirm()
+                if (yes) action?.invoke()
+                return
+            }
             if (clipRect.contains(t.lastX, t.lastY) && clipRect.contains(t.x0, t.y0)) {
                 if (mode == Mode.CLIPBOARD) {
                     setMode(lettersMode)

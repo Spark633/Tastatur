@@ -22,9 +22,9 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Zahnrad in der Leiste öffnet ein Menü: Allgemein, Wörterbuch, Zwischenablage, Größe, Sprachen, Aussehen, Suche, Formatieren
 - Aussehen: 7 Farbschemata, Hintergrundbild aus der Galerie (abdunkeln, Ausschnitt), Tasten-Deckkraft, Eckenrundung, Schriftgröße – mit Live-Vorschau
 - Eigene Wörter: werden gelernt (2× getippt oder Korrektur abgelehnt), in der App bearbeiten
-- Vorschlag lange drücken: wird nicht mehr vorgeschlagen
+- Vorschlag lange drücken: Rückfrage, ob er nicht mehr vorgeschlagen werden soll
 - Optional: Leerzeichen nach . , ! ? automatisch, Enter übernimmt den Vorschlag
-- Punkt-Taste: hoch wischen !, runter wischen ?, lange drücken ? und !
+- Punkt-Taste: hoch wischen !, runter wischen ?, lange drücken oder zur Seite ziehen ! und ?
 - Websuche (⚙ → 🔍): öffnet den Standard-Browser, markierter Text wird direkt gesucht (Google, DuckDuckGo, Ecosia, Bing, Startpage)
 - Formatieren (⚙ → ✎): Listen (• und 1.), die bei Enter weiterlaufen; 𝗳𝗲𝘁𝘁, 𝘬𝘶𝘳𝘴𝘪𝘷, d̶u̶r̶c̶h̶, u̲n̲t̲e̲r̲, sArKaSmUs als Unicode; WhatsApp *fett* _kursiv_ ~durch~ ```mono```
 - Größe direkt auf der Tastatur durch Ziehen anpassen, Abstand zu den Systemknöpfen
@@ -36,7 +36,8 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Vergessene Umlaute: offnen → öffnen, ware → wäre (bei schon/schön bleibt dein Wort)
 - ⌫ direkt nach einer Korrektur stellt das getippte Wort wieder her
 - ⌫ gedrückt halten löscht ganze Wörter
-- Versehentlich gelöscht: „↶ Wiederherstellen“ in der Leiste holt den Text zurück
+- Versehentlich gelöscht oder markierten Text übertippt: „↶ Wiederherstellen“ holt ihn zurück
+- Tasten mit Auswahl (a → ä, . → ! ?): zur Seite ziehen öffnet sie sofort
 - Nächstes Wort vorhersagen: lernt aus deinem Schreiben, welche Wörter aufeinander folgen (nur auf dem Handy)
 
 Wörterbücher: siehe `app/src/main/assets/dict/LIZENZ.txt`.

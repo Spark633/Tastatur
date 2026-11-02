@@ -27,6 +27,11 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     /** Zuletzt gelöschter Text, zum Wiederherstellen. */
     private val deletedText = StringBuilder()
+
+    /** Markierter Text wurde durch Tippen ersetzt: Text davor merken, um das Getippte wieder zu entfernen. */
+    private var replaceMode = false
+    private var replaceAnchor = ""
+    private var wordsSinceDelete = 0
     private var keyboard: KeyboardView? = null
     private var language = Language.DE
     private var isTextField = true
@@ -177,7 +182,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         lastCorrection = null
         autoSpacePending = false
         activeStyle = null
-        deletedText.setLength(0)
+        clearDeleted()
         v.setStyleIndicator(null)
         current = null // eigene Wörter könnten sich in den Einstellungen geändert haben
         languageChanged()
@@ -306,7 +311,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     /** Genug gelöscht, dass sich ein Angebot lohnt (mehrere Wörter oder längerer Text). */
     private fun restoreAvailable() =
-        deletedText.length >= RESTORE_MIN_CHARS ||
+        (replaceMode && deletedText.isNotEmpty()) ||
+            deletedText.length >= RESTORE_MIN_CHARS ||
             deletedText.trim().split(Regex("\\s+")).count { it.isNotEmpty() } >= 3
 
     private fun rememberDeleted(text: CharSequence) {
@@ -315,15 +321,50 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         if (deletedText.length > 5000) deletedText.setLength(5000)
     }
 
-    /** Neue Eingabe: kleine Löschungen (Tippfehler) vergessen, größere bis zum nächsten Wort anbieten. */
+    private fun clearDeleted() {
+        deletedText.setLength(0)
+        replaceMode = false
+        replaceAnchor = ""
+        wordsSinceDelete = 0
+    }
+
+    /** Neue Eingabe: kleine Löschungen (Tippfehler) vergessen, größere noch zwei Wörter lang anbieten. */
     private fun forgetDeleted(wordFinished: Boolean) {
-        if (!restoreAvailable() || wordFinished) deletedText.setLength(0)
+        if (!restoreAvailable()) {
+            clearDeleted()
+        } else if (wordFinished && ++wordsSinceDelete >= 2) {
+            clearDeleted()
+        }
+    }
+
+    /**
+     * Vor dem Tippen: Ist Text markiert, ersetzt der Buchstabe ihn. Den markierten
+     * Text merken, damit er sich wiederherstellen lässt.
+     */
+    private fun captureReplacedSelection() {
+        val ic = currentInputConnection ?: return
+        val selected = ic.getSelectedText(0)
+        if (selected.isNullOrEmpty()) return
+        clearDeleted()
+        rememberDeleted(selected)
+        replaceMode = true
+        replaceAnchor = ic.getTextBeforeCursor(40, 0)?.toString().orEmpty()
     }
 
     private fun restoreDeleted() {
+        val ic = currentInputConnection ?: return
         val text = deletedText.toString()
-        deletedText.setLength(0)
-        currentInputConnection?.commitText(text, 1)
+        ic.beginBatchEdit()
+        if (replaceMode) {
+            // Versehentlich Getipptes (seit dem Ersetzen) wieder entfernen
+            val before = ic.getTextBeforeCursor(400, 0)?.toString().orEmpty()
+            val start = if (replaceAnchor.isEmpty()) 0
+            else before.lastIndexOf(replaceAnchor).let { if (it >= 0) it + replaceAnchor.length else -1 }
+            if (start >= 0 && before.length - start in 1..300) ic.deleteSurroundingText(before.length - start, 0)
+        }
+        ic.commitText(text, 1)
+        ic.endBatchEdit()
+        clearDeleted()
         keyboard?.showMessage("Wiederhergestellt")
     }
 
@@ -459,6 +500,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     override fun onText(text: String) {
         val ic = currentInputConnection ?: return
+        captureReplacedSelection()
         activeStyle?.let {
             val styled = if (it == "sarcasm") {
                 Formatter.sarcasm(text, sarcasmCount).also { sarcasmCount += text.count(Char::isLetter) }
@@ -556,11 +598,13 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             keyboard?.showMessage("Wörterbuch-Wörter lassen sich nur als Vorschlag entfernen")
             return
         }
-        userDict.block(word)
-        ignored.remove(word.lowercase())
-        keyboard?.showMessage("„$word“ wird nicht mehr vorgeschlagen")
-        current = null
-        updateSuggestions()
+        keyboard?.askConfirm("„$word“ nicht mehr vorschlagen?") {
+            userDict.block(word)
+            ignored.remove(word.lowercase())
+            keyboard?.showMessage("„$word“ wird nicht mehr vorgeschlagen")
+            current = null
+            updateSuggestions()
+        }
     }
 
     override fun onDelete() {
@@ -573,7 +617,10 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             ic.commitText("", 1)
         } else {
             val b = ic.getTextBeforeCursor(2, 0)?.toString().orEmpty()
-            if (b.isNotEmpty()) rememberDeleted(if (b.length == 2 && Character.isLowSurrogate(b[1])) b else b.takeLast(1))
+            // Nach dem Ersetzen einer Markierung: das Getippte löschen gehört nicht zum alten Text
+            if (b.isNotEmpty() && !replaceMode) {
+                rememberDeleted(if (b.length == 2 && Character.isLowSurrogate(b[1])) b else b.takeLast(1))
+            }
             sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
         }
     }
@@ -598,13 +645,14 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         }
         val count = before.length - i
         if (count > 0) {
-            rememberDeleted(before.substring(i))
+            if (!replaceMode) rememberDeleted(before.substring(i))
             ic.deleteSurroundingText(count, 0)
         }
     }
 
     override fun onEnter() {
         val ic = currentInputConnection ?: return
+        captureReplacedSelection()
         val word = currentWord()
         if (!(prefs.correctOnEnter && correctAndCommit(""))) noteWordEnd(word)
         if (word != null) learnPair()
@@ -623,6 +671,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     override fun onSpace() {
         val ic = currentInputConnection ?: return
+        captureReplacedSelection()
         val now = SystemClock.uptimeMillis()
         if (prefs.doubleSpacePeriod && isTextField && now - lastSpaceTime < 700) {
             val before = ic.getTextBeforeCursor(2, 0)?.toString()

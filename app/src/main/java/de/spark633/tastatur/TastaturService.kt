@@ -67,9 +67,14 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     /** Die Einstellungs-App kann den Größen-Modus anstoßen. */
     private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        if (key == Prefs.KEY_RESIZE_REQUEST && prefs.resizeRequest) {
-            prefs.resizeRequest = false
-            keyboard?.startResize()
+        if (key == Prefs.KEY_RESIZE_REQUEST) {
+            if (prefs.resizeRequest) {
+                prefs.resizeRequest = false
+                keyboard?.startResize()
+            }
+        } else {
+            // Live-Vorschau: Aussehen und andere Einstellungen sofort übernehmen
+            keyboard?.configure(prefs, language)
         }
     }
 

@@ -19,7 +19,8 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Leertaste seitlich wischen: Sprache wechseln (Deutsch, English, Nederlands)
 - Emoticon-Taste (^.^, :D, ¯\_(ツ)_/¯ …)
 - Zwischenablage-Verlauf als Kacheln (1–2 Spalten, 1–4 Zeilen), ⋮ zum Anheften/Löschen
-- Zahnrad in der Leiste öffnet ein Menü: Allgemein, Wörterbuch, Zwischenablage, Größe, Sprachen, Hilfe
+- Zahnrad in der Leiste öffnet ein Menü: Allgemein, Wörterbuch, Zwischenablage, Größe, Sprachen, Aussehen, Suche, Formatieren
+- Aussehen: 7 Farbschemata, Hintergrundbild aus der Galerie (abdunkeln, Ausschnitt), Tasten-Deckkraft, Eckenrundung, Schriftgröße – mit Live-Vorschau
 - Eigene Wörter: werden gelernt (2× getippt oder Korrektur abgelehnt), in der App bearbeiten
 - Vorschlag lange drücken: wird nicht mehr vorgeschlagen
 - Optional: Leerzeichen nach . , ! ? automatisch, Enter übernimmt den Vorschlag
@@ -40,5 +41,4 @@ Wörterbücher: siehe `app/src/main/assets/dict/LIZENZ.txt`.
 
 ## Geplant
 
-5. Hintergrundbild und Design
 6. Nächstes Wort vorhersagen, gelöschten Text wiederherstellen

@@ -86,6 +86,45 @@ class Prefs(context: Context) {
         get() = sp.getString("search_engine", "google") ?: "google"
         set(v) = sp.edit().putString("search_engine", v).apply()
 
+    // --- Aussehen ---
+    var theme: String
+        get() = sp.getString("theme", "dunkel") ?: "dunkel"
+        set(v) = sp.edit().putString("theme", v).apply()
+
+    /** Deckkraft der Tasten in Prozent. */
+    var keyOpacity: Int
+        get() = sp.getInt("key_opacity", 25)
+        set(v) = sp.edit().putInt("key_opacity", v).apply()
+
+    var cornerRadiusDp: Int
+        get() = sp.getInt("corner_radius", 6)
+        set(v) = sp.edit().putInt("corner_radius", v).apply()
+
+    /** Schriftgröße in Prozent. */
+    var textScale: Int
+        get() = sp.getInt("text_scale", 100)
+        set(v) = sp.edit().putInt("text_scale", v).apply()
+
+    /** Kleine Zeichen über/unter den Buchstaben anzeigen. */
+    var showHints: Boolean
+        get() = sp.getBoolean("show_hints", true)
+        set(v) = sp.edit().putBoolean("show_hints", v).apply()
+
+    /** Hintergrundbild abdunkeln in Prozent. */
+    var bgDim: Int
+        get() = sp.getInt("bg_dim", 30)
+        set(v) = sp.edit().putInt("bg_dim", v).apply()
+
+    /** Sichtbarer Ausschnitt des Bildes: 0 = oben, 100 = unten. */
+    var bgPosition: Int
+        get() = sp.getInt("bg_position", 50)
+        set(v) = sp.edit().putInt("bg_position", v).apply()
+
+    /** Ändert sich bei jedem neuen Bild (0 = kein Bild). */
+    var bgVersion: Long
+        get() = sp.getLong("bg_version", 0L)
+        set(v) = sp.edit().putLong("bg_version", v).apply()
+
     /** Zusätzlicher Abstand unter der Tastatur (für die Systemknöpfe). */
     var bottomPaddingDp: Int
         get() = sp.getInt("bottom_padding", 0)

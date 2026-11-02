@@ -133,11 +133,71 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         clipColumns = prefs.clipColumns.coerceIn(1, 2)
         clipLines = prefs.clipLines.coerceIn(1, 4)
         clipLayouts.clear()
+        applyTheme(prefs)
         rowHeight = prefs.rowHeightDp * dp
         bottomPad = prefs.bottomPaddingDp * dp
         requestLayout()
         layoutKeys()
         invalidate()
+    }
+
+    // --- Aussehen ---
+    private var keyRadius = 6 * dp
+    private var showHints = true
+    private var themeLight = false
+    private var bgBitmap: android.graphics.Bitmap? = null
+    private var bgVersionLoaded = -1L
+    private var bgPos = 0.5f
+    private val bitmapPaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+    private val dimPaint = Paint()
+
+    private fun withAlpha(color: Int, a: Float) =
+        Color.argb((a.coerceIn(0f, 1f) * 255).toInt(), Color.red(color), Color.green(color), Color.blue(color))
+
+    /** Farbschema, Deckkraft, Schriftgröße und Hintergrundbild aus den Einstellungen übernehmen. */
+    private fun applyTheme(prefs: Prefs) {
+        val t = Theme.byId(prefs.theme)
+        themeLight = t.light
+        val op = prefs.keyOpacity.coerceIn(0, 100) / 100f
+        val keyAlpha = if (t.light) 0.5f + op * 0.5f else op
+        bgPaint.color = t.background
+        keyPaint.color = withAlpha(t.key, keyAlpha)
+        funcPaint.color = withAlpha(t.functionKey, if (t.light) keyAlpha else keyAlpha * 0.55f)
+        pressedPaint.color = if (t.light) withAlpha(Color.rgb(0x90, 0x9A, 0xA4), 0.9f)
+        else withAlpha(Color.WHITE, min(1f, keyAlpha + 0.3f))
+        accentPaint.color = t.accent
+        accentTextPaint.color = t.accent
+        for (p in listOf(labelPaint, funcLabelPaint, barTextPaint, boldBarPaint, clipTextPaint, iconPaint)) p.color = t.text
+        hintPaint.color = t.hint
+        popupPaint.color = t.popup
+
+        val scale = prefs.textScale.coerceIn(70, 150) / 100f
+        labelPaint.textSize = sp(23f) * scale
+        funcLabelPaint.textSize = sp(17f) * scale
+        hintPaint.textSize = sp(12f) * scale
+        keyRadius = prefs.cornerRadiusDp.coerceIn(0, 24) * dp
+        showHints = prefs.showHints
+
+        bgPos = prefs.bgPosition.coerceIn(0, 100) / 100f
+        dimPaint.color = withAlpha(if (t.light) Color.WHITE else Color.BLACK, prefs.bgDim.coerceIn(0, 90) / 100f)
+        if (prefs.bgVersion != bgVersionLoaded) {
+            bgVersionLoaded = prefs.bgVersion
+            bgBitmap = if (prefs.bgVersion == 0L) null else try { Background.load(context) } catch (_: Throwable) { null }
+        }
+    }
+
+    /** Bild füllt die Tastatur (wie "centerCrop"), senkrechter Ausschnitt einstellbar. */
+    private fun drawBackground(canvas: Canvas) {
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
+        val bmp = bgBitmap ?: return
+        val scale = max(width.toFloat() / bmp.width, height.toFloat() / bmp.height)
+        val srcW = width / scale
+        val srcH = height / scale
+        val left = (bmp.width - srcW) / 2f
+        val top = (bmp.height - srcH) * bgPos
+        val src = android.graphics.Rect(left.toInt(), top.toInt(), (left + srcW).toInt(), (top + srcH).toInt())
+        canvas.drawBitmap(bmp, src, RectF(0f, 0f, width.toFloat(), height.toFloat()), bitmapPaint)
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), dimPaint)
     }
 
     fun setMode(m: Mode) {
@@ -284,7 +344,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     // ------------------------------------------------------------------
 
     override fun onDraw(canvas: Canvas) {
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bgPaint)
+        drawBackground(canvas)
         drawBar(canvas)
         val pressed = touches.values.mapNotNull { it.target }.toSet()
         for (kr in keyRects) drawKey(canvas, kr, kr in pressed)
@@ -552,7 +612,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private fun drawKey(canvas: Canvas, kr: KeyRect, pressed: Boolean) {
         val k = kr.key
         val r = kr.rect
-        val radius = 6 * dp
+        val radius = keyRadius
         val paint = when {
             pressed -> pressedPaint
             k.action == Action.SHIFT && shift == Shift.LOCK -> accentPaint
@@ -565,8 +625,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             Action.CHAR -> {
                 val text = displayText(k)
                 val p = fitPaint(labelPaint, text, r.width() - 6 * dp)
-                val hasUp = k.up != null
-                val hasDown = k.down != null
+                val hasUp = k.up != null && showHints
+                val hasDown = k.down != null && showHints
                 var offset = when {
                     hasUp && hasDown -> -1 * dp
                     hasUp -> 5 * dp
@@ -576,8 +636,10 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 // Punkt und Komma sitzen unten in der Zeile: etwas anheben
                 if (text == "." || text == ",") offset -= 7 * dp
                 canvas.drawText(text, r.centerX(), centerY(p, r.centerY() + offset), p)
-                k.up?.let { canvas.drawText(it, r.centerX(), r.top + hintPaint.textSize + 1 * dp, hintPaint) }
-                k.down?.let { canvas.drawText(it, r.centerX(), r.bottom - 4 * dp, hintPaint) }
+                if (showHints) {
+                    k.up?.let { canvas.drawText(it, r.centerX(), r.top + hintPaint.textSize + 1 * dp, hintPaint) }
+                    k.down?.let { canvas.drawText(it, r.centerX(), r.bottom - 4 * dp, hintPaint) }
+                }
             }
             Action.SPACE -> {
                 val name = if (languageCount > 1 && mode != Mode.EMOTICONS) "‹  ${language.displayName}  ›"

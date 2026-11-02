@@ -49,6 +49,7 @@ class SettingsActivity : Activity() {
             "dictionary" -> buildDictionary()
             "clipboard" -> buildClipboard()
             "help" -> buildHelp()
+            "design" -> buildDesign()
             else -> buildMain()
         }
         setContentView(ScrollView(this).apply { addView(root) })
@@ -96,6 +97,7 @@ class SettingsActivity : Activity() {
         root.addView(button("🌍  Sprachen und Layout") { open("languages") })
         root.addView(button("📖  Wörterbuch – Vorschläge, eigene Wörter") { open("dictionary") })
         root.addView(button("📋  Zwischenablage") { open("clipboard") })
+        root.addView(button("🎨  Aussehen – Farben, Hintergrundbild") { open("design") })
         root.addView(button("❓  Hilfe – Bedienung") { open("help") })
     }
 
@@ -337,6 +339,96 @@ class SettingsActivity : Activity() {
     }
 
     // ------------------------------------------------------------------
+    // Aussehen
+    // ------------------------------------------------------------------
+
+    private var bgStatus: TextView? = null
+
+    private fun buildDesign() {
+        title = "Aussehen"
+        addTestField()
+        root.addView(info("Tipp: Ins Testfeld tippen, dann siehst du jede Änderung sofort an der Tastatur."))
+
+        root.addView(header("Farbschema"))
+        val themes = Theme.ALL
+        root.addView(radio(themes.map { it.name }, themes.indexOfFirst { it.id == prefs.theme }.coerceAtLeast(0)) {
+            prefs.theme = themes[it].id
+        }.apply { orientation = RadioGroup.VERTICAL })
+
+        root.addView(header("Hintergrundbild"))
+        bgStatus = info("")
+        root.addView(bgStatus)
+        updateBgStatus()
+        root.addView(button("Bild aus der Galerie wählen") { pickImage() })
+        root.addView(button("Bild entfernen") {
+            Background.remove(this)
+            updateBgStatus()
+        })
+        root.addView(slider("Bild abdunkeln", 0, 90, prefs.bgDim, "%") { prefs.bgDim = it })
+        root.addView(slider("Bildausschnitt (0 = oben, 100 = unten)", 0, 100, prefs.bgPosition, "") { prefs.bgPosition = it })
+
+        root.addView(header("Tasten"))
+        root.addView(slider("Deckkraft der Tasten", 0, 100, prefs.keyOpacity, "%") { prefs.keyOpacity = it })
+        root.addView(slider("Eckenrundung", 0, 24, prefs.cornerRadiusDp, " dp") { prefs.cornerRadiusDp = it })
+        root.addView(slider("Schriftgröße", 70, 150, prefs.textScale, "%") { prefs.textScale = it })
+        root.addView(switch("Kleine Zeichen über/unter den Buchstaben anzeigen", prefs.showHints) { prefs.showHints = it })
+    }
+
+    private fun updateBgStatus() {
+        bgStatus?.text = if (prefs.bgVersion != 0L) "✅ Ein Hintergrundbild ist gesetzt." else "Kein Bild gesetzt."
+    }
+
+    private fun pickImage() {
+        val photoPicker = if (android.os.Build.VERSION.SDK_INT >= 33) {
+            Intent(android.provider.MediaStore.ACTION_PICK_IMAGES)
+        } else null
+        val fallback = Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
+        try {
+            startActivityForResult(photoPicker ?: fallback, REQ_IMAGE)
+        } catch (_: Exception) {
+            startActivityForResult(fallback, REQ_IMAGE)
+        }
+    }
+
+    @Deprecated("Activity-API")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        @Suppress("DEPRECATION")
+        super.onActivityResult(requestCode, resultCode, data)
+        val uri = data?.data
+        if (requestCode != REQ_IMAGE || resultCode != RESULT_OK || uri == null) return
+        bgStatus?.text = "Bild wird übernommen …"
+        Thread {
+            val ok = Background.import(this, uri)
+            runOnUiThread {
+                updateBgStatus()
+                if (!ok) bgStatus?.text = "❌ Das Bild konnte nicht gelesen werden."
+            }
+        }.start()
+    }
+
+    private fun slider(label: String, min: Int, max: Int, value: Int, unit: String, onChange: (Int) -> Unit) =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, (6 * dp).toInt(), 0, (6 * dp).toInt())
+            val text = TextView(this@SettingsActivity).apply { textSize = 15f }
+            fun show(v: Int) { text.text = "$label: $v$unit" }
+            show(value)
+            addView(text)
+            addView(android.widget.SeekBar(this@SettingsActivity).apply {
+                this.max = max - min
+                progress = (value - min).coerceIn(0, max - min)
+                setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(sb: android.widget.SeekBar, p: Int, fromUser: Boolean) {
+                        show(min + p)
+                        if (fromUser) onChange(min + p)
+                    }
+                    override fun onStartTrackingTouch(sb: android.widget.SeekBar) {}
+                    override fun onStopTrackingTouch(sb: android.widget.SeekBar) {}
+                })
+            })
+        }
+
+    // ------------------------------------------------------------------
     // Hilfe
     // ------------------------------------------------------------------
 
@@ -354,7 +446,7 @@ class SettingsActivity : Activity() {
                 "• Vorschlag antippen: einsetzen. Lange drücken: nicht mehr vorschlagen\n" +
                 "• ⌫ direkt nach einer Korrektur: dein Wort zurück\n" +
                 "• zb → z.B., oä → o.Ä., idr → i.d.R.\n" +
-                "• 📋 Zwischenablage, ⚙ Menü mit Einstellungen und Größe\n" +
+                "• 📋 Zwischenablage, ⚙ Menü mit Einstellungen, Größe und Aussehen\n" +
                 "• ⚙ → 🔍 Suche: Browser öffnen, markierter Text wird gesucht\n" +
                 "• ⚙ → ✎ Formatieren: Listen, fett, kursiv, durch- und unterstrichen, sArKaSmUs"
         ))
@@ -422,5 +514,6 @@ class SettingsActivity : Activity() {
 
     companion object {
         const val EXTRA_SECTION = "section"
+        private const val REQ_IMAGE = 41
     }
 }

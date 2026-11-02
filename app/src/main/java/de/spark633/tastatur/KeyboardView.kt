@@ -403,6 +403,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             clipMenuFor = entry
         } else {
             listener.onText(entry.text)
+            setMode(lettersMode) // nach dem Einfügen zurück zur Tastatur
         }
         invalidate()
     }

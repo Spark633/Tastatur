@@ -41,7 +41,7 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Vergessene Umlaute: offnen → öffnen, ware → wäre (bei schon/schön bleibt dein Wort)
 - ⌫ direkt nach einer Korrektur stellt das getippte Wort wieder her
 - ⌫ gedrückt halten löscht ganze Wörter
-- Versehentlich gelöscht oder markierten Text übertippt: ↶ neben den Vorschlägen holt ihn zurück (lange drücken = verwerfen)
+- Versehentlich gelöscht oder markierten Text übertippt: ↶ neben den Vorschlägen antippen, dann „Wiederherstellen“ oder ✕
 - Tasten mit Auswahl (a → ä, . → ! ?): zur Seite ziehen öffnet sie sofort
 - Nächstes Wort vorhersagen: lernt aus deinem Schreiben, welche Wörter aufeinander folgen (nur auf dem Handy)
 

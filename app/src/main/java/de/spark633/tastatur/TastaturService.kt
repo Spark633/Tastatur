@@ -681,14 +681,15 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onRestore() {
-        if (restoreAvailable()) restoreDeleted()
-        updateSuggestions()
-    }
-
-    override fun onRestoreDismiss() {
-        clearDeleted()
-        keyboard?.showMessage("Wiederherstellen verworfen")
-        updateSuggestions()
+        if (!restoreAvailable()) return updateSuggestions()
+        keyboard?.askConfirm("Gelöschten Text wiederherstellen?", yes = {
+            if (restoreAvailable()) restoreDeleted()
+            updateSuggestions()
+        }, yesLabel = "Wiederherstellen", no = {
+            clearDeleted()
+            keyboard?.showMessage("Verworfen")
+            updateSuggestions()
+        })
     }
 
     override fun onSuggestionLongPress(index: Int) {
@@ -708,13 +709,13 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             keyboard?.showMessage("Wörterbuch-Wörter lassen sich nur als Vorschlag entfernen")
             return
         }
-        keyboard?.askConfirm("„$word“ nicht mehr vorschlagen?") {
+        keyboard?.askConfirm("„$word“ nicht mehr vorschlagen?", yes = {
             userDict.block(word)
             ignored.remove(word.lowercase())
             keyboard?.showMessage("„$word“ wird nicht mehr vorgeschlagen")
             current = null
             updateSuggestions()
-        }
+        })
     }
 
     override fun onDelete() {

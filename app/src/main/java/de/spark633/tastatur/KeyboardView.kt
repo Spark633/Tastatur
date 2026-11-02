@@ -38,9 +38,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         fun onMenu(section: String)
         /** Vorschlag lange gedrückt: nicht mehr vorschlagen. */
         fun onSuggestionLongPress(index: Int)
-        /** ↶ neben den Vorschlägen: gelöschten Text wiederherstellen bzw. Angebot verwerfen. */
+        /** ↶ neben den Vorschlägen angetippt (fragt nach: wiederherstellen oder verwerfen). */
         fun onRestore()
-        fun onRestoreDismiss()
         /** Formatieren: "bold", "strike", "bullet", "wa_bold" … oder "off" (Stil beenden). */
         fun onFormat(code: String)
         /** Vorschlag angetippt: 0 = links, 1 = Mitte, 2 = rechts. */
@@ -81,6 +80,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     /** Rückfrage in der Leiste (z. B. Vorschlag entfernen). */
     private var confirmText: String? = null
     private var confirmAction: (() -> Unit)? = null
+    private var confirmNo: (() -> Unit)? = null
+    private var confirmYesLabel = "Entfernen"
     private val confirmYesRect = RectF()
     private var lettersMode = Mode.LETTERS
 
@@ -259,9 +260,12 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         }
     }
 
-    fun askConfirm(text: String, yes: () -> Unit) {
+    /** Rückfrage in der Leiste. [no] läuft bei ✕ bzw. Tippen daneben in der Leiste. */
+    fun askConfirm(text: String, yes: () -> Unit, yesLabel: String = "Entfernen", no: (() -> Unit)? = null) {
         confirmText = text
         confirmAction = yes
+        confirmNo = no
+        confirmYesLabel = yesLabel
         invalidate()
     }
 
@@ -269,15 +273,16 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         if (confirmText != null) {
             confirmText = null
             confirmAction = null
+            confirmNo = null
             invalidate()
         }
     }
 
     private fun drawConfirm(canvas: Canvas, text: String) {
-        val btnW = 110 * dp
+        val btnW = max(110 * dp, barTextPaint.measureText(confirmYesLabel) + 28 * dp)
         confirmYesRect.set(width - btnW - 6 * dp, 6 * dp, width - 6 * dp, barHeight - 6 * dp)
         canvas.drawRoundRect(confirmYesRect, confirmYesRect.height() / 2, confirmYesRect.height() / 2, accentPaint)
-        canvas.drawText("Entfernen", confirmYesRect.centerX(), centerY(barTextPaint, confirmYesRect.centerY()), barTextPaint)
+        canvas.drawText(confirmYesLabel, confirmYesRect.centerX(), centerY(barTextPaint, confirmYesRect.centerY()), barTextPaint)
         val avail = confirmYesRect.left - 16 * dp
         val p = fitPaint(barTextPaint, "$text   ✕", avail)
         canvas.drawText("$text   ✕", avail / 2f + 8 * dp, centerY(p, barHeight / 2f), p)
@@ -886,7 +891,6 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 styleLabel == null) {
                 val i = slotRects().indexOfFirst { it.contains(x, y) }
                 if (i >= 0 && slots.getOrNull(i)?.isNotEmpty() == true) postDelayed(t.longPress, 500)
-                if (restoreVisible && restoreRect.contains(x, y)) postDelayed(t.longPress, 500)
             }
             return
         }
@@ -993,12 +997,6 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             }
             return
         }
-        if (t.onBar && restoreVisible && restoreRect.contains(t.lastX, t.lastY)) {
-            t.barLong = true
-            listener.onKeyFeedback()
-            listener.onRestoreDismiss()
-            return
-        }
         if (t.onBar) {
             val i = slotRects().indexOfFirst { it.contains(t.lastX, t.lastY) }
             if (i >= 0) {
@@ -1038,9 +1036,10 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             if (t.barLong) return
             if (confirmText != null) {
                 val action = confirmAction
+                val no = confirmNo
                 val yes = confirmYesRect.contains(t.lastX, t.lastY)
                 clearConfirm()
-                if (yes) action?.invoke()
+                if (yes) action?.invoke() else no?.invoke()
                 return
             }
             if (clipRect.contains(t.lastX, t.lastY) && clipRect.contains(t.x0, t.y0)) {

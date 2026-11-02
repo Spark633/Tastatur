@@ -110,7 +110,7 @@ object Layouts {
     )
     const val EMOTICONS_PER_PAGE = 12
 
-    val emoticonPages: Int get() = (EMOTICONS.size + EMOTICONS_PER_PAGE - 1) / EMOTICONS_PER_PAGE
+    fun emoticonPages(list: List<String>): Int = maxOf(1, (list.size + EMOTICONS_PER_PAGE - 1) / EMOTICONS_PER_PAGE)
 
     /** Menü hinter dem Zahnrad. text = Bereich der Einstellungen. */
     fun menu(): List<List<Key>> = listOf(
@@ -153,8 +153,8 @@ object Layouts {
         ),
     )
 
-    fun emoticons(page: Int): List<List<Key>> {
-        val items = EMOTICONS.drop(page * EMOTICONS_PER_PAGE).take(EMOTICONS_PER_PAGE)
+    fun emoticons(page: Int, list: List<String>): List<List<Key>> {
+        val items = list.drop(page * EMOTICONS_PER_PAGE).take(EMOTICONS_PER_PAGE)
         val rows = items.chunked(4).map { row -> row.map { Key(it, width = 2.5f) } }.toMutableList()
         while (rows.size < 3) rows.add(emptyList())
         rows.add(

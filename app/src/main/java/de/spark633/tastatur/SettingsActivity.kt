@@ -50,6 +50,7 @@ class SettingsActivity : Activity() {
             "clipboard" -> buildClipboard()
             "help" -> buildHelp()
             "design" -> buildDesign()
+            "emoticons" -> buildEmoticons()
             else -> buildMain()
         }
         setContentView(ScrollView(this).apply { addView(root) })
@@ -98,6 +99,7 @@ class SettingsActivity : Activity() {
         root.addView(button("📖  Wörterbuch – Vorschläge, eigene Wörter") { open("dictionary") })
         root.addView(button("📋  Zwischenablage") { open("clipboard") })
         root.addView(button("🎨  Aussehen – Farben, Hintergrundbild") { open("design") })
+        root.addView(button("^.^  Emoticons bearbeiten") { open("emoticons") })
         root.addView(button("❓  Hilfe – Bedienung") { open("help") })
     }
 
@@ -427,6 +429,96 @@ class SettingsActivity : Activity() {
                 })
             })
         }
+
+    // ------------------------------------------------------------------
+    // Emoticons
+    // ------------------------------------------------------------------
+
+    private lateinit var emoList: LinearLayout
+
+    private fun buildEmoticons() {
+        title = "Emoticons"
+        addTestField()
+        root.addView(info(
+            "Erscheinen hinter der ^.^-Taste, je 12 pro Seite. ▲ schiebt einen Eintrag nach vorne."
+        ))
+        val addRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val input = EditText(this).apply {
+            hint = "Neues Emoticon, z. B. (◕‿◕)"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        addRow.addView(input)
+        addRow.addView(Button(this).apply {
+            text = "Hinzufügen"
+            isAllCaps = false
+            setOnClickListener {
+                val e = input.text.toString().trim()
+                if (e.isNotEmpty()) {
+                    prefs.emoticons = prefs.emoticons + e
+                    input.setText("")
+                    renderEmoticons()
+                }
+            }
+        })
+        root.addView(addRow)
+        emoList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(emoList)
+        root.addView(button("Standard wiederherstellen") {
+            AlertDialog.Builder(this)
+                .setMessage("Eigene Liste durch die ursprünglichen Emoticons ersetzen?")
+                .setPositiveButton("Ersetzen") { _, _ ->
+                    prefs.resetEmoticons()
+                    renderEmoticons()
+                }
+                .setNegativeButton("Abbrechen", null)
+                .show()
+        })
+        renderEmoticons()
+    }
+
+    private fun renderEmoticons() {
+        emoList.removeAllViews()
+        val list = prefs.emoticons
+        if (list.isEmpty()) emoList.addView(info("Keine Emoticons."))
+        list.forEachIndexed { i, e ->
+            emoList.addView(listRow(e,
+                "▲" to {
+                    if (i > 0) {
+                        val l = prefs.emoticons.toMutableList()
+                        l.add(i - 1, l.removeAt(i))
+                        prefs.emoticons = l
+                        renderEmoticons()
+                    }
+                },
+                "✎" to { editEmoticon(i, e) },
+                "✕" to {
+                    prefs.emoticons = prefs.emoticons.toMutableList().also { it.removeAt(i) }
+                    renderEmoticons()
+                },
+            ))
+        }
+    }
+
+    private fun editEmoticon(index: Int, old: String) {
+        val field = EditText(this).apply {
+            setText(old)
+            setSelection(old.length)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Emoticon bearbeiten")
+            .setView(field)
+            .setPositiveButton("Speichern") { _, _ ->
+                val new = field.text.toString().trim()
+                if (new.isNotEmpty()) {
+                    prefs.emoticons = prefs.emoticons.toMutableList().also { it[index] = new }
+                    renderEmoticons()
+                }
+            }
+            .setNegativeButton("Abbrechen", null)
+            .show()
+    }
 
     // ------------------------------------------------------------------
     // Hilfe

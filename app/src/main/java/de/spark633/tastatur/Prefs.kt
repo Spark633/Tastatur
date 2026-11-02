@@ -86,6 +86,21 @@ class Prefs(context: Context) {
         get() = sp.getString("search_engine", "google") ?: "google"
         set(v) = sp.edit().putString("search_engine", v).apply()
 
+    /** Eigene Emoticon-Liste (Reihenfolge = Reihenfolge in der Tastatur). */
+    var emoticons: List<String>
+        get() {
+            val raw = sp.getString("emoticons", null) ?: return Layouts.EMOTICONS
+            return try {
+                val arr = org.json.JSONArray(raw)
+                (0 until arr.length()).map { arr.getString(it) }
+            } catch (_: Exception) {
+                Layouts.EMOTICONS
+            }
+        }
+        set(v) = sp.edit().putString("emoticons", org.json.JSONArray(v).toString()).apply()
+
+    fun resetEmoticons() = sp.edit().remove("emoticons").apply()
+
     // --- Aussehen ---
     var theme: String
         get() = sp.getString("theme", "dunkel") ?: "dunkel"

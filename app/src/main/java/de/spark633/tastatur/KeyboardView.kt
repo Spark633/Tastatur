@@ -67,6 +67,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var shift = Shift.OFF
     private var lastShiftTap = 0L
     private var emoticonPage = 0
+    private var emoticonList: List<String> = Layouts.EMOTICONS
     private var message: String? = null
     private var slots: List<String> = emptyList()
     private var styleLabel: String? = null
@@ -133,6 +134,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         clipColumns = prefs.clipColumns.coerceIn(1, 2)
         clipLines = prefs.clipLines.coerceIn(1, 4)
         clipLayouts.clear()
+        emoticonList = prefs.emoticons
+        emoticonPage = emoticonPage.coerceIn(0, Layouts.emoticonPages(emoticonList) - 1)
         applyTheme(prefs)
         rowHeight = prefs.rowHeightDp * dp
         bottomPad = prefs.bottomPaddingDp * dp
@@ -298,7 +301,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         Mode.LETTERS -> Layouts.letters(qwertz, language)
         Mode.SYMBOLS -> Layouts.symbols()
         Mode.SYMBOLS2 -> Layouts.symbols2()
-        Mode.EMOTICONS -> Layouts.emoticons(emoticonPage)
+        Mode.EMOTICONS -> Layouts.emoticons(emoticonPage, emoticonList)
         Mode.CLIPBOARD -> Layouts.clipboard()
         Mode.MENU -> Layouts.menu()
         Mode.FORMAT -> Layouts.format()
@@ -923,11 +926,12 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 setMode(Mode.EMOTICONS)
             }
             Action.PAGE_PREV -> {
-                emoticonPage = (emoticonPage - 1 + Layouts.emoticonPages) % Layouts.emoticonPages
+                val pages = Layouts.emoticonPages(emoticonList)
+                emoticonPage = (emoticonPage - 1 + pages) % pages
                 setMode(Mode.EMOTICONS)
             }
             Action.PAGE_NEXT -> {
-                emoticonPage = (emoticonPage + 1) % Layouts.emoticonPages
+                emoticonPage = (emoticonPage + 1) % Layouts.emoticonPages(emoticonList)
                 setMode(Mode.EMOTICONS)
             }
             Action.CLIP_CLEAR -> clipClear()

@@ -53,7 +53,26 @@ class SettingsActivity : Activity() {
             "emoticons" -> buildEmoticons()
             else -> buildMain()
         }
-        setContentView(ScrollView(this).apply { addView(root) })
+        val scroll = ScrollView(this).apply { addView(root) }
+        val pv = preview
+        if (pv == null) {
+            setContentView(scroll)
+        } else {
+            // Aussehen: Vorschau bleibt oben stehen, Einstellungen scrollen darunter
+            val p = (12 * dp).toInt()
+            setContentView(LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(pv, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { setMargins(p, p, p, p / 2) })
+                addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+            })
+            prefs.registerListener(previewListener)
+        }
+    }
+
+    override fun onDestroy() {
+        if (preview != null) prefs.unregisterListener(previewListener)
+        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -345,11 +364,19 @@ class SettingsActivity : Activity() {
     // ------------------------------------------------------------------
 
     private var bgStatus: TextView? = null
+    private var preview: KeyboardPreview? = null
+    private var positionBar: android.widget.SeekBar? = null
+
+    /** Vorschau und Ausschnitt-Regler bei jeder Änderung aktualisieren. */
+    private val previewListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        preview?.refresh()
+        if (key == "bg_position") positionBar?.progress = prefs.bgPosition
+    }
 
     private fun buildDesign() {
         title = "Aussehen"
-        addTestField()
-        root.addView(info("Tipp: Ins Testfeld tippen, dann siehst du jede Änderung sofort an der Tastatur."))
+        preview = KeyboardPreview(this, prefs)
+        root.addView(info("Die Vorschau oben zeigt jede Änderung sofort. Bild darin nach oben/unten ziehen wählt den Ausschnitt."))
 
         root.addView(header("Farbschema"))
         val themes = Theme.ALL
@@ -367,13 +394,15 @@ class SettingsActivity : Activity() {
             updateBgStatus()
         })
         root.addView(slider("Bild abdunkeln", 0, 90, prefs.bgDim, "%") { prefs.bgDim = it })
-        root.addView(slider("Bildausschnitt (0 = oben, 100 = unten)", 0, 100, prefs.bgPosition, "") { prefs.bgPosition = it })
+        root.addView(slider("Bildausschnitt (0 = oben, 100 = unten)", 0, 100, prefs.bgPosition, "") { prefs.bgPosition = it }
+            .also { positionBar = it.getChildAt(1) as android.widget.SeekBar })
 
         root.addView(header("Tasten"))
         root.addView(slider("Deckkraft der Tasten", 0, 100, prefs.keyOpacity, "%") { prefs.keyOpacity = it })
         root.addView(slider("Eckenrundung", 0, 24, prefs.cornerRadiusDp, " dp") { prefs.cornerRadiusDp = it })
         root.addView(slider("Schriftgröße", 70, 150, prefs.textScale, "%") { prefs.textScale = it })
         root.addView(switch("Kleine Zeichen über/unter den Buchstaben anzeigen", prefs.showHints) { prefs.showHints = it })
+        addTestField()
     }
 
     private fun updateBgStatus() {

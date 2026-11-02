@@ -119,8 +119,9 @@ object Layouts {
             Key("↕  Größe anpassen", Action.MENU, text = "resize", width = 5f)),
         listOf(Key("🌍  Sprachen", Action.MENU, text = "languages", width = 5f),
             Key("❓  Hilfe", Action.MENU, text = "help", width = 5f)),
-        listOf(Key("ABC", Action.TO_LETTERS, width = 4f),
-            Key("✎  Formatieren", Action.MENU, text = "format", width = 6f)),
+        listOf(Key("ABC", Action.TO_LETTERS, width = 3f),
+            Key("🔍  Suche", Action.MENU, text = "search", width = 3.5f),
+            Key("✎  Formatieren", Action.MENU, text = "format", width = 3.5f)),
     )
 
     /** Formatieren: Listen, Unicode-Stile (überall sichtbar) und WhatsApp-Zeichen. */

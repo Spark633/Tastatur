@@ -140,6 +140,14 @@ class SettingsActivity : Activity() {
             }
         })
 
+        root.addView(header("Websuche"))
+        root.addView(info("⚙ → 🔍 Suche: Suchbegriff in der Leiste tippen, Enter öffnet den Standard-Browser."))
+        val engines = TastaturService.SEARCH_ENGINES.keys.toList()
+        val names = listOf("Google", "DuckDuckGo", "Ecosia", "Bing", "Startpage")
+        root.addView(radio(names, engines.indexOf(prefs.searchEngine).coerceAtLeast(0)) {
+            prefs.searchEngine = engines[it]
+        }.apply { orientation = RadioGroup.VERTICAL })
+
         root.addView(header("Leiste"))
         root.addView(info("Seite des Zwischenablage-Knopfs. Das Zahnrad sitzt gegenüber."))
         root.addView(radio(listOf("Links", "Rechts"), if (prefs.clipboardRight) 1 else 0) {
@@ -342,7 +350,9 @@ class SettingsActivity : Activity() {
                 "• Vorschlag antippen: einsetzen. Lange drücken: nicht mehr vorschlagen\n" +
                 "• ⌫ direkt nach einer Korrektur: dein Wort zurück\n" +
                 "• zb → z.B., oä → o.Ä., idr → i.d.R.\n" +
-                "• 📋 Zwischenablage, ⚙ Menü mit Einstellungen und Größe"
+                "• 📋 Zwischenablage, ⚙ Menü mit Einstellungen und Größe\n" +
+                "• ⚙ → 🔍 Suche: im Browser suchen (markierter Text wird übernommen)\n" +
+                "• ⚙ → ✎ Formatieren: Listen, fett, kursiv, durch- und unterstrichen"
         ))
     }
 

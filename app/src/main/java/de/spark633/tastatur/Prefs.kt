@@ -81,6 +81,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("learn_words", true)
         set(v) = sp.edit().putBoolean("learn_words", v).apply()
 
+    /** Suchmaschine für die Websuche aus der Tastatur. */
+    var searchEngine: String
+        get() = sp.getString("search_engine", "google") ?: "google"
+        set(v) = sp.edit().putString("search_engine", v).apply()
+
     /** Zusätzlicher Abstand unter der Tastatur (für die Systemknöpfe). */
     var bottomPaddingDp: Int
         get() = sp.getInt("bottom_padding", 0)

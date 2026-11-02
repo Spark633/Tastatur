@@ -154,6 +154,25 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     override fun onEvaluateFullscreenMode(): Boolean = false
 
+    /** Zurück-Taste/-Geste: erst Menüs schließen, dann wie gewohnt die Tastatur. */
+    private var backConsumed = false
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK && isInputViewShown && keyboard?.handleBack() == true) {
+            backConsumed = true
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK && backConsumed) {
+            backConsumed = false
+            return true
+        }
+        return super.onKeyUp(keyCode, event)
+    }
+
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
         val v = keyboard ?: return

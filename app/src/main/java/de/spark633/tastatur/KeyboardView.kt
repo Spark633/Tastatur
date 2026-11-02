@@ -281,6 +281,23 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     private val clearMessage = Runnable { message = null; invalidate() }
 
+    /** Android-Zurück: aus Menüs und Unterseiten zurück zu den Buchstaben. true = erledigt. */
+    fun handleBack(): Boolean {
+        if (resizing) {
+            finishResize()
+            return true
+        }
+        if (confirmText != null) {
+            clearConfirm()
+            return true
+        }
+        if (mode != Mode.LETTERS) {
+            setMode(Mode.LETTERS)
+            return true
+        }
+        return false
+    }
+
     fun cancelTouches() {
         touches.values.forEach { cancelTimers(it) }
         touches.clear()
@@ -960,10 +977,13 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         }
 
         when (k.action) {
-            Action.CHAR -> when {
-                t.swipe == 1 && k.up != null -> typeText(k.up, false)
-                t.swipe == -1 && k.down != null -> typeText(k.down, false)
-                else -> typeText(displayText(k), k.cased)
+            Action.CHAR -> {
+                when {
+                    t.swipe == 1 && k.up != null -> typeText(k.up, false)
+                    t.swipe == -1 && k.down != null -> typeText(k.down, false)
+                    else -> typeText(displayText(k), k.cased)
+                }
+                if (mode == Mode.EMOTICONS) setMode(Mode.LETTERS) // nach dem Emoticon zurück zur Tastatur
             }
             Action.SPACE -> if (!t.languageSwitched) listener.onSpace()
             Action.ENTER -> listener.onEnter()

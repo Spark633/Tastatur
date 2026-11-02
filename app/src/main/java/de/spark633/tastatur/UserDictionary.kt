@@ -81,6 +81,28 @@ class UserDictionary private constructor(context: Context) {
         save()
     }
 
+    /** Für die Sicherung: eigene Wörter und gesperrte Vorschläge. */
+    fun export(): JSONObject {
+        val arr = JSONArray()
+        for (w in words.values) arr.put(JSONObject().put("t", w.text).put("c", w.count).put("m", w.manual))
+        return JSONObject().put("woerter", arr).put("gesperrt", JSONArray(blocked.toList()))
+    }
+
+    /** Aus einer Sicherung übernehmen (ersetzt die aktuelle Liste). */
+    fun import(o: JSONObject) {
+        words.clear()
+        blocked.clear()
+        val arr = o.optJSONArray("woerter") ?: JSONArray()
+        for (i in 0 until arr.length()) {
+            val w = arr.getJSONObject(i)
+            val t = w.getString("t")
+            words[t.lowercase()] = Word(t, w.optInt("c"), w.optBoolean("m"))
+        }
+        val b = o.optJSONArray("gesperrt") ?: JSONArray()
+        for (i in 0 until b.length()) blocked.add(b.getString(i))
+        save()
+    }
+
     private fun load() {
         try {
             val arr = JSONArray(sp.getString("woerter", "[]"))

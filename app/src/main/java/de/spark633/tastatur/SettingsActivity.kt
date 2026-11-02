@@ -51,6 +51,7 @@ class SettingsActivity : Activity() {
             "help" -> buildHelp()
             "design" -> buildDesign()
             "emoticons" -> buildEmoticons()
+            "profiles" -> buildProfiles()
             else -> buildMain()
         }
         val scroll = ScrollView(this).apply { addView(root) }
@@ -119,6 +120,7 @@ class SettingsActivity : Activity() {
         root.addView(button("📋  Zwischenablage") { open("clipboard") })
         root.addView(button("🎨  Aussehen – Farben, Hintergrundbild") { open("design") })
         root.addView(button("^.^  Emoticons bearbeiten") { open("emoticons") })
+        root.addView(button("💾  Profile & Sicherung") { open("profiles") })
         root.addView(button("❓  Hilfe – Bedienung") { open("help") })
     }
 
@@ -398,11 +400,15 @@ class SettingsActivity : Activity() {
         bgStatus = info("")
         root.addView(bgStatus)
         updateBgStatus()
-        root.addView(button("Bild aus der Galerie wählen") { pickImage() })
-        root.addView(button("Bild entfernen") {
+        root.addView(button("Neues Bild aus der Galerie wählen") { pickImage() })
+        root.addView(button("Hintergrund ausschalten") {
             Background.remove(this)
             updateBgStatus()
         })
+        root.addView(info("Frühere Bilder: antippen = verwenden, lange drücken = löschen"))
+        gallery = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        root.addView(android.widget.HorizontalScrollView(this).apply { addView(gallery) })
+        renderGallery()
         root.addView(slider("Bild abdunkeln", 0, 90, prefs.bgDim, "%") { prefs.bgDim = it })
         root.addView(slider("Bildausschnitt (0 = oben, 100 = unten)", 0, 100, prefs.bgPosition, "") { prefs.bgPosition = it }
             .also { positionBar = it.getChildAt(1) as android.widget.SeekBar })
@@ -416,7 +422,47 @@ class SettingsActivity : Activity() {
     }
 
     private fun updateBgStatus() {
-        bgStatus?.text = if (prefs.bgVersion != 0L) "✅ Ein Hintergrundbild ist gesetzt." else "Kein Bild gesetzt."
+        bgStatus?.text = if (Background.current(this) != null) "✅ Ein Hintergrundbild ist gesetzt." else "Kein Bild gesetzt."
+        renderGallery()
+    }
+
+    private var gallery: LinearLayout? = null
+
+    /** Vorschaubilder der früheren Hintergründe; das aktive ist farbig umrandet. */
+    private fun renderGallery() {
+        val g = gallery ?: return
+        g.removeAllViews()
+        val names = Background.history(this)
+        val active = prefs.bgFile
+        val w = (96 * dp).toInt()
+        val h = (64 * dp).toInt()
+        val pad = (3 * dp).toInt()
+        for (name in names) {
+            val img = android.widget.ImageView(this).apply {
+                scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                setImageBitmap(Background.thumbnail(this@SettingsActivity, name, w))
+                setPadding(pad, pad, pad, pad)
+                setBackgroundColor(if (name == active) android.graphics.Color.rgb(0x4D, 0xB6, 0xAC) else android.graphics.Color.TRANSPARENT)
+                layoutParams = LinearLayout.LayoutParams(w, h).apply { setMargins(0, 0, (8 * dp).toInt(), 0) }
+                setOnClickListener {
+                    Background.select(this@SettingsActivity, name)
+                    updateBgStatus()
+                }
+                setOnLongClickListener {
+                    AlertDialog.Builder(this@SettingsActivity)
+                        .setMessage("Dieses Bild aus dem Verlauf löschen?")
+                        .setPositiveButton("Löschen") { _, _ ->
+                            Background.delete(this@SettingsActivity, name)
+                            updateBgStatus()
+                        }
+                        .setNegativeButton("Abbrechen", null)
+                        .show()
+                    true
+                }
+            }
+            g.addView(img)
+        }
+        if (names.isEmpty()) g.addView(info("Noch keine Bilder."))
     }
 
     private fun pickImage() {
@@ -436,7 +482,10 @@ class SettingsActivity : Activity() {
         @Suppress("DEPRECATION")
         super.onActivityResult(requestCode, resultCode, data)
         val uri = data?.data
-        if (requestCode != REQ_IMAGE || resultCode != RESULT_OK || uri == null) return
+        if (resultCode != RESULT_OK || uri == null) return
+        if (requestCode == REQ_EXPORT) return exportBackup(uri)
+        if (requestCode == REQ_IMPORT) return importBackup(uri)
+        if (requestCode != REQ_IMAGE) return
         bgStatus?.text = "Bild wird übernommen …"
         Thread {
             val ok = Background.import(this, uri)
@@ -468,6 +517,109 @@ class SettingsActivity : Activity() {
                 })
             })
         }
+
+    // ------------------------------------------------------------------
+    // Profile & Sicherung
+    // ------------------------------------------------------------------
+
+    private lateinit var profileList: LinearLayout
+    private var backupStatus: TextView? = null
+
+    private fun buildProfiles() {
+        title = "Profile & Sicherung"
+        root.addView(header("Profile"))
+        root.addView(info(
+            "Ein Profil speichert alle Einstellungen: Aussehen samt Hintergrundbild, Tippen, Vorschläge, " +
+                "Zwischenablage-Ansicht und Emoticons. Eigene Wörter gelten immer für alle Profile."
+        ))
+        root.addView(button("Aktuelle Einstellungen als Profil speichern") {
+            val field = EditText(this).apply { hint = "Name, z. B. Dunkel mit Pony" }
+            AlertDialog.Builder(this)
+                .setTitle("Profil speichern")
+                .setView(field)
+                .setPositiveButton("Speichern") { _, _ ->
+                    val name = field.text.toString().trim()
+                    if (name.isNotEmpty()) {
+                        Profiles(this).save(name)
+                        renderProfiles()
+                    }
+                }
+                .setNegativeButton("Abbrechen", null)
+                .show()
+        })
+        profileList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(profileList)
+        renderProfiles()
+
+        root.addView(header("Sicherung als Datei"))
+        root.addView(info(
+            "Für ein neues Handy oder eine Neuinstallation: Einstellungen, Profile, eigene Wörter, Emoticons " +
+                "und das aktuelle Hintergrundbild in einer Datei, z. B. in Google Drive ablegen."
+        ))
+        backupStatus = info("")
+        root.addView(backupStatus)
+        root.addView(button("Sicherung speichern …") {
+            startActivityForResult(
+                Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                    .setType("application/json").putExtra(Intent.EXTRA_TITLE, "tastatur-sicherung.json"),
+                REQ_EXPORT
+            )
+        })
+        root.addView(button("Sicherung laden …") {
+            startActivityForResult(
+                Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"),
+                REQ_IMPORT
+            )
+        })
+    }
+
+    private fun renderProfiles() {
+        profileList.removeAllViews()
+        val names = Profiles(this).names()
+        if (names.isEmpty()) profileList.addView(info("Noch keine Profile."))
+        for (n in names) {
+            profileList.addView(listRow(n,
+                "Laden" to {
+                    if (Profiles(this).load(n)) backupStatus?.text = "✅ Profil „$n“ geladen."
+                },
+                "✕" to {
+                    AlertDialog.Builder(this)
+                        .setMessage("Profil „$n“ löschen?")
+                        .setPositiveButton("Löschen") { _, _ ->
+                            Profiles(this).delete(n)
+                            renderProfiles()
+                        }
+                        .setNegativeButton("Abbrechen", null)
+                        .show()
+                },
+            ))
+        }
+    }
+
+    private fun exportBackup(uri: android.net.Uri) {
+        backupStatus?.text = "Wird gespeichert …"
+        Thread {
+            val ok = try {
+                val json = Backup.create(this)
+                contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray()) } != null
+            } catch (_: Exception) { false }
+            runOnUiThread { backupStatus?.text = if (ok) "✅ Sicherung gespeichert." else "❌ Speichern fehlgeschlagen." }
+        }.start()
+    }
+
+    private fun importBackup(uri: android.net.Uri) {
+        backupStatus?.text = "Wird geladen …"
+        Thread {
+            val ok = try {
+                val json = contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
+                json != null && Backup.restore(this, json)
+            } catch (_: Exception) { false }
+            runOnUiThread {
+                backupStatus?.text = if (ok) "✅ Sicherung geladen." else "❌ Das ist keine gültige Tastatur-Sicherung."
+                renderProfiles()
+            }
+        }.start()
+    }
 
     // ------------------------------------------------------------------
     // Emoticons
@@ -648,5 +800,7 @@ class SettingsActivity : Activity() {
     companion object {
         const val EXTRA_SECTION = "section"
         private const val REQ_IMAGE = 41
+        private const val REQ_EXPORT = 42
+        private const val REQ_IMPORT = 43
     }
 }

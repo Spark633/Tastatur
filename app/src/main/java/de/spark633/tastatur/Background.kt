@@ -9,14 +9,38 @@ import android.net.Uri
 import java.io.File
 import kotlin.math.max
 
-/** Hintergrundbild: wird beim Auswählen verkleinert und in der App gespeichert. */
+/**
+ * Hintergrundbilder: werden beim Auswählen verkleinert und in der App gespeichert.
+ * Die letzten [MAX_HISTORY] Bilder bleiben erhalten und lassen sich wieder wählen.
+ */
 object Background {
 
     private const val MAX_SIZE = 1440
+    private const val MAX_HISTORY = 10
 
-    fun file(context: Context) = File(context.filesDir, "hintergrund.jpg")
+    private fun dir(context: Context) = File(context.filesDir, "hintergruende").apply { mkdirs() }
 
-    /** Bild aus der Galerie übernehmen. true = erfolgreich. */
+    /** Früher gab es nur eine Datei: in den Verlauf übernehmen. */
+    private fun migrate(context: Context) {
+        val old = File(context.filesDir, "hintergrund.jpg")
+        if (!old.exists()) return
+        val name = "bg_${System.currentTimeMillis()}.jpg"
+        if (old.renameTo(File(dir(context), name))) {
+            val prefs = Prefs(context)
+            if (prefs.bgVersion != 0L) prefs.bgFile = name
+        }
+    }
+
+    /** Alle gespeicherten Bilder, neueste zuerst (Dateinamen). */
+    fun history(context: Context): List<String> {
+        migrate(context)
+        return dir(context).listFiles { f -> f.name.endsWith(".jpg") }
+            ?.sortedByDescending { it.lastModified() }?.map { it.name } ?: emptyList()
+    }
+
+    fun file(context: Context, name: String) = File(dir(context), name)
+
+    /** Bild aus der Galerie übernehmen und als Hintergrund setzen. true = erfolgreich. */
     fun import(context: Context, uri: Uri): Boolean = try {
         val cr = context.contentResolver
         // Größe ermitteln, dann passend verkleinert laden
@@ -47,20 +71,67 @@ object Background {
             if (rotation != 0f) m.postRotate(rotation)
             bmp = Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, m, true)
         }
-        file(context).outputStream().use { bmp.compress(Bitmap.CompressFormat.JPEG, 90, it) }
-        Prefs(context).bgVersion = System.currentTimeMillis()
+        val name = "bg_${System.currentTimeMillis()}.jpg"
+        file(context, name).outputStream().use { bmp.compress(Bitmap.CompressFormat.JPEG, 90, it) }
+        select(context, name)
+        trim(context)
         true
     } catch (_: Exception) {
         false
     }
 
-    fun remove(context: Context) {
-        file(context).delete()
-        Prefs(context).bgVersion = 0L
+    /** Bild aus einer Sicherung übernehmen (JPEG-Daten). */
+    fun importBytes(context: Context, data: ByteArray): String {
+        val name = "bg_${System.currentTimeMillis()}.jpg"
+        file(context, name).writeBytes(data)
+        trim(context)
+        return name
     }
 
-    fun load(context: Context): Bitmap? {
-        val f = file(context)
-        return if (f.exists()) BitmapFactory.decodeFile(f.path) else null
+    /** Ein gespeichertes Bild als Hintergrund setzen. */
+    fun select(context: Context, name: String) {
+        val prefs = Prefs(context)
+        prefs.bgFile = name
+        file(context, name).setLastModified(System.currentTimeMillis()) // nach vorne im Verlauf
+        prefs.bgVersion = System.currentTimeMillis()
+    }
+
+    /** Hintergrund ausschalten; das Bild bleibt im Verlauf. */
+    fun remove(context: Context) {
+        val prefs = Prefs(context)
+        prefs.bgFile = ""
+        prefs.bgVersion = 0L
+    }
+
+    /** Bild aus dem Verlauf löschen (ist es aktiv, wird der Hintergrund ausgeschaltet). */
+    fun delete(context: Context, name: String) {
+        if (Prefs(context).bgFile == name) remove(context)
+        file(context, name).delete()
+    }
+
+    /** Älteste Bilder löschen; das aktive und in Profilen benutzte bleiben. */
+    private fun trim(context: Context) {
+        val keep = Profiles(context).usedBackgrounds() + Prefs(context).bgFile
+        val all = history(context)
+        all.drop(MAX_HISTORY).filter { it !in keep }.forEach { file(context, it).delete() }
+    }
+
+    fun current(context: Context): File? {
+        migrate(context)
+        val name = Prefs(context).bgFile
+        if (name.isEmpty()) return null
+        return file(context, name).takeIf { it.exists() }
+    }
+
+    fun load(context: Context): Bitmap? = current(context)?.let { BitmapFactory.decodeFile(it.path) }
+
+    /** Kleines Vorschaubild für die Auswahl. */
+    fun thumbnail(context: Context, name: String, targetPx: Int): Bitmap? {
+        val f = file(context, name)
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(f.path, bounds)
+        var sample = 1
+        while (max(bounds.outWidth, bounds.outHeight) / (sample * 2) >= targetPx) sample *= 2
+        return BitmapFactory.decodeFile(f.path, BitmapFactory.Options().apply { inSampleSize = sample })
     }
 }

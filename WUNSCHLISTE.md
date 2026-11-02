@@ -4,8 +4,7 @@ Ideen für später. Erledigte Punkte wandern nach unten.
 
 ## Offen
 
-- [ ] **Frühere Hintergrundbilder wieder auswählen** – zuletzt benutzte Bilder aufheben und mit einem Tipp zurückholen
-- [ ] **Einstellungen speichern und laden** – komplette Konfiguration (Aussehen, Wörterbuch, Emoticons …) als Profil sichern, wiederherstellen, ggf. als Datei exportieren
+_(gerade nichts offen)_
 
 ## Erledigt
 
@@ -16,3 +15,5 @@ Ideen für später. Erledigte Punkte wandern nach unten.
 - [x] Formatieren, Websuche, Emoticons bearbeiten
 - [x] Aussehen: Farbschemata, Hintergrundbild, Vorschau
 - [x] Nächstes Wort vorhersagen, gelöschten Text wiederherstellen
+- [x] Frühere Hintergrundbilder wieder auswählen (Verlauf der letzten 10)
+- [x] Einstellungen als Profil speichern und laden, Sicherung als Datei

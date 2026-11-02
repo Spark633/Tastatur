@@ -140,6 +140,50 @@ class Prefs(context: Context) {
         get() = sp.getInt("bg_position", 50)
         set(v) = sp.edit().putInt("bg_position", v).apply()
 
+    /** Dateiname des aktiven Hintergrundbilds im Verlauf ("" = keins). */
+    var bgFile: String
+        get() = sp.getString("bg_file", "") ?: ""
+        set(v) = sp.edit().putString("bg_file", v).apply()
+
+    /** Alle Einstellungen als JSON (für Profile und Sicherung). */
+    fun snapshot(): org.json.JSONObject {
+        val o = org.json.JSONObject()
+        for ((k, v) in sp.all) {
+            if (k in TRANSIENT) continue
+            val e = org.json.JSONObject()
+            when (v) {
+                is Boolean -> e.put("t", "b").put("v", v)
+                is Int -> e.put("t", "i").put("v", v)
+                is Long -> e.put("t", "l").put("v", v)
+                is Float -> e.put("t", "f").put("v", v.toDouble())
+                is String -> e.put("t", "s").put("v", v)
+                else -> continue
+            }
+            o.put(k, e)
+        }
+        return o
+    }
+
+    /** Einstellungen aus [snapshot] übernehmen; alles andere wird zurückgesetzt. */
+    fun restore(o: org.json.JSONObject) {
+        val ed = sp.edit()
+        for (k in sp.all.keys) if (k !in TRANSIENT) ed.remove(k)
+        for (k in o.keys()) {
+            if (k in TRANSIENT) continue
+            val e = o.optJSONObject(k) ?: continue
+            when (e.optString("t")) {
+                "b" -> ed.putBoolean(k, e.getBoolean("v"))
+                "i" -> ed.putInt(k, e.getInt("v"))
+                "l" -> ed.putLong(k, e.getLong("v"))
+                "f" -> ed.putFloat(k, e.getDouble("v").toFloat())
+                "s" -> ed.putString(k, e.getString("v"))
+            }
+        }
+        // Bild neu laden lassen (oder keins, wenn es nicht mehr da ist)
+        ed.putLong("bg_version", System.currentTimeMillis())
+        ed.apply()
+    }
+
     /** Ändert sich bei jedem neuen Bild (0 = kein Bild). */
     var bgVersion: Long
         get() = sp.getLong("bg_version", 0L)
@@ -163,5 +207,8 @@ class Prefs(context: Context) {
 
     companion object {
         const val KEY_RESIZE_REQUEST = "resize_request"
+
+        /** Nicht in Profile/Sicherungen übernehmen. */
+        private val TRANSIENT = setOf(KEY_RESIZE_REQUEST, "bg_version")
     }
 }

@@ -44,20 +44,14 @@ object Layouts {
      * Langes Drücken liefert das kleine Zeichen der Taste (z. B. q → 1).
      */
     private fun accents(lang: Language): Map<Char, List<String>> = when (lang) {
-        // Umlaut zuerst, dann die gängigsten Akzente (é è, à á …)
+        // Umlaute; Akzente nur beim e
         Language.DE -> mapOf(
-            'a' to listOf("ä", "à", "á"), 'e' to listOf("é", "è", "ê"), 'i' to listOf("í", "ì"),
-            'o' to listOf("ö", "ó", "ò"), 'u' to listOf("ü", "ú", "ù"), 's' to listOf("ß"),
-            'c' to listOf("ç"), 'n' to listOf("ñ"),
+            'a' to listOf("ä"), 'e' to listOf("é", "è", "ê"), 'o' to listOf("ö"), 'u' to listOf("ü"), 's' to listOf("ß"),
         )
         Language.NL -> mapOf(
-            'a' to listOf("á", "à", "ä"), 'e' to listOf("é", "ë", "è"), 'i' to listOf("ï", "í"),
-            'o' to listOf("ó", "ö", "ò"), 'u' to listOf("ü", "ú"), 'c' to listOf("ç"), 'n' to listOf("ñ"),
+            'e' to listOf("é", "ë", "è"), 'i' to listOf("ï"), 'o' to listOf("ó", "ö"), 'u' to listOf("ü"),
         )
-        Language.EN -> mapOf(
-            'a' to listOf("à", "á"), 'e' to listOf("é", "è"), 'i' to listOf("í"),
-            'o' to listOf("ó", "ò"), 'u' to listOf("ú"), 'c' to listOf("ç"), 'n' to listOf("ñ"),
-        )
+        Language.EN -> mapOf('e' to listOf("é", "è"))
     }
 
     private fun letter(c: Char, lang: Language, up: String? = null, down: String? = null) = Key(

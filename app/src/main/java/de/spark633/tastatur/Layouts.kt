@@ -84,7 +84,26 @@ object Layouts {
         return listOf(r1, r2, r3, bottomRow(Key("123", Action.TO_SYMBOLS, width = 1.5f)))
     }
 
-    private fun chars(s: String) = s.split(" ").map { Key(it) }
+    /** Extras beim langen Drücken (oder seitlich ziehen) auf den Symbolseiten. */
+    private val SYMBOL_EXTRAS = mapOf(
+        "1" to listOf("¹", "½", "¼"),
+        "2" to listOf("²"),
+        "3" to listOf("³", "¾"),
+        "0" to listOf("°"),
+        "€" to listOf("£", "$", "¥", "¢"),
+        "-" to listOf("–", "—"),
+        "\"" to listOf("„", "“", "”", "«", "»"),
+        "'" to listOf("‚", "‘", "’"),
+        "!" to listOf("¡"),
+        "?" to listOf("¿"),
+        "*" to listOf("•", "×"),
+        "/" to listOf("÷", "\\"),
+        "%" to listOf("‰"),
+        "=" to listOf("≠", "≈"),
+        "©" to listOf("®", "™"),
+    )
+
+    private fun chars(s: String) = s.split(" ").map { Key(it, longPress = SYMBOL_EXTRAS[it] ?: emptyList()) }
 
     fun symbols(): List<List<Key>> = listOf(
         chars("1 2 3 4 5 6 7 8 9 0"),
@@ -95,9 +114,9 @@ object Layouts {
 
     fun symbols2(): List<List<Key>> = listOf(
         chars("~ ` | • √ π ÷ × § ¶"),
-        chars("£ ¥ $ ¢ ^ ° = { } \\"),
-        listOf(Key("?123", Action.TO_SYMBOLS, width = 1.5f)) + chars("< > % [ ]") +
-            Key("©", longPress = listOf("©", "®", "™")) + Key("✓") + deleteKey,
+        // Klammern paarweise nebeneinander, ^ gleich daneben
+        chars("[ ] { } < > ^ ° = \\"),
+        listOf(Key("?123", Action.TO_SYMBOLS, width = 1.5f)) + chars("£ ¥ $ ¢ % © ✓") + deleteKey,
         bottomRow(Key("ABC", Action.TO_LETTERS, width = 1.5f)),
     )
 

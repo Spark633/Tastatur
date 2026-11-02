@@ -696,6 +696,10 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                     k.up?.let { canvas.drawText(it, r.centerX(), r.top + hintPaint.textSize + 1 * dp, hintPaint) }
                     k.down?.let { canvas.drawText(it, r.centerX(), r.bottom - 4 * dp, hintPaint) }
                 }
+                // Symbolseiten: Punkt oben rechts = gedrückt halten für mehr Zeichen
+                if ((mode == Mode.SYMBOLS || mode == Mode.SYMBOLS2) && k.longPress.isNotEmpty()) {
+                    canvas.drawCircle(r.right - 6 * dp, r.top + 6 * dp, 2.2f * dp, hintPaint)
+                }
             }
             Action.SPACE -> {
                 val name = if (languageCount > 1 && mode != Mode.EMOTICONS) "‹  ${language.displayName}  ›"

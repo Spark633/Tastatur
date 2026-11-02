@@ -120,6 +120,16 @@ class Prefs(context: Context) {
         get() = sp.getInt("corner_radius", 6)
         set(v) = sp.edit().putInt("corner_radius", v).apply()
 
+    /** Eigene Tastenfarbe (0 = aus dem Farbschema). */
+    var keyColor: Int
+        get() = sp.getInt("key_color", 0)
+        set(v) = sp.edit().putInt("key_color", v).apply()
+
+    /** Eigene Schriftfarbe der Tasten (0 = aus dem Farbschema). */
+    var keyTextColor: Int
+        get() = sp.getInt("key_text_color", 0)
+        set(v) = sp.edit().putInt("key_text_color", v).apply()
+
     /** Schriftgröße in Prozent. */
     var textScale: Int
         get() = sp.getInt("text_scale", 100)

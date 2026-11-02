@@ -35,5 +35,40 @@ class Theme(
         )
 
         fun byId(id: String?) = ALL.firstOrNull { it.id == id } ?: ALL.first()
+
+        /** Auswahl für Tasten- und Schriftfarbe (0 = aus dem Farbschema). */
+        val COLOR_CHOICES = listOf(
+            "Automatisch (Farbschema)" to 0,
+            "⚪ Weiß" to Color.WHITE,
+            "⚫ Schwarz" to Color.rgb(0x11, 0x11, 0x11),
+            "🩶 Grau" to Color.rgb(0x9E, 0x9E, 0x9E),
+            "🩵 Türkis" to Color.rgb(0x4D, 0xB6, 0xAC),
+            "🔵 Blau" to Color.rgb(0x42, 0xA5, 0xF5),
+            "🟣 Lila" to Color.rgb(0xAB, 0x47, 0xBC),
+            "🩷 Rosa" to Color.rgb(0xF4, 0x8F, 0xB1),
+            "🔴 Rot" to Color.rgb(0xE5, 0x39, 0x35),
+            "🟠 Orange" to Color.rgb(0xFB, 0x8C, 0x00),
+            "🟡 Gelb" to Color.rgb(0xFD, 0xD8, 0x35),
+            "🟢 Grün" to Color.rgb(0x43, 0xA0, 0x47),
+        )
+
+        private fun alpha(color: Int, a: Float) =
+            Color.argb((a.coerceIn(0f, 1f) * 255).toInt(), Color.red(color), Color.green(color), Color.blue(color))
+
+        /** Tasten- und Schriftfarben aus Farbschema, Deckkraft und eigener Auswahl. */
+        class KeyColors(val key: Int, val function: Int, val text: Int, val hint: Int)
+
+        fun keyColors(t: Theme, prefs: Prefs): KeyColors {
+            val op = prefs.keyOpacity.coerceIn(0, 100) / 100f
+            val keyAlpha = if (t.light) 0.5f + op * 0.5f else op
+            val own = prefs.keyColor
+            val key = alpha(if (own != 0) own else t.key, keyAlpha)
+            val function = if (own != 0) alpha(own, keyAlpha * 0.6f)
+            else alpha(t.functionKey, if (t.light) keyAlpha else keyAlpha * 0.55f)
+            val ownText = prefs.keyTextColor
+            val text = if (ownText != 0) ownText else t.text
+            val hint = if (ownText != 0) alpha(ownText, 0.75f) else t.hint
+            return KeyColors(key, function, text, hint)
+        }
     }
 }

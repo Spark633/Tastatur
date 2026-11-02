@@ -82,13 +82,14 @@ class KeyboardPreview(context: Context, private val prefs: Prefs) : View(context
         // Farben wie in der Tastatur
         val op = prefs.keyOpacity / 100f
         val keyAlpha = if (t.light) 0.5f + op * 0.5f else op
-        val keyColor = alpha(t.key, keyAlpha)
-        val funcColor = alpha(t.functionKey, if (t.light) keyAlpha else keyAlpha * 0.55f)
+        val colors = Theme.keyColors(t, prefs)
+        val keyColor = colors.key
+        val funcColor = colors.function
         val radius = prefs.cornerRadiusDp * dp * k
         val scaleText = prefs.textScale / 100f
-        text.color = t.text
+        text.color = colors.text
         text.textSize = sp(23f) * scaleText * k
-        hint.color = t.hint
+        hint.color = colors.hint
         hint.textSize = sp(12f) * scaleText * k
 
         // Leiste mit Beispiel-Vorschlägen

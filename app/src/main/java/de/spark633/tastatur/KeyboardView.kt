@@ -180,16 +180,18 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         themeLight = t.light
         val op = prefs.keyOpacity.coerceIn(0, 100) / 100f
         val keyAlpha = if (t.light) 0.5f + op * 0.5f else op
+        val colors = Theme.keyColors(t, prefs)
         bgPaint.color = t.background
-        keyPaint.color = withAlpha(t.key, keyAlpha)
-        funcPaint.color = withAlpha(t.functionKey, if (t.light) keyAlpha else keyAlpha * 0.55f)
+        keyPaint.color = colors.key
+        funcPaint.color = colors.function
         pressedPaint.color = if (t.light) withAlpha(Color.rgb(0x90, 0x9A, 0xA4), 0.9f)
         else withAlpha(Color.WHITE, min(1f, keyAlpha + 0.3f))
         accentPaint.color = t.accent
         accentTextPaint.color = t.accent
-        for (p in listOf(labelPaint, funcLabelPaint, barTextPaint, boldBarPaint, clipTextPaint, iconPaint)) p.color = t.text
-        hintPaint.color = t.hint
-        popupPaint.color = t.popup
+        for (p in listOf(labelPaint, funcLabelPaint, barTextPaint, boldBarPaint, clipTextPaint, iconPaint)) p.color = colors.text
+        hintPaint.color = colors.hint
+        // Dunkle Schrift: Auswahl- und Vorschau-Kästen hell, damit sie lesbar bleiben
+        popupPaint.color = if (Color.luminance(colors.text) < 0.5f) Color.rgb(0xF2, 0xF2, 0xF2) else t.popup
 
         val scale = prefs.textScale.coerceIn(70, 150) / 100f
         labelPaint.textSize = sp(23f) * scale

@@ -80,9 +80,14 @@ class SettingsActivity : Activity() {
 
     override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
-            // Auch wenn der Bereich aus der Tastatur geöffnet wurde: zur Startseite
-            startActivity(Intent(this, SettingsActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP))
-            finish()
+            if (isTaskRoot) {
+                // Aus der Tastatur geöffnet: Startseite darunter legen, dann zurück dorthin
+                startActivity(Intent(this, SettingsActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
+                @Suppress("DEPRECATION")
+                overridePendingTransition(android.R.anim.slide_in_left, android.R.anim.slide_out_right)
+            }
+            finish() // echtes Zurück (mit Zurück-Animation)
             return true
         }
         return super.onOptionsItemSelected(item)
@@ -478,6 +483,16 @@ class SettingsActivity : Activity() {
             applySliderLock()
         })
         sliderGroup = GROUP_KEYS
+        val colorNames = Theme.COLOR_CHOICES.map { it.first }
+        val colorValues = Theme.COLOR_CHOICES.map { it.second }
+        root.addView(info("Tastenfarbe"))
+        root.addView(dropdown(colorNames, colorValues.indexOf(prefs.keyColor).coerceAtLeast(0)) {
+            prefs.keyColor = colorValues[it]
+        })
+        root.addView(info("Schriftfarbe"))
+        root.addView(dropdown(colorNames, colorValues.indexOf(prefs.keyTextColor).coerceAtLeast(0)) {
+            prefs.keyTextColor = colorValues[it]
+        })
         root.addView(slider("Deckkraft der Tasten", 0, 100, prefs.keyOpacity, "%") { prefs.keyOpacity = it })
         root.addView(slider("Eckenrundung", 0, 24, prefs.cornerRadiusDp, " dp") { prefs.cornerRadiusDp = it })
         root.addView(slider("Schriftgröße", 70, 150, prefs.textScale, "%") { prefs.textScale = it })

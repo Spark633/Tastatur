@@ -13,9 +13,29 @@ object Formatter {
         "italic" to "Kursiv",
         "strike" to "Durchgestrichen",
         "underline" to "Unterstrichen",
+        "sarcasm" to "sArKaSmUs",
     )
 
+    /**
+     * Abwechselnd klein und groß: "sArKaSmUs". [start] zählt die bisher
+     * geschriebenen Buchstaben, damit es über mehrere Tasten weiterläuft.
+     */
+    fun sarcasm(text: String, start: Int = 0): String {
+        var n = start
+        val sb = StringBuilder()
+        for (c in text) {
+            if (c.isLetter()) {
+                sb.append(if (n % 2 == 0) c.lowercaseChar() else c.uppercaseChar())
+                n++
+            } else {
+                sb.append(c)
+            }
+        }
+        return sb.toString()
+    }
+
     fun apply(style: String, text: String): String = when (style) {
+        "sarcasm" -> sarcasm(text)
         "bold" -> mapLetters(text, ::bold)
         "italic" -> mapLetters(text, ::italic)
         "strike" -> combine(text, '̶')

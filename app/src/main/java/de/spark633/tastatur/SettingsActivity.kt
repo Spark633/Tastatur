@@ -118,6 +118,7 @@ class SettingsActivity : Activity() {
 
     private fun buildGeneral() {
         title = "Allgemein"
+        addTestField()
         root.addView(header("Tippen"))
         root.addView(switch("Vibration beim Tippen", prefs.vibrate) { prefs.vibrate = it })
         root.addView(switch("Automatisch großschreiben am Satzanfang", prefs.autoCaps) { prefs.autoCaps = it })
@@ -141,7 +142,10 @@ class SettingsActivity : Activity() {
         })
 
         root.addView(header("Websuche"))
-        root.addView(info("⚙ → 🔍 Suche: Suchbegriff in der Leiste tippen, Enter öffnet den Standard-Browser."))
+        root.addView(info(
+            "⚙ → 🔍 Suche: Der Text aus dem Eingabefeld wandert ins Suchfeld (✕ holt ihn zurück). " +
+                "Enter öffnet den Standard-Browser."
+        ))
         val engines = TastaturService.SEARCH_ENGINES.keys.toList()
         val names = listOf("Google", "DuckDuckGo", "Ecosia", "Bing", "Startpage")
         root.addView(radio(names, engines.indexOf(prefs.searchEngine).coerceAtLeast(0)) {
@@ -153,7 +157,6 @@ class SettingsActivity : Activity() {
         root.addView(radio(listOf("Links", "Rechts"), if (prefs.clipboardRight) 1 else 0) {
             prefs.clipboardRight = it == 1
         })
-        addTestField()
     }
 
     // ------------------------------------------------------------------
@@ -162,6 +165,7 @@ class SettingsActivity : Activity() {
 
     private fun buildLanguages() {
         title = "Sprachen"
+        addTestField()
         root.addView(header("Sprachen"))
         root.addView(info("Zum Wechseln auf der Leertaste nach links oder rechts wischen."))
         for (lang in Language.entries) {
@@ -192,6 +196,7 @@ class SettingsActivity : Activity() {
 
     private fun buildDictionary() {
         title = "Wörterbuch"
+        addTestField()
         root.addView(header("Vorschläge"))
         root.addView(info(
             "Die Mitte der Leiste (fett) wird beim Leerzeichen eingesetzt. Links steht bei einer Korrektur " +
@@ -238,7 +243,6 @@ class SettingsActivity : Activity() {
         blockedList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(blockedList)
         renderWords()
-        addTestField()
     }
 
     private fun renderWords() {
@@ -304,9 +308,10 @@ class SettingsActivity : Activity() {
 
     private fun buildClipboard() {
         title = "Zwischenablage"
+        addTestField()
         root.addView(info(
             "Die Tastatur merkt sich die letzten ${ClipboardHistory.MAX_UNPINNED} kopierten Texte. " +
-                "Antippen fügt ein. ⋮ oben rechts: anheften oder löschen. Seitlich wischen: löschen. " +
+                "Antippen fügt ein. ⋮ oben rechts: anheften oder löschen. " +
                 "Angeheftete Einträge bleiben dauerhaft. Alles bleibt nur auf dem Handy."
         ))
         root.addView(header("Ansicht"))
@@ -352,7 +357,7 @@ class SettingsActivity : Activity() {
                 "• zb → z.B., oä → o.Ä., idr → i.d.R.\n" +
                 "• 📋 Zwischenablage, ⚙ Menü mit Einstellungen und Größe\n" +
                 "• ⚙ → 🔍 Suche: im Browser suchen (markierter Text wird übernommen)\n" +
-                "• ⚙ → ✎ Formatieren: Listen, fett, kursiv, durch- und unterstrichen"
+                "• ⚙ → ✎ Formatieren: Listen, fett, kursiv, durch- und unterstrichen, sArKaSmUs"
         ))
     }
 
@@ -361,7 +366,7 @@ class SettingsActivity : Activity() {
     // ------------------------------------------------------------------
 
     private fun addTestField() {
-        root.addView(header("Ausprobieren"))
+        root.addView(info("Ausprobieren:"))
         testField = EditText(this).apply {
             hint = "Hier tippen …"
             minLines = 2

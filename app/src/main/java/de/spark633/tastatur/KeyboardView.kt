@@ -82,8 +82,6 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var clipColumns = 2
     private var clipLines = 3
     private var clipMenuFor: ClipboardHistory.Entry? = null
-    private var swipeEntry: ClipboardHistory.Entry? = null
-    private var swipeDx = 0f
 
     // Größen-Modus
     private var resizing = false
@@ -358,7 +356,6 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         val radius = 8 * dp
         for ((e, base) in rects) {
             val r = RectF(base)
-            if (e === swipeEntry) r.offset(swipeDx, 0f)
             if (r.bottom < area.top || r.top > area.bottom) continue
 
             if (e === clipMenuFor) {
@@ -600,11 +597,14 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 val p = fitPaint(labelPaint, text, r.width() - 6 * dp)
                 val hasUp = k.up != null
                 val hasDown = k.down != null
-                val offset = when {
+                var offset = when {
+                    hasUp && hasDown -> -1 * dp
                     hasUp -> 5 * dp
                     hasDown -> -5 * dp
                     else -> 0f
                 }
+                // Punkt und Komma sitzen unten in der Zeile: etwas anheben
+                if (text == "." || text == ",") offset -= 7 * dp
                 canvas.drawText(text, r.centerX(), centerY(p, r.centerY() + offset), p)
                 k.up?.let { canvas.drawText(it, r.centerX(), r.top + hintPaint.textSize + 1 * dp, hintPaint) }
                 k.down?.let { canvas.drawText(it, r.centerX(), r.bottom - 4 * dp, hintPaint) }
@@ -624,7 +624,10 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             }
             Action.ENTER -> canvas.drawText(enterLabel, r.centerX(), centerY(labelPaint, r.centerY()), labelPaint)
             Action.DELETE -> canvas.drawText(k.label, r.centerX(), centerY(labelPaint, r.centerY()), labelPaint)
-            else -> canvas.drawText(k.label, r.centerX(), centerY(funcLabelPaint, r.centerY()), funcLabelPaint)
+            else -> {
+                val p = fitPaint(funcLabelPaint, k.label, r.width() - 8 * dp)
+                canvas.drawText(k.label, r.centerX(), centerY(p, r.centerY()), p)
+            }
         }
     }
 
@@ -677,7 +680,6 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         var popupIndex = 0
         var languageSwitched = false
         var inClipList = false
-        var hSwipe = false
         var barLong = false
         var dragging = false
         var scrollStart = 0f
@@ -756,16 +758,6 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         t.lastX = x
         t.lastY = y
         if (t.inClipList) {
-            val ddx = x - t.x0
-            if (!t.dragging && !t.hSwipe && abs(ddx) > 12 * dp && abs(ddx) > abs(y - t.y0)) {
-                t.hSwipe = true
-                swipeEntry = clipEntryAt(t.x0, t.y0)?.first
-            }
-            if (t.hSwipe) {
-                swipeDx = ddx
-                invalidate()
-                return
-            }
             if (abs(y - t.y0) > 8 * dp) t.dragging = true
             if (t.dragging) {
                 clipScroll = (t.scrollStart - (y - t.y0)).coerceIn(0f, maxClipScroll())
@@ -874,15 +866,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             return
         }
         if (t.inClipList) {
-            if (t.hSwipe) {
-                val e = swipeEntry
-                if (e != null && abs(t.lastX - t.x0) > 80 * dp) deleteClip(e)
-                swipeEntry = null
-                swipeDx = 0f
-                invalidate()
-            } else if (!t.dragging) {
-                clipTap(t.lastX, t.lastY)
-            }
+            if (!t.dragging) clipTap(t.lastX, t.lastY)
             return
         }
         val k = t.target?.key ?: return

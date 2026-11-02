@@ -50,9 +50,13 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     /** Aktiver Unicode-Stil ("bold", "strike" …) oder null. */
     private var activeStyle: String? = null
+    private var sarcasmCount = 0
 
     /** Websuche aktiv: Tasten schreiben in den Suchbegriff statt ins Textfeld. */
     private var searchQuery: StringBuilder? = null
+
+    /** Text, der fürs Suchfeld aus dem Eingabefeld genommen wurde (kommt bei ✕ zurück). */
+    private var searchTakenText: String? = null
 
     private val vibrator: Vibrator? by lazy {
         if (Build.VERSION.SDK_INT >= 31) {
@@ -171,6 +175,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         activeStyle = null
         v.setStyleIndicator(null)
         searchQuery = null
+        searchTakenText = null
         v.setSearchText(null)
         current = null // eigene Wörter könnten sich in den Einstellungen geändert haben
         languageChanged()
@@ -383,7 +388,12 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         }
         val ic = currentInputConnection ?: return
         activeStyle?.let {
-            ic.commitText(Formatter.apply(it, text), 1)
+            val styled = if (it == "sarcasm") {
+                Formatter.sarcasm(text, sarcasmCount).also { sarcasmCount += text.count(Char::isLetter) }
+            } else {
+                Formatter.apply(it, text)
+            }
+            ic.commitText(styled, 1)
             return
         }
         if (text.length == 1 && text[0] in PUNCTUATION) {
@@ -587,7 +597,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val selected = ic.getSelectedText(0)?.toString().orEmpty()
         when (code) {
             "off" -> setStyle(null)
-            "bold", "italic", "strike", "underline" -> {
+            "bold", "italic", "strike", "underline", "sarcasm" -> {
                 if (selected.isNotEmpty()) {
                     ic.commitText(Formatter.apply(code, selected), 1)
                 } else {
@@ -618,6 +628,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     private fun setStyle(style: String?) {
         activeStyle = style
+        sarcasmCount = 0
         keyboard?.setStyleIndicator(style?.let { Formatter.LABELS[it] })
     }
 
@@ -656,7 +667,26 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     // ------------------------------------------------------------------
 
     private fun startSearch() {
-        val selected = currentInputConnection?.getSelectedText(0)?.toString().orEmpty()
+        val ic = currentInputConnection
+        var taken = ""
+        if (ic != null) {
+            val selected = ic.getSelectedText(0)?.toString().orEmpty()
+            if (selected.isNotEmpty()) {
+                taken = selected
+                ic.commitText("", 1)
+            } else {
+                // Ganzen Text aus dem Feld (z. B. Chat) ins Suchfeld übernehmen
+                val et = ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
+                val all = et?.text?.toString()
+                if (!all.isNullOrEmpty() && all.length < 2000) {
+                    taken = all
+                    val start = et.selectionStart.coerceIn(0, all.length)
+                    ic.deleteSurroundingText(start, all.length - start)
+                }
+            }
+        }
+        searchTakenText = taken.ifEmpty { null }
+        val selected = taken.trim()
         searchQuery = StringBuilder(selected)
         setStyle(null)
         keyboard?.setAutoShift(false)
@@ -666,6 +696,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onSearchCancel() {
+        searchTakenText?.let { currentInputConnection?.commitText(it, 1) }
+        searchTakenText = null
         searchQuery = null
         keyboard?.setSearchText(null)
         currentInputEditorInfo?.let { keyboard?.setEnterLabel(enterLabel(it)) }
@@ -677,6 +709,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val base = SEARCH_ENGINES[prefs.searchEngine] ?: SEARCH_ENGINES.getValue("google")
         val url = if (query.isEmpty()) "https://" + android.net.Uri.parse(base).host
         else base + java.net.URLEncoder.encode(query, "UTF-8")
+        searchTakenText = null // Text ist jetzt im Browser
         onSearchCancel()
         try {
             requestHideSelf(0)

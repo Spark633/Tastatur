@@ -143,8 +143,7 @@ class SettingsActivity : Activity() {
 
         root.addView(header("Websuche"))
         root.addView(info(
-            "⚙ → 🔍 Suche: Suchbegriff in der Leiste tippen (markierter Text wird übernommen). " +
-                "Enter öffnet den Standard-Browser."
+            "⚙ → 🔍 Suche öffnet den Standard-Browser. Ist Text markiert, wird direkt danach gesucht."
         ))
         val engines = TastaturService.SEARCH_ENGINES.keys.toList()
         val names = listOf("Google", "DuckDuckGo", "Ecosia", "Bing", "Startpage")
@@ -356,7 +355,7 @@ class SettingsActivity : Activity() {
                 "• ⌫ direkt nach einer Korrektur: dein Wort zurück\n" +
                 "• zb → z.B., oä → o.Ä., idr → i.d.R.\n" +
                 "• 📋 Zwischenablage, ⚙ Menü mit Einstellungen und Größe\n" +
-                "• ⚙ → 🔍 Suche: im Browser suchen (markierter Text wird übernommen)\n" +
+                "• ⚙ → 🔍 Suche: Browser öffnen, markierter Text wird gesucht\n" +
                 "• ⚙ → ✎ Formatieren: Listen, fett, kursiv, durch- und unterstrichen, sArKaSmUs"
         ))
     }

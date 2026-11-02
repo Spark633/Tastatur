@@ -59,6 +59,12 @@ class Dictionary private constructor(
         blocked: Set<String> = emptySet(),
     ): Suggestions {
         val ok = { w: String -> !blocked.contains(w.lowercase()) }
+        // "ware" ist ein Wort, aber "wäre" ist viel häufiger: Umlaut einsetzen
+        if (!known(typed)) {
+            umlautVariant(typed)?.takeIf(ok)?.let { v ->
+                return Suggestions(typed, v, listOf("\"$typed\"", v, ""))
+            }
+        }
         val valid = contains(typed) || known(typed)
         val completions = completions(typed, 3, extra).filter(ok)
         if (valid) {
@@ -79,6 +85,39 @@ class Dictionary private constructor(
         // Unbekannt und nichts Ähnliches: Wort bleibt, Vervollständigungen daneben
         val others = completions.filter { !it.equals(typed, ignoreCase = true) }
         return Suggestions(typed, null, listOf(others.getOrElse(0) { "" }, typed, others.getOrElse(1) { "" }))
+    }
+
+    private fun freqOf(word: String): Int {
+        val i = exact[word] ?: exact[word.lowercase()] ?: return -1
+        return freqs[i]
+    }
+
+    /**
+     * Umlaut vergessen? Ersetzt bis zu zwei a/o/u durch ä/ö/ü. Ergebnis nur, wenn
+     * die Variante deutlich häufiger ist als das Getippte ("horen" → "hören").
+     * Bei schon/schön oder gedruckt/gedrückt bleibt das Wort stehen.
+     */
+    private fun umlautVariant(typed: String): String? {
+        if (typed.any { it in "äöüÄÖÜ" }) return null
+        val positions = typed.indices.filter { typed[it].lowercaseChar() in "aou" }.take(6)
+        if (positions.isEmpty()) return null
+        val own = if (contains(typed)) freqOf(typed) else -1
+        var best: String? = null
+        var bestFreq = own + UMLAUT_MARGIN
+        val combos = positions.map { listOf(it) } +
+            positions.flatMapIndexed { i, a -> positions.drop(i + 1).map { b -> listOf(a, b) } }
+        for (combo in combos) {
+            val chars = typed.toCharArray()
+            for (p in combo) chars[p] = UMLAUT[chars[p]] ?: chars[p]
+            val v = String(chars)
+            if (!contains(v)) continue
+            val f = freqOf(v)
+            if (f >= bestFreq) {
+                best = v
+                bestFreq = f
+            }
+        }
+        return best
     }
 
     /** Wörter, die mit dem Getippten beginnen: eigene zuerst, dann die häufigsten. */
@@ -182,6 +221,8 @@ class Dictionary private constructor(
         private const val FUZZY_LIMIT = 100_000
         private const val COST_WEIGHT = 45f
         private const val OWN_WORD_FREQ = 200f
+        private const val UMLAUT_MARGIN = 40
+        private val UMLAUT = mapOf('a' to 'ä', 'o' to 'ö', 'u' to 'ü', 'A' to 'Ä', 'O' to 'Ö', 'U' to 'Ü')
 
         fun load(context: Context, lang: Language): Dictionary =
             context.assets.open("dict/${lang.code}.txt").bufferedReader().useLines { fromLines(it) }

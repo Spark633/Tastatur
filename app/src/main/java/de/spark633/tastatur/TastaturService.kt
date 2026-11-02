@@ -52,9 +52,6 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     private var activeStyle: String? = null
     private var sarcasmCount = 0
 
-    /** Websuche aktiv: Tasten schreiben in den Suchbegriff statt ins Textfeld. */
-    private var searchQuery: StringBuilder? = null
-
     private val vibrator: Vibrator? by lazy {
         if (Build.VERSION.SDK_INT >= 31) {
             getSystemService(VibratorManager::class.java)?.defaultVibrator
@@ -171,8 +168,6 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         autoSpacePending = false
         activeStyle = null
         v.setStyleIndicator(null)
-        searchQuery = null
-        v.setSearchText(null)
         current = null // eigene Wörter könnten sich in den Einstellungen geändert haben
         languageChanged()
 
@@ -212,7 +207,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     /** Großbuchstabe am Satzanfang, nach . ! ? und nach einem Zeilenumbruch. */
     private fun updateAutoCaps() {
         val v = keyboard ?: return
-        if (!prefs.autoCaps || !isTextField || searchQuery != null) {
+        if (!prefs.autoCaps || !isTextField) {
             v.setAutoShift(false)
             return
         }
@@ -377,11 +372,6 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     // ------------------------------------------------------------------
 
     override fun onText(text: String) {
-        searchQuery?.let {
-            it.append(text)
-            keyboard?.setSearchText(it.toString())
-            return
-        }
         val ic = currentInputConnection ?: return
         activeStyle?.let {
             val styled = if (it == "sarcasm") {
@@ -470,11 +460,6 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDelete() {
-        searchQuery?.let {
-            if (it.isNotEmpty()) it.setLength(it.offsetByCodePoints(it.length, -1))
-            keyboard?.setSearchText(it.toString())
-            return
-        }
         if (undoCorrection()) return
         autoSpacePending = false
         val ic = currentInputConnection ?: return
@@ -484,13 +469,6 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDeleteWord() {
-        searchQuery?.let {
-            val trimmed = it.toString().trimEnd()
-            val cut = trimmed.lastIndexOf(' ') + 1
-            it.setLength(cut)
-            keyboard?.setSearchText(it.toString())
-            return
-        }
         lastCorrection = null
         val ic = currentInputConnection ?: return
         if (!ic.getSelectedText(0).isNullOrEmpty()) {
@@ -511,10 +489,6 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onEnter() {
-        searchQuery?.let {
-            runSearch(it.toString().trim())
-            return
-        }
         val ic = currentInputConnection ?: return
         val word = currentWord()
         if (!(prefs.correctOnEnter && correctAndCommit(""))) noteWordEnd(word)
@@ -531,11 +505,6 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onSpace() {
-        searchQuery?.let {
-            it.append(' ')
-            keyboard?.setSearchText(it.toString())
-            return
-        }
         val ic = currentInputConnection ?: return
         val now = SystemClock.uptimeMillis()
         if (prefs.doubleSpacePeriod && isTextField && now - lastSpaceTime < 700) {
@@ -662,30 +631,11 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     // Websuche
     // ------------------------------------------------------------------
 
-    private fun startSearch() {
-        // Markierter Text wird als Suchbegriff übernommen (bleibt im Feld stehen)
-        val selected = currentInputConnection?.getSelectedText(0)?.toString().orEmpty().trim()
-        searchQuery = StringBuilder(selected)
-        setStyle(null)
-        keyboard?.setAutoShift(false)
-        keyboard?.setSuggestions(emptyList())
-        keyboard?.setSearchText(selected)
-        keyboard?.setEnterLabel("🔍")
-    }
-
-    override fun onSearchCancel() {
-        searchQuery = null
-        keyboard?.setSearchText(null)
-        currentInputEditorInfo?.let { keyboard?.setEnterLabel(enterLabel(it)) }
-        updateSuggestions()
-    }
-
     /** Öffnet den Standard-Browser mit der Suche. */
     private fun runSearch(query: String) {
         val base = SEARCH_ENGINES[prefs.searchEngine] ?: SEARCH_ENGINES.getValue("google")
         val url = if (query.isEmpty()) "https://" + android.net.Uri.parse(base).host
         else base + java.net.URLEncoder.encode(query, "UTF-8")
-        onSearchCancel()
         try {
             requestHideSelf(0)
             startActivity(
@@ -703,7 +653,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             return
         }
         if (section == "search") {
-            startSearch()
+            // Markierter Text wird gesucht, sonst öffnet die Startseite der Suchmaschine
+            runSearch(currentInputConnection?.getSelectedText(0)?.toString().orEmpty().trim())
             return
         }
         requestHideSelf(0)

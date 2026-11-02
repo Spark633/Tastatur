@@ -15,7 +15,7 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - QWERTZ-Layout (pro Sprache auf QWERTY umschaltbar)
 - Nach oben wischen: Zahlen und Zeichen auf den oberen beiden Reihen
 - Nach unten wischen: Zeichen auf der unteren Buchstabenreihe
-- Lange drücken: nur die gängigsten Sonderbuchstaben je Sprache (DE: ä ö ü ß, NL: é ë ï ó ö ü)
+- Lange drücken: gängigste Sonderbuchstaben je Sprache plus das Wisch-Zeichen (u → ü 7, a → ä @)
 - Leertaste seitlich wischen: Sprache wechseln (Deutsch, English, Nederlands)
 - Emoticon-Taste (^.^, :D, ¯\_(ツ)_/¯ …)
 - Zwischenablage-Verlauf als Kacheln (1–2 Spalten, 1–4 Zeilen), ⋮ zum Anheften/Löschen
@@ -24,7 +24,7 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Vorschlag lange drücken: wird nicht mehr vorgeschlagen
 - Optional: Leerzeichen nach . , ! ? automatisch, Enter übernimmt den Vorschlag
 - Punkt-Taste: hoch wischen !, runter wischen ?, lange drücken ? und !
-- Websuche (⚙ → 🔍): Suchbegriff mit blinkendem Cursor in der Leiste tippen, Enter öffnet den Standard-Browser (Google, DuckDuckGo, Ecosia, Bing, Startpage)
+- Websuche (⚙ → 🔍): öffnet den Standard-Browser, markierter Text wird direkt gesucht (Google, DuckDuckGo, Ecosia, Bing, Startpage)
 - Formatieren (⚙ → ✎): Listen (• und 1.), die bei Enter weiterlaufen; 𝗳𝗲𝘁𝘁, 𝘬𝘶𝘳𝘴𝘪𝘷, d̶u̶r̶c̶h̶, u̲n̲t̲e̲r̲, sArKaSmUs als Unicode; WhatsApp *fett* _kursiv_ ~durch~ ```mono```
 - Größe direkt auf der Tastatur durch Ziehen anpassen, Abstand zu den Systemknöpfen
 - Automatische Großschreibung, doppeltes Leerzeichen → Punkt
@@ -32,6 +32,7 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Abkürzungen wie vllt, bzw, bzgl, lg, lol, wss werden nicht korrigiert
 - Punkt-Abkürzungen: zb → z.B., oä → o.Ä., idr → i.d.R., dh → d.h. …
 - Tippfehler-Korrektur beim Leerzeichen oder Satzzeichen, richtige Wörter bleiben immer unverändert
+- Vergessene Umlaute: offnen → öffnen, ware → wäre (bei schon/schön bleibt dein Wort)
 - ⌫ direkt nach einer Korrektur stellt das getippte Wort wieder her
 - ⌫ gedrückt halten löscht ganze Wörter
 

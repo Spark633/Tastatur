@@ -40,8 +40,6 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         fun onSuggestionLongPress(index: Int)
         /** Formatieren: "bold", "strike", "bullet", "wa_bold" … oder "off" (Stil beenden). */
         fun onFormat(code: String)
-        /** Websuche in der Leiste abbrechen. */
-        fun onSearchCancel()
         /** Vorschlag angetippt: 0 = links, 1 = Mitte, 2 = rechts. */
         fun onSuggestion(index: Int)
         fun onKeyFeedback()
@@ -72,7 +70,6 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var message: String? = null
     private var slots: List<String> = emptyList()
     private var styleLabel: String? = null
-    private var searchText: String? = null
     private var lettersMode = Mode.LETTERS
 
     // Zwischenablage-Ansicht
@@ -173,28 +170,6 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         if (list != slots) {
             slots = list
             invalidate()
-        }
-    }
-
-    /** Websuche: Leiste zeigt den Suchbegriff (null = keine Suche). */
-    fun setSearchText(text: String?) {
-        val starting = searchText == null && text != null
-        searchText = text
-        cursorOn = true
-        removeCallbacks(blink)
-        if (text != null) postDelayed(blink, 530)
-        if (starting) cursorOn = true
-        invalidate()
-    }
-
-    /** Blinkender Cursor im Suchfeld. */
-    private var cursorOn = true
-    private val blink: Runnable = object : Runnable {
-        override fun run() {
-            if (searchText == null) return
-            cursorOn = !cursorOn
-            invalidate()
-            postDelayed(this, 530)
         }
     }
 
@@ -501,44 +476,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         invalidate()
     }
 
-    private val searchPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE; textAlign = Paint.Align.LEFT; textSize = sp(17f)
-    }
-
-    /** Leiste als Suchfeld: 🔍 Begriff|   ✕ */
-    private fun drawSearchBar(canvas: Canvas, query: String) {
-        val box = RectF(6 * dp, 5 * dp, width - barHeight - 4 * dp, barHeight - 5 * dp)
-        canvas.drawRoundRect(box, box.height() / 2, box.height() / 2, keyPaint)
-        val avail = box.width() - 48 * dp
-        var shown = if (query.isEmpty()) "Suchbegriff eingeben …" else query
-        // Lange Begriffe: das Ende bleibt sichtbar
-        while (shown.length > 1 && searchPaint.measureText(shown) > avail) shown = shown.drop(1)
-        val textX = box.left + 12 * dp
-        val textY = centerY(searchPaint, box.centerY())
-        val prefix = "🔍  "
-        searchPaint.alpha = 0xFF
-        canvas.drawText(prefix, textX, textY, searchPaint)
-        val startX = textX + searchPaint.measureText(prefix)
-        if (query.isEmpty()) {
-            searchPaint.alpha = 0x90
-            canvas.drawText(shown, startX + 4 * dp, textY, searchPaint)
-            searchPaint.alpha = 0xFF
-        } else {
-            canvas.drawText(shown, startX, textY, searchPaint)
-        }
-        // Cursor: blinkender Strich hinter dem Text
-        if (cursorOn) {
-            val cx = if (query.isEmpty()) startX + 1 * dp else startX + searchPaint.measureText(shown) + 2 * dp
-            canvas.drawRect(cx, box.top + 9 * dp, cx + 2 * dp, box.bottom - 9 * dp, accentPaint)
-        }
-        canvas.drawText("✕", width - barHeight / 2f, centerY(barTextPaint, barHeight / 2f), barTextPaint)
-    }
-
     private fun drawBar(canvas: Canvas) {
-        searchText?.let {
-            drawSearchBar(canvas, it)
-            return
-        }
         // Zwischenablage-Symbol
         val cx = clipRect.centerX()
         val cy = clipRect.centerY()
@@ -758,7 +696,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             val t = Touch(id, null, true, x, y)
             touches[id] = t
             if (mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT && message == null &&
-                styleLabel == null && searchText == null) {
+                styleLabel == null) {
                 val i = slotRects().indexOfFirst { it.contains(x, y) }
                 if (i >= 0 && slots.getOrNull(i)?.isNotEmpty() == true) postDelayed(t.longPress, 500)
             }
@@ -869,10 +807,6 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
         if (t.onBar) {
             if (t.barLong) return
-            if (searchText != null) {
-                if (t.lastX > width - barHeight) listener.onSearchCancel()
-                return
-            }
             if (clipRect.contains(t.lastX, t.lastY) && clipRect.contains(t.x0, t.y0)) {
                 if (mode == Mode.CLIPBOARD) {
                     setMode(lettersMode)

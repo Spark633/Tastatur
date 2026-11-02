@@ -54,7 +54,8 @@ object Layouts {
         text = c.toString(),
         up = up,
         down = down,
-        longPress = accents(lang)[c] ?: listOfNotNull(up ?: down),
+        // Umlaute/Akzente und zusätzlich das Wisch-Zeichen (u → ü 7)
+        longPress = ((accents(lang)[c] ?: emptyList()) + listOfNotNull(up ?: down)).distinct(),
         cased = true,
     )
 

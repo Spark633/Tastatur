@@ -10,3 +10,6 @@ Die Häufigkeiten wurden mit den Listen aus FrequencyWords (Hermit Dave,
 auf Basis von OpenSubtitles) ergänzt, damit Alltagswörter wie „ich“ oder
 „hallo“ passend gewichtet sind. Lizenz der Daten: CC BY-SA 4.0
 https://github.com/hermitdave/FrequencyWords
+Häufige Alltagswörter, die in den AOSP-Listen fehlen (z. B. „öffnen“), wurden
+aus FrequencyWords ergänzt (ohne englische Wörter, Schimpfwörter und OCR-Fehler).
+Erzeugt mit tools/build_dicts.py.

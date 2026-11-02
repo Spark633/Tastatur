@@ -23,6 +23,10 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     private lateinit var prefs: Prefs
     private lateinit var clipHistory: ClipboardHistory
     private lateinit var userDict: UserDictionary
+    private lateinit var nextWords: NextWordModel
+
+    /** Zuletzt gelöschter Text, zum Wiederherstellen. */
+    private val deletedText = StringBuilder()
     private var keyboard: KeyboardView? = null
     private var language = Language.DE
     private var isTextField = true
@@ -83,6 +87,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         prefs = Prefs(this)
         clipHistory = ClipboardHistory.get(this)
         userDict = UserDictionary.get(this)
+        nextWords = NextWordModel.get(this)
         clipboard?.addPrimaryClipChangedListener(clipListener)
         prefs.registerListener(prefListener)
     }
@@ -172,6 +177,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         lastCorrection = null
         autoSpacePending = false
         activeStyle = null
+        deletedText.setLength(0)
         v.setStyleIndicator(null)
         current = null // eigene Wörter könnten sich in den Einstellungen geändert haben
         languageChanged()
@@ -187,6 +193,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
+        nextWords.save()
         keyboard?.cancelTouches()
     }
 
@@ -295,14 +302,88 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         return Dictionary.Suggestions(word, cased, listOf("\"$word\"", cased, ""))
     }
 
+    // --- Wiederherstellen ---
+
+    /** Genug gelöscht, dass sich ein Angebot lohnt (mehrere Wörter oder längerer Text). */
+    private fun restoreAvailable() =
+        deletedText.length >= RESTORE_MIN_CHARS ||
+            deletedText.trim().split(Regex("\\s+")).count { it.isNotEmpty() } >= 3
+
+    private fun rememberDeleted(text: CharSequence) {
+        if (text.isEmpty()) return
+        deletedText.insert(0, text)
+        if (deletedText.length > 5000) deletedText.setLength(5000)
+    }
+
+    /** Neue Eingabe: kleine Löschungen (Tippfehler) vergessen, größere bis zum nächsten Wort anbieten. */
+    private fun forgetDeleted(wordFinished: Boolean) {
+        if (!restoreAvailable() || wordFinished) deletedText.setLength(0)
+    }
+
+    private fun restoreDeleted() {
+        val text = deletedText.toString()
+        deletedText.setLength(0)
+        currentInputConnection?.commitText(text, 1)
+        keyboard?.showMessage("Wiederhergestellt")
+    }
+
+    // --- Nächstes Wort ---
+
+    /** Nach einem fertigen Wort das Wortpaar lernen (Trennzeichen steht schon). */
+    private fun learnPair() {
+        if (!suggestOn || !prefs.predictNext) return
+        val before = currentInputConnection?.getTextBeforeCursor(80, 0)?.toString() ?: return
+        val tokens = before.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+        if (tokens.isEmpty() || (tokens.size < 2 && before.length >= 80)) return
+        val last = tokens.last().trim { !it.isLetterOrDigit() }
+        if (last.isEmpty() || !last[0].isLetter() || last.any { Character.isSurrogate(it) }) return
+        val prevRaw = tokens.getOrNull(tokens.size - 2)
+        val prev = when {
+            prevRaw == null || prevRaw.last() in ".!?" -> "^"
+            else -> prevRaw.trim { !it.isLetterOrDigit() }.ifEmpty { "^" }
+        }
+        // Am Satzanfang großgeschriebene Wörter klein lernen, wenn das Wörterbuch sie klein kennt
+        val word = if (prev == "^" && dict?.contains(last.lowercase()) == true) last.lowercase() else last
+        nextWords.record(language, prev, word)
+    }
+
+    /** Vorhersagen für die Stelle hinter dem Cursor (nur direkt nach einem Leerzeichen). */
+    private fun predictions(): List<String> {
+        val before = currentInputConnection?.getTextBeforeCursor(80, 0)?.toString() ?: return emptyList()
+        val ctx = when {
+            before.isEmpty() -> "^"
+            !before.last().isWhitespace() -> return emptyList()
+            else -> {
+                val t = before.trim().split(Regex("\\s+")).lastOrNull { it.isNotEmpty() }
+                when {
+                    t == null -> "^"
+                    t.last() in ".!?" -> "^"
+                    else -> t.trim { !it.isLetterOrDigit() }.ifEmpty { return emptyList() }
+                }
+            }
+        }
+        val blocked = userDict.blockedWords().toHashSet()
+        val list = nextWords.predict(language, ctx, 5).filter { !blocked.contains(it.lowercase()) }.take(3)
+        val cased = if (ctx == "^") list.map { w -> w.replaceFirstChar { it.uppercaseChar() } } else list
+        if (cased.isEmpty()) return emptyList()
+        return listOf(cased.getOrElse(1) { "" }, cased[0], cased.getOrElse(2) { "" })
+    }
+
     private fun updateSuggestions() {
         val v = keyboard ?: return
         val d = dict
-        val word = if (suggestOn) currentWord() else null
-        if (word == null || d == null) {
+        if (restoreAvailable()) {
             current = null
             suggestSeq++
-            v.setSuggestions(emptyList())
+            v.setSuggestions(listOf("", RESTORE_LABEL, ""))
+            return
+        }
+        val word = if (suggestOn) currentWord() else null
+        if (word == null || d == null) {
+            suggestSeq++
+            val preds = if (suggestOn && prefs.predictNext && word == null) predictions() else emptyList()
+            current = if (preds.isEmpty()) null else Dictionary.Suggestions("", null, preds)
+            v.setSuggestions(preds)
             return
         }
         if (current?.typed == word) return
@@ -393,6 +474,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         }
         lastCorrection = null
         autoSpacePending = false
+        forgetDeleted(false)
         ic.commitText(text, 1)
     }
 
@@ -408,12 +490,14 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         autoSpacePending = false
         val prev = ic.getTextBeforeCursor(1, 0)?.toString()?.firstOrNull()
         val word = currentWord()
+        forgetDeleted(true)
         val corrected = correctAndCommit(p)
         if (!corrected) {
             noteWordEnd(word)
             lastCorrection = null
             ic.commitText(p, 1)
         }
+        if (word != null) learnPair()
         val wantsSpace = prefs.autoSpacePunct && isTextField &&
             (afterPunct || (prev != null && (prev.isLetter() || prev in ")\"'")))
         val nextIsSpace = ic.getTextAfterCursor(1, 0)?.toString()?.firstOrNull()?.isWhitespace() == true
@@ -425,7 +509,20 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onSuggestion(index: Int) {
+        if (restoreAvailable()) {
+            if (index == 1) restoreDeleted()
+            return
+        }
         val s = current ?: return
+        if (s.typed.isEmpty()) {
+            // Vorhersage: Wort mit Leerzeichen anhängen
+            val chosen = s.slots.getOrNull(index)?.takeIf { it.isNotEmpty() } ?: return
+            currentInputConnection?.commitText("$chosen ", 1)
+            learnPair()
+            current = null
+            lastSpaceTime = SystemClock.uptimeMillis()
+            return
+        }
         val word = currentWord() ?: return
         if (s.typed != word) return
         val chosen = if (index == 0 && s.correction != null) {
@@ -440,6 +537,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         ic.deleteSurroundingText(word.length, 0)
         ic.commitText("$chosen ", 1)
         ic.endBatchEdit()
+        forgetDeleted(true)
+        learnPair()
         lastCorrection = null
         autoSpacePending = false
         current = null
@@ -469,14 +568,22 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         autoSpacePending = false
         val ic = currentInputConnection ?: return
         val selected = ic.getSelectedText(0)
-        if (!selected.isNullOrEmpty()) ic.commitText("", 1)
-        else sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
+        if (!selected.isNullOrEmpty()) {
+            rememberDeleted(selected)
+            ic.commitText("", 1)
+        } else {
+            val b = ic.getTextBeforeCursor(2, 0)?.toString().orEmpty()
+            if (b.isNotEmpty()) rememberDeleted(if (b.length == 2 && Character.isLowSurrogate(b[1])) b else b.takeLast(1))
+            sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
+        }
     }
 
     override fun onDeleteWord() {
         lastCorrection = null
         val ic = currentInputConnection ?: return
-        if (!ic.getSelectedText(0).isNullOrEmpty()) {
+        val selected = ic.getSelectedText(0)
+        if (!selected.isNullOrEmpty()) {
+            rememberDeleted(selected)
             ic.commitText("", 1)
             return
         }
@@ -490,13 +597,18 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             i -= if (i > 1 && Character.isLowSurrogate(before[i - 1])) 2 else 1
         }
         val count = before.length - i
-        if (count > 0) ic.deleteSurroundingText(count, 0)
+        if (count > 0) {
+            rememberDeleted(before.substring(i))
+            ic.deleteSurroundingText(count, 0)
+        }
     }
 
     override fun onEnter() {
         val ic = currentInputConnection ?: return
         val word = currentWord()
         if (!(prefs.correctOnEnter && correctAndCommit(""))) noteWordEnd(word)
+        if (word != null) learnPair()
+        forgetDeleted(true)
         lastCorrection = null
         autoSpacePending = false
         val info = currentInputEditorInfo
@@ -534,13 +646,16 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             return
         }
         val word = currentWord()
+        forgetDeleted(true)
         if (correctAndCommit(" ")) {
             lastSpaceTime = now
+            learnPair()
             return
         }
         noteWordEnd(word)
         lastCorrection = null
         ic.commitText(" ", 1)
+        if (word != null) learnPair()
         lastSpaceTime = now
     }
 
@@ -684,6 +799,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     companion object {
         private const val PUNCTUATION = ".,!?;:"
+        private const val RESTORE_MIN_CHARS = 15
+        const val RESTORE_LABEL = "↶ Wiederherstellen"
 
         /** Name → Such-URL (der Begriff wird angehängt). */
         val SEARCH_ENGINES = linkedMapOf(

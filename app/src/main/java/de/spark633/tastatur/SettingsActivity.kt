@@ -231,6 +231,16 @@ class SettingsActivity : Activity() {
             prefs.undoCorrection = it
         })
         root.addView(switch("Neue Wörter automatisch lernen", prefs.learnWords) { prefs.learnWords = it })
+        root.addView(switch("Nächstes Wort vorschlagen (lernt aus deinem Schreiben)", prefs.predictNext) {
+            prefs.predictNext = it
+        })
+        root.addView(button("Gelernte Wortfolgen vergessen") {
+            AlertDialog.Builder(this)
+                .setMessage("Alles vergessen, was die Tastatur über deine Wortfolgen gelernt hat?")
+                .setPositiveButton("Vergessen") { _, _ -> NextWordModel.get(this).clear() }
+                .setNegativeButton("Abbrechen", null)
+                .show()
+        })
 
         root.addView(header("Eigene Wörter"))
         root.addView(info(
@@ -566,6 +576,8 @@ class SettingsActivity : Activity() {
                 "• Zwei Leerzeichen: Punkt am Satzende\n" +
                 "• Vorschlag antippen: einsetzen. Lange drücken: nicht mehr vorschlagen\n" +
                 "• ⌫ direkt nach einer Korrektur: dein Wort zurück\n" +
+                "• Versehentlich viel gelöscht: „↶ Wiederherstellen“ in der Leiste antippen\n" +
+                "• Nach einem Leerzeichen: Vorschläge fürs nächste Wort (lernt aus deinem Schreiben)\n" +
                 "• zb → z.B., oä → o.Ä., idr → i.d.R.\n" +
                 "• 📋 Zwischenablage, ⚙ Menü mit Einstellungen, Größe und Aussehen\n" +
                 "• ⚙ → 🔍 Suche: Browser öffnen, markierter Text wird gesucht\n" +

@@ -36,9 +36,12 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Vergessene Umlaute: offnen → öffnen, ware → wäre (bei schon/schön bleibt dein Wort)
 - ⌫ direkt nach einer Korrektur stellt das getippte Wort wieder her
 - ⌫ gedrückt halten löscht ganze Wörter
+- Versehentlich gelöscht: „↶ Wiederherstellen“ in der Leiste holt den Text zurück
+- Nächstes Wort vorhersagen: lernt aus deinem Schreiben, welche Wörter aufeinander folgen (nur auf dem Handy)
 
 Wörterbücher: siehe `app/src/main/assets/dict/LIZENZ.txt`.
 
 ## Geplant
 
-6. Nächstes Wort vorhersagen, gelöschten Text wiederherstellen
+Siehe [WUNSCHLISTE.md](WUNSCHLISTE.md).
+

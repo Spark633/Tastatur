@@ -76,6 +76,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("correct_on_enter", true)
         set(v) = sp.edit().putBoolean("correct_on_enter", v).apply()
 
+    /** Nächstes Wort vorschlagen (lernt aus deinem Schreiben). */
+    var predictNext: Boolean
+        get() = sp.getBoolean("predict_next", true)
+        set(v) = sp.edit().putBoolean("predict_next", v).apply()
+
     /** Unbekannte Wörter, die du öfter tippst, automatisch lernen. */
     var learnWords: Boolean
         get() = sp.getBoolean("learn_words", true)

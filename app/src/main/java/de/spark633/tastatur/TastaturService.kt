@@ -418,6 +418,14 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         keyboard?.showMessage(language.displayName)
     }
 
+    override fun onOpenSettings() {
+        requestHideSelf(0)
+        startActivity(
+            android.content.Intent(this, SettingsActivity::class.java)
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+    }
+
     override fun onClipboardOpen() {
         captureClip()
     }

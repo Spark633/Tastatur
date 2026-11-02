@@ -19,6 +19,7 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Leertaste seitlich wischen: Sprache wechseln (Deutsch, English, Nederlands)
 - Emoticon-Taste (^.^, :D, ¯\_(ツ)_/¯ …)
 - Zwischenablage-Verlauf (letzte 30 Einträge, anheften, löschen, leeren), Knopf links oder rechts
+- Zahnrad in der Leiste öffnet die Einstellungen (gegenüber der Zwischenablage)
 - Größe direkt auf der Tastatur durch Ziehen anpassen, Abstand zu den Systemknöpfen
 - Automatische Großschreibung, doppeltes Leerzeichen → Punkt
 - Wortvorschläge (Deutsch, Englisch, Niederländisch) mit Vervollständigung

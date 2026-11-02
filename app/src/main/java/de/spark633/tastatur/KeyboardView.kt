@@ -34,6 +34,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         fun onLanguageSwipe(direction: Int)
         /** Zwischenablage wird geöffnet: aktuellen Inhalt in den Verlauf übernehmen. */
         fun onClipboardOpen()
+        fun onOpenSettings()
         /** Vorschlag angetippt: 0 = links, 1 = Mitte, 2 = rechts. */
         fun onSuggestion(index: Int)
         fun onKeyFeedback()
@@ -86,6 +87,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     private var keyRects = listOf<KeyRect>()
     private val clipRect = RectF()
+    private val settingsRect = RectF()
 
     // --- Farben ---
     private val bgPaint = Paint().apply { color = Color.rgb(0x1E, 0x27, 0x2B) }
@@ -239,7 +241,13 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         }
         keyRects = list
         val cs = barHeight
-        if (clipboardRight) clipRect.set(w - cs, 0f, w, cs) else clipRect.set(0f, 0f, cs, cs)
+        if (clipboardRight) {
+            clipRect.set(w - cs, 0f, w, cs)
+            settingsRect.set(0f, 0f, cs, cs)
+        } else {
+            clipRect.set(0f, 0f, cs, cs)
+            settingsRect.set(w - cs, 0f, w, cs)
+        }
     }
 
     private fun keyAt(x: Float, y: Float): KeyRect? {
@@ -407,6 +415,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         canvas.drawLine(cx - 4 * dp, cy + 3 * dp, cx + 4 * dp, cy + 3 * dp, iconPaint)
 
         if (mode == Mode.CLIPBOARD) canvas.drawCircle(cx, cy, barHeight * 0.42f, funcPaint)
+        drawGear(canvas, settingsRect.centerX(), settingsRect.centerY())
         val text = message ?: if (mode == Mode.CLIPBOARD) "Zwischenablage" else null
         if (text != null) {
             canvas.drawText(text, width / 2f, centerY(barTextPaint, barHeight / 2f), barTextPaint)
@@ -433,6 +442,24 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         val cs = barHeight
         val w = (width - 2 * cs) / 3f
         return (0 until 3).map { RectF(cs + it * w, 0f, cs + (it + 1) * w, barHeight) }
+    }
+
+    /** Zahnrad: Ring mit acht Zähnen. */
+    private fun drawGear(canvas: Canvas, cx: Float, cy: Float) {
+        val inner = 5.5f * dp
+        val outer = 9f * dp
+        val tooth = 11.5f * dp
+        canvas.drawCircle(cx, cy, inner, iconPaint)
+        canvas.drawCircle(cx, cy, outer, iconPaint)
+        val old = iconPaint.strokeWidth
+        iconPaint.strokeWidth = 3.2f * dp
+        for (k in 0 until 8) {
+            val a = Math.PI * k / 4
+            val c = Math.cos(a).toFloat()
+            val s = Math.sin(a).toFloat()
+            canvas.drawLine(cx + c * outer, cy + s * outer, cx + c * tooth, cy + s * tooth, iconPaint)
+        }
+        iconPaint.strokeWidth = old
     }
 
     private fun centerY(p: Paint, cy: Float) = cy - (p.descent() + p.ascent()) / 2f
@@ -686,6 +713,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                     listener.onClipboardOpen()
                     setMode(Mode.CLIPBOARD)
                 }
+            } else if (settingsRect.contains(t.lastX, t.lastY) && settingsRect.contains(t.x0, t.y0)) {
+                listener.onOpenSettings()
             } else if (mode != Mode.CLIPBOARD && message == null) {
                 val rects = slotRects()
                 val i = rects.indexOfFirst { it.contains(t.lastX, t.lastY) }

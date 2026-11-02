@@ -85,6 +85,7 @@ class SettingsActivity : Activity() {
 
         // --- Leiste ---
         root.addView(header("Zwischenablage-Knopf"))
+        root.addView(info("Das Zahnrad für diese Einstellungen sitzt auf der anderen Seite."))
         val group = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL }
         val left = RadioButton(this).apply { text = "Links"; id = View.generateViewId() }
         val right = RadioButton(this).apply { text = "Rechts"; id = View.generateViewId() }

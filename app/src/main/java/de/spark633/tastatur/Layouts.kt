@@ -95,12 +95,13 @@ object Layouts {
         "\"" to listOf("„", "“", "”", "«", "»"),
         "'" to listOf("‚", "‘", "’"),
         "!" to listOf("¡"),
-        "?" to listOf("¿"),
         "*" to listOf("•", "×"),
         "/" to listOf("÷", "\\"),
         "%" to listOf("‰"),
         "=" to listOf("≠", "≈"),
         "©" to listOf("®", "™"),
+        "°" to listOf("℃", "℉"),
+        "?" to listOf("¿", "!", "¡"),
     )
 
     private fun chars(s: String) = s.split(" ").map { Key(it, longPress = SYMBOL_EXTRAS[it] ?: emptyList()) }
@@ -108,7 +109,8 @@ object Layouts {
     fun symbols(): List<List<Key>> = listOf(
         chars("1 2 3 4 5 6 7 8 9 0"),
         chars("@ # € _ & - + ( ) /"),
-        listOf(Key("=\\<", Action.TO_SYMBOLS2, width = 1.5f)) + chars("* \" ' : ; ! ?") + deleteKey,
+        // ° eigene Taste; ! gibt es auf der Punkt-Taste (hoch wischen)
+        listOf(Key("=\\<", Action.TO_SYMBOLS2, width = 1.5f)) + chars("* \" ' : ; ° ?") + deleteKey,
         bottomRow(Key("ABC", Action.TO_LETTERS, width = 1.5f)),
     )
 

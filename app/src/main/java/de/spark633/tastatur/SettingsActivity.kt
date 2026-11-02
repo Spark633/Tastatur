@@ -426,7 +426,7 @@ class SettingsActivity : Activity() {
         sliderGroup = GROUP_IMAGE
         root.addView(slider("Bild abdunkeln", 0, 90, prefs.bgDim, "%") { prefs.bgDim = it }
             .also { dimBar = it.getChildAt(1) as android.widget.SeekBar })
-        root.addView(slider("Zoom", 100, 300, prefs.bgZoom, "%") { prefs.bgZoom = it }
+        root.addView(slider("Zoom", 0, 200, prefs.bgZoom - 100, "%") { prefs.bgZoom = it + 100 }
             .also { zoomBar = it.getChildAt(1) as android.widget.SeekBar })
         root.addView(slider("Ausschnitt senkrecht (0 = oben, 100 = unten)", 0, 100, prefs.bgPosition, "") { prefs.bgPosition = it }
             .also { positionBar = it.getChildAt(1) as android.widget.SeekBar })

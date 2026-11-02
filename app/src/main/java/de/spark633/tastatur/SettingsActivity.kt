@@ -612,7 +612,7 @@ class SettingsActivity : Activity() {
 
     /** Aufklapp-Liste mit Farbpunkt vor jedem Eintrag. */
     private fun colorDropdown(names: List<String>, values: List<Int>, selected: Int, onSelect: (Int) -> Unit) =
-        android.widget.Spinner(this).apply {
+        android.widget.Spinner(this, android.widget.Spinner.MODE_DIALOG).apply {
             adapter = object : android.widget.ArrayAdapter<String>(
                 this@SettingsActivity, android.R.layout.simple_spinner_item, names
             ) {
@@ -637,7 +637,7 @@ class SettingsActivity : Activity() {
 
     /** Aufklapp-Liste (braucht weniger Platz als Auswahlknöpfe). */
     private fun dropdown(options: List<String>, selected: Int, onSelect: (Int) -> Unit) =
-        android.widget.Spinner(this).apply {
+        android.widget.Spinner(this, android.widget.Spinner.MODE_DIALOG).apply {
             adapter = android.widget.ArrayAdapter(this@SettingsActivity, android.R.layout.simple_spinner_item, options)
                 .also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
             setSelection(selected.coerceIn(0, options.lastIndex), false)

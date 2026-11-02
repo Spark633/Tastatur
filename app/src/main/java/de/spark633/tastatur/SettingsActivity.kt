@@ -102,15 +102,24 @@ class SettingsActivity : Activity() {
 
     private fun buildMain() {
         title = "Tastatur"
-        root.addView(header("Einrichtung"))
+        // Einrichtung: eingeklappt, Antippen klappt auf
+        setupHeader = header("▸ Einrichtung").apply {
+            setOnClickListener {
+                setupExpanded = !setupExpanded
+                updateStatus()
+            }
+        }
+        root.addView(setupHeader)
+        setupBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         status = TextView(this).apply { textSize = 15f; setPadding(0, 0, 0, (8 * dp).toInt()) }
-        root.addView(status)
-        root.addView(button("1. Tastatur in den Android-Einstellungen aktivieren") {
+        setupBox?.addView(status)
+        setupBox?.addView(button("1. Tastatur in den Android-Einstellungen aktivieren") {
             startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS))
         })
-        root.addView(button("2. Tastatur auswählen") {
+        setupBox?.addView(button("2. Tastatur auswählen") {
             getSystemService(InputMethodManager::class.java)?.showInputMethodPicker()
         })
+        root.addView(setupBox)
         addTestField()
 
         root.addView(header("Einstellungen"))
@@ -124,6 +133,11 @@ class SettingsActivity : Activity() {
         root.addView(button("❓  Hilfe – Bedienung") { open("help") })
     }
 
+    private var setupHeader: TextView? = null
+    private var setupBox: LinearLayout? = null
+    private var setupExpanded = false
+    private var setupAutoOpened = false
+
     private fun updateStatus() {
         val st = status ?: return
         val imm = getSystemService(InputMethodManager::class.java)
@@ -135,6 +149,18 @@ class SettingsActivity : Activity() {
             enabled -> "⚠️ Aktiviert, aber noch nicht ausgewählt → Schritt 2."
             else -> "❌ Noch nicht aktiviert → Schritt 1."
         }
+        // Noch nicht fertig eingerichtet: einmal von selbst aufklappen
+        if (!selected && !setupAutoOpened) {
+            setupExpanded = true
+            setupAutoOpened = true
+        }
+        val icon = when {
+            selected -> "✅"
+            enabled -> "⚠️"
+            else -> "❌"
+        }
+        setupHeader?.text = (if (setupExpanded) "▾" else "▸") + " Einrichtung  $icon"
+        setupBox?.visibility = if (setupExpanded) View.VISIBLE else View.GONE
     }
 
     // ------------------------------------------------------------------

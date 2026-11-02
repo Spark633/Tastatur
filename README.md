@@ -24,6 +24,7 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Wortvorschläge (Deutsch, Englisch, Niederländisch) mit Vervollständigung
 - Tippfehler-Korrektur beim Leerzeichen oder Satzzeichen, richtige Wörter bleiben immer unverändert
 - ⌫ direkt nach einer Korrektur stellt das getippte Wort wieder her
+- ⌫ gedrückt halten löscht ganze Wörter
 
 Wörterbücher: siehe `app/src/main/assets/dict/LIZENZ.txt`.
 

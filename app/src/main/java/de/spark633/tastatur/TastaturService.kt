@@ -350,6 +350,26 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         else sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
     }
 
+    override fun onDeleteWord() {
+        lastCorrection = null
+        val ic = currentInputConnection ?: return
+        if (!ic.getSelectedText(0).isNullOrEmpty()) {
+            ic.commitText("", 1)
+            return
+        }
+        val before = ic.getTextBeforeCursor(64, 0)?.toString() ?: return
+        var i = before.length
+        while (i > 0 && before[i - 1].isWhitespace()) i--
+        if (i > 0 && (before[i - 1].isLetterOrDigit() || before[i - 1] in "'-")) {
+            while (i > 0 && (before[i - 1].isLetterOrDigit() || before[i - 1] in "'-")) i--
+        } else if (i > 0) {
+            // Satzzeichen oder Emoji: ein Zeichen (Emojis bestehen aus zwei Teilen)
+            i -= if (i > 1 && Character.isLowSurrogate(before[i - 1])) 2 else 1
+        }
+        val count = before.length - i
+        if (count > 0) ic.deleteSurroundingText(count, 0)
+    }
+
     override fun onEnter() {
         lastCorrection = null
         val ic = currentInputConnection ?: return

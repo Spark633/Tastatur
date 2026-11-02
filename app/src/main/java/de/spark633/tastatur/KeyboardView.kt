@@ -27,6 +27,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     interface Listener {
         fun onText(text: String)
         fun onDelete()
+        /** ⌫ gedrückt gehalten: ganzes Wort löschen. */
+        fun onDeleteWord()
         fun onEnter()
         fun onSpace()
         fun onLanguageSwipe(direction: Int)
@@ -540,8 +542,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         val longPress = Runnable { startPopup(this) }
         val repeat: Runnable = object : Runnable {
             override fun run() {
-                listener.onDelete()
-                postDelayed(this, 50)
+                listener.onDeleteWord()
+                postDelayed(this, 280)
             }
         }
     }

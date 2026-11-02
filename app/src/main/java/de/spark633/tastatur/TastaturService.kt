@@ -198,11 +198,17 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             v.setAutoShift(false)
             return
         }
-        val before = currentInputConnection?.getTextBeforeCursor(3, 0)?.toString() ?: return
+        val longer = currentInputConnection?.getTextBeforeCursor(12, 0)?.toString() ?: return
+        val before = longer.takeLast(3)
         val trimmed = before.trimEnd()
-        val caps = (trimmed.isEmpty() && before.length < 3) ||
+        var caps = (trimmed.isEmpty() && longer.length < 3) ||
             before.endsWith("\n") ||
             (before.length > trimmed.length && trimmed.isNotEmpty() && trimmed.last() in ".!?")
+        // Nach "z.B." oder "d.h." geht der Satz weiter
+        if (caps && !before.endsWith("\n")) {
+            val lastToken = longer.trimEnd().substringAfterLast(' ').substringAfterLast('\n').lowercase()
+            if (Dictionary.DOT_ABBREVIATIONS_DE.values.any { it.lowercase() == lastToken }) caps = false
+        }
         v.setAutoShift(caps)
     }
 
@@ -250,6 +256,14 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     private fun isKnown(word: String) = ignored.contains(word.lowercase())
 
+    /** "zb" → "z.B." (nur Deutsch). Am Satzanfang großgeschrieben: "Z.B.". */
+    private fun dotAbbreviation(word: String): Dictionary.Suggestions? {
+        if (language != Language.DE || isKnown(word)) return null
+        val e = Dictionary.DOT_ABBREVIATIONS_DE[word.lowercase()] ?: return null
+        val cased = if (word[0].isUpperCase()) e.replaceFirstChar { it.uppercaseChar() } else e
+        return Dictionary.Suggestions(word, cased, listOf("\"$word\"", cased, ""))
+    }
+
     private fun updateSuggestions() {
         val v = keyboard ?: return
         val d = dict
@@ -261,6 +275,12 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             return
         }
         if (current?.typed == word) return
+        dotAbbreviation(word)?.let {
+            suggestSeq++
+            current = it
+            v.setSuggestions(it.slots)
+            return
+        }
         val seq = ++suggestSeq
         val nb = neighbors
         val ign = HashSet(ignored)
@@ -280,15 +300,17 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         if (!autocorrectOn) return false
         val d = dict ?: return false
         val word = currentWord() ?: return false
-        val s = current?.takeIf { it.typed == word } ?: d.suggest(word, neighbors, ::isKnown)
+        val s = dotAbbreviation(word) ?: current?.takeIf { it.typed == word } ?: d.suggest(word, neighbors, ::isKnown)
         val corr = s.correction ?: return false
         if (corr == word) return false
+        // "zb." getippt: kein doppelter Punkt hinter "z.B."
+        val sep = if (separator == "." && corr.endsWith(".")) "" else separator
         val ic = currentInputConnection ?: return false
         ic.beginBatchEdit()
         ic.deleteSurroundingText(word.length, 0)
-        ic.commitText(corr + separator, 1)
+        ic.commitText(corr + sep, 1)
         ic.endBatchEdit()
-        lastCorrection = Triple(word, corr, separator)
+        lastCorrection = Triple(word, corr, sep)
         current = null
         return true
     }

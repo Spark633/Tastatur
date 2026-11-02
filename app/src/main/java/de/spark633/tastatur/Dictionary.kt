@@ -177,6 +177,20 @@ class Dictionary private constructor(
             return Dictionary(words.toTypedArray(), freqs.toIntArray())
         }
 
+        /** Deutsche Abkürzungen, die mit Punkten geschrieben werden. */
+        val DOT_ABBREVIATIONS_DE = mapOf(
+            "zb" to "z.B.",
+            "oä" to "o.Ä.",
+            "uä" to "u.Ä.",
+            "idr" to "i.d.R.",
+            "dh" to "d.h.",
+            "ua" to "u.a.",
+            "uu" to "u.U.",
+            "zt" to "z.T.",
+            "va" to "v.a.",
+            "uvm" to "u.v.m.",
+        )
+
         /** Buchstabe ohne Akzent: ä → a, é → e, ß → s. */
         fun base(c: Char): Char = when (c) {
             'ä', 'á', 'à', 'â', 'å' -> 'a'

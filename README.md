@@ -23,7 +23,8 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Größe direkt auf der Tastatur durch Ziehen anpassen, Abstand zu den Systemknöpfen
 - Automatische Großschreibung, doppeltes Leerzeichen → Punkt
 - Wortvorschläge (Deutsch, Englisch, Niederländisch) mit Vervollständigung
-- Abkürzungen wie vllt, bzw, bzgl, zb, lg, lol, wss werden nicht korrigiert
+- Abkürzungen wie vllt, bzw, bzgl, lg, lol, wss werden nicht korrigiert
+- Punkt-Abkürzungen: zb → z.B., oä → o.Ä., idr → i.d.R., dh → d.h. …
 - Tippfehler-Korrektur beim Leerzeichen oder Satzzeichen, richtige Wörter bleiben immer unverändert
 - ⌫ direkt nach einer Korrektur stellt das getippte Wort wieder her
 - ⌫ gedrückt halten löscht ganze Wörter

@@ -91,7 +91,9 @@ object Background {
     /** Ein gespeichertes Bild als Hintergrund setzen. */
     fun select(context: Context, name: String) {
         val prefs = Prefs(context)
+        prefs.rememberImageSettings() // Werte des bisherigen Bildes sichern
         prefs.bgFile = name
+        prefs.loadImageSettings(name) // eigene Werte des Bildes (Abdunkeln, Zoom, Ausschnitt)
         file(context, name).setLastModified(System.currentTimeMillis()) // nach vorne im Verlauf
         prefs.bgVersion = System.currentTimeMillis()
     }
@@ -107,13 +109,17 @@ object Background {
     fun delete(context: Context, name: String) {
         if (Prefs(context).bgFile == name) remove(context)
         file(context, name).delete()
+        Prefs(context).forgetImageSettings(name)
     }
 
     /** Älteste Bilder löschen; das aktive und in Profilen benutzte bleiben. */
     private fun trim(context: Context) {
         val keep = Profiles(context).usedBackgrounds() + Prefs(context).bgFile
         val all = history(context)
-        all.drop(MAX_HISTORY).filter { it !in keep }.forEach { file(context, it).delete() }
+        all.drop(MAX_HISTORY).filter { it !in keep }.forEach {
+            file(context, it).delete()
+            Prefs(context).forgetImageSettings(it)
+        }
     }
 
     fun current(context: Context): File? {

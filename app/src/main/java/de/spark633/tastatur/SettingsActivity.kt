@@ -370,6 +370,7 @@ class SettingsActivity : Activity() {
     private var positionBar: android.widget.SeekBar? = null
     private var positionXBar: android.widget.SeekBar? = null
     private var zoomBar: android.widget.SeekBar? = null
+    private var dimBar: android.widget.SeekBar? = null
 
     /** Vorschau und Ausschnitt-Regler bei jeder Änderung aktualisieren. */
     private val previewListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
@@ -377,6 +378,7 @@ class SettingsActivity : Activity() {
         if (key == "bg_position") positionBar?.progress = prefs.bgPosition
         if (key == "bg_position_x") positionXBar?.progress = prefs.bgPositionX
         if (key == "bg_zoom") zoomBar?.progress = prefs.bgZoom - 100
+        if (key == "bg_dim") dimBar?.progress = prefs.bgDim
     }
 
     private fun buildDesign() {
@@ -413,7 +415,7 @@ class SettingsActivity : Activity() {
             Background.remove(this)
             updateBgStatus()
         })
-        root.addView(info("Frühere Bilder: antippen = verwenden, lange drücken = löschen"))
+        root.addView(info("Frühere Bilder: antippen = verwenden, lange drücken = löschen. Jedes Bild merkt sich Abdunkeln, Zoom und Ausschnitt."))
         gallery = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         root.addView(android.widget.HorizontalScrollView(this).apply { addView(gallery) })
         renderGallery()
@@ -422,7 +424,8 @@ class SettingsActivity : Activity() {
             applySliderLock()
         })
         sliderGroup = GROUP_IMAGE
-        root.addView(slider("Bild abdunkeln", 0, 90, prefs.bgDim, "%") { prefs.bgDim = it })
+        root.addView(slider("Bild abdunkeln", 0, 90, prefs.bgDim, "%") { prefs.bgDim = it }
+            .also { dimBar = it.getChildAt(1) as android.widget.SeekBar })
         root.addView(slider("Zoom", 100, 300, prefs.bgZoom, "%") { prefs.bgZoom = it }
             .also { zoomBar = it.getChildAt(1) as android.widget.SeekBar })
         root.addView(slider("Ausschnitt senkrecht (0 = oben, 100 = unten)", 0, 100, prefs.bgPosition, "") { prefs.bgPosition = it }

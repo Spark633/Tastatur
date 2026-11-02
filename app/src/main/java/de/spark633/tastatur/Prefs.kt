@@ -152,22 +152,58 @@ class Prefs(context: Context) {
     /** Hintergrundbild abdunkeln in Prozent. */
     var bgDim: Int
         get() = sp.getInt("bg_dim", 30)
-        set(v) = sp.edit().putInt("bg_dim", v).apply()
+        set(v) {
+            sp.edit().putInt("bg_dim", v).apply()
+            rememberImageSettings()
+        }
 
     /** Sichtbarer Ausschnitt des Bildes: 0 = oben, 100 = unten. */
     var bgPosition: Int
         get() = sp.getInt("bg_position", 50)
-        set(v) = sp.edit().putInt("bg_position", v).apply()
+        set(v) {
+            sp.edit().putInt("bg_position", v).apply()
+            rememberImageSettings()
+        }
 
     /** Waagerechter Ausschnitt: 0 = links, 100 = rechts (wichtig beim Zoomen). */
     var bgPositionX: Int
         get() = sp.getInt("bg_position_x", 50)
-        set(v) = sp.edit().putInt("bg_position_x", v).apply()
+        set(v) {
+            sp.edit().putInt("bg_position_x", v).apply()
+            rememberImageSettings()
+        }
 
     /** Zoom des Hintergrundbilds in Prozent (100 = passt genau). */
     var bgZoom: Int
         get() = sp.getInt("bg_zoom", 100)
-        set(v) = sp.edit().putInt("bg_zoom", v).apply()
+        set(v) {
+            sp.edit().putInt("bg_zoom", v).apply()
+            rememberImageSettings()
+        }
+
+    // --- Einstellungen pro Bild (Abdunkeln, Zoom, Ausschnitt) ---
+    private val imageSp = context.getSharedPreferences("bild_einstellungen", Context.MODE_PRIVATE)
+
+    /** Aktuelle Bild-Werte beim aktiven Bild speichern. */
+    fun rememberImageSettings() {
+        val name = bgFile
+        if (name.isEmpty()) return
+        val o = org.json.JSONObject()
+            .put("dim", sp.getInt("bg_dim", 30)).put("zoom", sp.getInt("bg_zoom", 100))
+            .put("x", sp.getInt("bg_position_x", 50)).put("y", sp.getInt("bg_position", 50))
+        imageSp.edit().putString(name, o.toString()).apply()
+    }
+
+    /** Werte eines Bildes übernehmen (neue Bilder: Standardwerte). */
+    fun loadImageSettings(name: String) {
+        val o = try { org.json.JSONObject(imageSp.getString(name, "{}") ?: "{}") } catch (_: Exception) { org.json.JSONObject() }
+        sp.edit()
+            .putInt("bg_dim", o.optInt("dim", 30)).putInt("bg_zoom", o.optInt("zoom", 100))
+            .putInt("bg_position_x", o.optInt("x", 50)).putInt("bg_position", o.optInt("y", 50))
+            .apply()
+    }
+
+    fun forgetImageSettings(name: String) = imageSp.edit().remove(name).apply()
 
     /** Dateiname des aktiven Hintergrundbilds im Verlauf ("" = keins). */
     var bgFile: String

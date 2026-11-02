@@ -1,0 +1,44 @@
+name: APK bauen
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: APK bauen
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: APK umbenennen
+        run: cp app/build/outputs/apk/release/app-release.apk Tastatur.apk
+
+      - name: Als Artefakt speichern
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tastatur
+          path: Tastatur.apk
+
+      - name: Als Download "Neueste Version" veröffentlichen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete neueste --yes --cleanup-tag || true
+          gh release create neueste Tastatur.apk \
+            --title "Neueste Version (Build ${{ github.run_number }})" \
+            --notes "Automatisch gebaut aus ${{ github.sha }}. Tastatur.apk herunterladen und installieren." \
+            --target ${{ github.sha }}

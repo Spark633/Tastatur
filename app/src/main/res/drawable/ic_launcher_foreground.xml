@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Tastatur-Umriss -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M28,38h52a6,6 0,0 1,6 6v22a6,6 0,0 1,-6 6h-52a6,6 0,0 1,-6 -6v-22a6,6 0,0 1,6 -6z" />
+    <path android:fillColor="#3F7F78"
+        android:pathData="M30,44h6v6h-6zM40,44h6v6h-6zM50,44h6v6h-6zM60,44h6v6h-6zM70,44h8v6h-8zM33,54h6v6h-6zM43,54h6v6h-6zM53,54h6v6h-6zM63,54h6v6h-6zM38,64h32v4h-32z" />
+</vector>

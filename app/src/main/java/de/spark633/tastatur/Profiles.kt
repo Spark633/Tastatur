@@ -42,7 +42,7 @@ class Profiles(private val context: Context) {
     }
 }
 
-/** Sicherung als Datei: Einstellungen, Profile, eigene Wörter, Emoticons und Hintergrundbild. */
+/** Sicherung als Datei: Einstellungen, Profile, eigene Wörter, gelernte Wortfolgen, Emoticons und Hintergrundbild. */
 object Backup {
 
     fun create(context: Context): String {
@@ -51,6 +51,7 @@ object Backup {
         o.put("version", 1)
         o.put("einstellungen", Prefs(context).snapshot())
         o.put("eigene_woerter", UserDictionary.get(context).export())
+        o.put("wortfolgen", NextWordModel.get(context).export())
         val profiles = JSONObject()
         val p = context.getSharedPreferences("profile", Context.MODE_PRIVATE)
         for ((k, v) in p.all) if (v is String) profiles.put(k, v)
@@ -74,6 +75,7 @@ object Backup {
             settings.remove("bg_file")
         }
         o.optJSONObject("eigene_woerter")?.let { UserDictionary.get(context).import(it) }
+        o.optJSONObject("wortfolgen")?.let { NextWordModel.get(context).import(it) }
         o.optJSONObject("profile")?.let { prof ->
             val ed = context.getSharedPreferences("profile", Context.MODE_PRIVATE).edit()
             for (k in prof.keys()) ed.putString(k, prof.getString(k))

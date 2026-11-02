@@ -84,7 +84,7 @@ object Layouts {
         // Untere Buchstabenreihe: Sonderzeichen per Wischen nach UNTEN
         val r3 = listOf(shiftKey) +
             (if (qwertz) "yxcvbnm" else "zxcvbnm").toList()
-                .zip(listOf("_", "€", "\"", "'", ":", ";", "/")) { c, s -> letter(c, lang, down = s) } +
+                .zip(listOf("_", "€", "'", "\"", ":", ";", "/")) { c, s -> letter(c, lang, down = s) } +
             deleteKey
         return listOf(r1, r2, r3, bottomRow(Key("123", Action.TO_SYMBOLS, width = 1.5f)))
     }

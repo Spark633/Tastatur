@@ -52,6 +52,20 @@ class NextWordModel private constructor(context: Context) {
         unsaved = 0
     }
 
+    /** Für die Sicherung. */
+    fun export(): JSONObject {
+        save()
+        return JSONObject(sp.getString("paare", "{}") ?: "{}")
+    }
+
+    /** Aus einer Sicherung übernehmen (ersetzt das Gelernte). */
+    fun import(o: JSONObject) {
+        pairs.clear()
+        sp.edit().putString("paare", o.toString()).apply()
+        load()
+        unsaved = 0
+    }
+
     private fun load() {
         try {
             val o = JSONObject(sp.getString("paare", "{}") ?: "{}")

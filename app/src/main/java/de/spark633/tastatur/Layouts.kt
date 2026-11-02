@@ -123,8 +123,8 @@ object Layouts {
     fun symbols2(): List<List<Key>> = listOf(
         chars("~ ` | • √ π ÷ × § ¶"),
         // Klammern paarweise nebeneinander, ^ gleich daneben
-        chars("[ ] { } < > ^ ° = \\"),
-        listOf(Key("?123", Action.TO_SYMBOLS, width = 1.5f)) + chars("£ ¥ $ ¢ % © ✓") + deleteKey,
+        chars("© ✓ [ ] { } < > ^ °"),
+        listOf(Key("?123", Action.TO_SYMBOLS, width = 1.5f)) + chars("£ ¥ $ ¢ % = \\") + deleteKey,
         bottomRow(Key("ABC", Action.TO_LETTERS, width = 1.5f)),
     )
 

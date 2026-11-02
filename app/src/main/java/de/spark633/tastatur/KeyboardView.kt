@@ -660,8 +660,12 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     private fun centerY(p: Paint, cy: Float) = cy - (p.descent() + p.ascent()) / 2f
 
-    /** Großschreiben, aber ß bleibt ß (sonst würde daraus "SS"). */
-    private fun upper(t: String) = if (t == "ß") t else t.uppercase()
+    /** Großschreiben ohne "SS": Feststelltaste gibt ẞ, einfaches Shift lässt ß stehen. */
+    private fun upper(t: String) = when {
+        t != "ß" -> t.uppercase()
+        shift == Shift.LOCK -> "ẞ"
+        else -> t
+    }
 
     private fun displayText(k: Key): String {
         if (!k.cased || shift == Shift.OFF || k.text == "ß") return k.text

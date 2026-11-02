@@ -15,16 +15,16 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - QWERTZ-Layout (pro Sprache auf QWERTY umschaltbar)
 - Nach oben wischen: Zahlen und Zeichen auf den oberen beiden Reihen
 - Nach unten wischen: Zeichen auf der unteren Buchstabenreihe
-- Lange drücken: Umlaute und Akzente
+- Lange drücken: nur die gängigsten Sonderbuchstaben je Sprache (DE: ä ö ü ß, NL: é ë ï ó ö ü)
 - Leertaste seitlich wischen: Sprache wechseln (Deutsch, English, Nederlands)
 - Emoticon-Taste (^.^, :D, ¯\_(ツ)_/¯ …)
-- Zwischenablage-Knopf links oder rechts in der Leiste
+- Zwischenablage-Verlauf (letzte 30 Einträge, anheften, löschen, leeren), Knopf links oder rechts
+- Größe direkt auf der Tastatur durch Ziehen anpassen, Abstand zu den Systemknöpfen
 - Automatische Großschreibung, doppeltes Leerzeichen → Punkt
 
 ## Geplant
 
 2. Wortvorschläge, Korrektur beim Leerzeichen, Rückgängig mit ⌫
-3. Zwischenablage-Verlauf mit angehefteten Einträgen
 4. Eigene Wörter (lernen, hinzufügen, bearbeiten)
 5. Hintergrundbild und Design
 6. Nächstes Wort vorhersagen, gelöschten Text wiederherstellen

@@ -5,6 +5,7 @@ enum class Action {
     CHAR, SHIFT, DELETE, ENTER, SPACE,
     TO_LETTERS, TO_SYMBOLS, TO_SYMBOLS2, TO_EMOTICONS,
     PAGE_PREV, PAGE_NEXT,
+    TO_CLIPBOARD, CLIP_CLEAR,
 }
 
 /**
@@ -37,25 +38,22 @@ enum class Language(val code: String, val displayName: String) {
 
 object Layouts {
 
-    /** Akzente und Sonderbuchstaben für Deutsch, Englisch und Niederländisch. */
-    private val ACCENTS = mapOf(
-        'a' to listOf("ä", "á", "à", "â", "å", "æ"),
-        'e' to listOf("é", "è", "ë", "ê", "€"),
-        'i' to listOf("ï", "í", "ì", "î"),
-        'o' to listOf("ö", "ó", "ò", "ô", "ø", "œ"),
-        'u' to listOf("ü", "ú", "ù", "û"),
-        's' to listOf("ß", "$", "§"),
-        'c' to listOf("ç", "©"),
-        'n' to listOf("ñ"),
-        'y' to listOf("ÿ", "ý"),
-    )
+    /**
+     * Nur die gängigsten Sonderbuchstaben je Sprache. Taste ohne Eintrag:
+     * Langes Drücken liefert das kleine Zeichen der Taste (z. B. q → 1).
+     */
+    private fun accents(lang: Language): Map<Char, List<String>> = when (lang) {
+        Language.DE -> mapOf('a' to listOf("ä"), 'o' to listOf("ö"), 'u' to listOf("ü"), 's' to listOf("ß"))
+        Language.NL -> mapOf('e' to listOf("é", "ë"), 'i' to listOf("ï"), 'o' to listOf("ó", "ö"), 'u' to listOf("ü"))
+        Language.EN -> emptyMap()
+    }
 
-    private fun letter(c: Char, up: String? = null, down: String? = null) = Key(
+    private fun letter(c: Char, lang: Language, up: String? = null, down: String? = null) = Key(
         label = c.toString(),
         text = c.toString(),
         up = up,
         down = down,
-        longPress = (ACCENTS[c] ?: emptyList()) + listOfNotNull(up, down),
+        longPress = accents(lang)[c] ?: listOfNotNull(up ?: down),
         cased = true,
     )
 
@@ -71,15 +69,15 @@ object Layouts {
     private val shiftKey = Key("⇧", Action.SHIFT, width = 1.5f)
     private val deleteKey = Key("⌫", Action.DELETE, width = 1.5f)
 
-    fun letters(qwertz: Boolean): List<List<Key>> {
+    fun letters(qwertz: Boolean, lang: Language): List<List<Key>> {
         val r1 = (if (qwertz) "qwertzuiop" else "qwertyuiop")
-            .mapIndexed { i, c -> letter(c, up = "1234567890"[i].toString()) }
+            .mapIndexed { i, c -> letter(c, lang, up = "1234567890"[i].toString()) }
         val r2 = "asdfghjkl".toList()
-            .zip(listOf("@", "#", "&", "*", "-", "+", "=", "(", ")")) { c, s -> letter(c, up = s) }
+            .zip(listOf("@", "#", "&", "*", "-", "+", "=", "(", ")")) { c, s -> letter(c, lang, up = s) }
         // Untere Buchstabenreihe: Sonderzeichen per Wischen nach UNTEN
         val r3 = listOf(shiftKey) +
             (if (qwertz) "yxcvbnm" else "zxcvbnm").toList()
-                .zip(listOf("_", "€", "\"", "'", ":", ";", "/")) { c, s -> letter(c, down = s) } +
+                .zip(listOf("_", "€", "\"", "'", ":", ";", "/")) { c, s -> letter(c, lang, down = s) } +
             deleteKey
         return listOf(r1, r2, r3, bottomRow(Key("123", Action.TO_SYMBOLS, width = 1.5f)))
     }
@@ -111,6 +109,16 @@ object Layouts {
     const val EMOTICONS_PER_PAGE = 12
 
     val emoticonPages: Int get() = (EMOTICONS.size + EMOTICONS_PER_PAGE - 1) / EMOTICONS_PER_PAGE
+
+    /** Untere Reihe der Zwischenablage-Ansicht; darüber liegt die Liste. */
+    fun clipboard(): List<List<Key>> = listOf(
+        emptyList(), emptyList(), emptyList(),
+        listOf(
+            Key("ABC", Action.TO_LETTERS, width = 2.5f),
+            Key("Leeren", Action.CLIP_CLEAR, width = 5f),
+            Key("⌫", Action.DELETE, width = 2.5f),
+        ),
+    )
 
     fun emoticons(page: Int): List<List<Key>> {
         val items = EMOTICONS.drop(page * EMOTICONS_PER_PAGE).take(EMOTICONS_PER_PAGE)

@@ -1,6 +1,7 @@
 package de.spark633.tastatur
 
 import android.content.ClipboardManager
+import android.content.SharedPreferences
 import android.inputmethodservice.InputMethodService
 import android.os.Build
 import android.os.SystemClock
@@ -10,12 +11,14 @@ import android.os.VibratorManager
 import android.text.InputType
 import android.view.KeyEvent
 import android.view.View
+import android.view.WindowInsets
 import android.view.inputmethod.EditorInfo
 
 /** Der eigentliche Tastatur-Dienst, den Android in jeder App einblendet. */
 class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     private lateinit var prefs: Prefs
+    private lateinit var clipHistory: ClipboardHistory
     private var keyboard: KeyboardView? = null
     private var language = Language.DE
     private var isTextField = true
@@ -29,15 +32,79 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    private val clipboard: ClipboardManager? by lazy { getSystemService(ClipboardManager::class.java) }
+
+    /** Jeder kopierte Text landet im Verlauf (Android erlaubt das der aktiven Tastatur). */
+    private val clipListener = ClipboardManager.OnPrimaryClipChangedListener { captureClip() }
+
+    /** Die Einstellungs-App kann den Größen-Modus anstoßen. */
+    private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == Prefs.KEY_RESIZE_REQUEST && prefs.resizeRequest) {
+            prefs.resizeRequest = false
+            keyboard?.startResize()
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs(this)
+        clipHistory = ClipboardHistory(this)
+        clipboard?.addPrimaryClipChangedListener(clipListener)
+        prefs.registerListener(prefListener)
+    }
+
+    override fun onDestroy() {
+        clipboard?.removePrimaryClipChangedListener(clipListener)
+        prefs.unregisterListener(prefListener)
+        super.onDestroy()
     }
 
     override fun onCreateInputView(): View {
         val v = KeyboardView(this, this)
+        v.clipHistory = clipHistory
         keyboard = v
+        // Systemknöpfe (Zurück, Tastatur wechseln) liegen über der Tastatur:
+        // deren Höhe als Abstand unten freihalten.
+        window?.window?.decorView?.setOnApplyWindowInsetsListener { dv, insets ->
+            updateSystemInset(insets)
+            dv.onApplyWindowInsets(insets)
+        }
         return v
+    }
+
+    private fun updateSystemInset(insets: WindowInsets?) {
+        var bottom = 0
+        if (insets != null) {
+            bottom = if (Build.VERSION.SDK_INT >= 30) {
+                insets.getInsets(WindowInsets.Type.navigationBars() or WindowInsets.Type.tappableElement()).bottom
+            } else {
+                @Suppress("DEPRECATION") insets.systemWindowInsetBottom
+            }
+        }
+        // Ab Android 15 liegt die Tastatur hinter der Navigationsleiste, auch
+        // wenn Android keinen Abstand meldet: Höhe der Leiste selbst bestimmen.
+        if (bottom == 0 && Build.VERSION.SDK_INT >= 35) bottom = navigationBarHeight()
+        keyboard?.setSystemInset(bottom)
+    }
+
+    @Suppress("DiscouragedApi", "InternalInsetResource")
+    private fun navigationBarHeight(): Int {
+        val id = resources.getIdentifier("navigation_bar_frame_height", "dimen", "android")
+            .takeIf { it != 0 } ?: resources.getIdentifier("navigation_bar_height", "dimen", "android")
+        return if (id != 0) resources.getDimensionPixelSize(id) else (48 * resources.displayMetrics.density).toInt()
+    }
+
+    private fun captureClip() {
+        try {
+            val clip = clipboard?.primaryClip ?: return
+            if (clip.itemCount == 0) return
+            // Passwörter aus Passwort-Managern nicht speichern
+            if (clip.description?.extras?.getBoolean("android.content.extra.IS_SENSITIVE") == true) return
+            val text = clip.getItemAt(0).coerceToText(this)?.toString() ?: return
+            clipHistory.add(text)
+            keyboard?.invalidate()
+        } catch (_: Exception) {
+        }
     }
 
     override fun onEvaluateFullscreenMode(): Boolean = false
@@ -64,7 +131,12 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         )
 
         v.setEnterLabel(enterLabel(info))
+        updateSystemInset(window?.window?.decorView?.rootWindowInsets)
         updateAutoCaps()
+        if (prefs.resizeRequest) {
+            prefs.resizeRequest = false
+            v.startResize()
+        }
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
@@ -161,14 +233,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         keyboard?.showMessage(language.displayName)
     }
 
-    override fun onClipboard() {
-        // Vorläufig: fügt den zuletzt kopierten Text ein.
-        // Der Verlauf mit angehefteten Einträgen kommt in Schritt 3.
-        val cm = getSystemService(ClipboardManager::class.java)
-        val clip = cm?.primaryClip
-        val text = if (clip != null && clip.itemCount > 0) clip.getItemAt(0).coerceToText(this)?.toString() else null
-        if (text.isNullOrEmpty()) keyboard?.showMessage("Zwischenablage ist leer")
-        else currentInputConnection?.commitText(text, 1)
+    override fun onClipboardOpen() {
+        captureClip()
     }
 
     override fun onKeyFeedback() {

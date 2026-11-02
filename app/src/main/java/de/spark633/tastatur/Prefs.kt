@@ -43,4 +43,24 @@ class Prefs(context: Context) {
     var autoCaps: Boolean
         get() = sp.getBoolean("auto_caps", true)
         set(v) = sp.edit().putBoolean("auto_caps", v).apply()
+
+    /** Zusätzlicher Abstand unter der Tastatur (für die Systemknöpfe). */
+    var bottomPaddingDp: Int
+        get() = sp.getInt("bottom_padding", 0)
+        set(v) = sp.edit().putInt("bottom_padding", v).apply()
+
+    /** Die Einstellungs-App bittet die Tastatur, den Größen-Modus zu öffnen. */
+    var resizeRequest: Boolean
+        get() = sp.getBoolean(KEY_RESIZE_REQUEST, false)
+        set(v) = sp.edit().putBoolean(KEY_RESIZE_REQUEST, v).apply()
+
+    fun registerListener(l: android.content.SharedPreferences.OnSharedPreferenceChangeListener) =
+        sp.registerOnSharedPreferenceChangeListener(l)
+
+    fun unregisterListener(l: android.content.SharedPreferences.OnSharedPreferenceChangeListener) =
+        sp.unregisterOnSharedPreferenceChangeListener(l)
+
+    companion object {
+        const val KEY_RESIZE_REQUEST = "resize_request"
+    }
 }

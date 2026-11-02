@@ -16,7 +16,6 @@ import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.ScrollView
-import android.widget.SeekBar
 import android.widget.Switch
 import android.widget.TextView
 
@@ -25,6 +24,7 @@ class SettingsActivity : Activity() {
 
     private lateinit var prefs: Prefs
     private lateinit var status: TextView
+    private lateinit var testField: EditText
     private val dp by lazy { resources.displayMetrics.density }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,7 +48,8 @@ class SettingsActivity : Activity() {
         root.addView(button("2. Tastatur auswählen") {
             getSystemService(InputMethodManager::class.java)?.showInputMethodPicker()
         })
-        root.addView(EditText(this).apply { hint = "Hier ausprobieren …"; minLines = 2 })
+        testField = EditText(this).apply { hint = "Hier ausprobieren …"; minLines = 2 }
+        root.addView(testField)
 
         // --- Sprachen ---
         root.addView(header("Sprachen"))
@@ -89,21 +90,15 @@ class SettingsActivity : Activity() {
             prefs.doubleSpacePeriod = it
         })
 
-        val heightLabel = TextView(this).apply { textSize = 15f }
-        fun updateHeightLabel() { heightLabel.text = "Tastenhöhe: ${prefs.rowHeightDp} dp" }
-        updateHeightLabel()
-        root.addView(heightLabel)
-        root.addView(SeekBar(this).apply {
-            max = 40 // 40 … 80 dp
-            progress = prefs.rowHeightDp - 40
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(sb: SeekBar, value: Int, fromUser: Boolean) {
-                    prefs.rowHeightDp = 40 + value
-                    updateHeightLabel()
-                }
-                override fun onStartTrackingTouch(sb: SeekBar) {}
-                override fun onStopTrackingTouch(sb: SeekBar) {}
-            })
+        root.addView(header("Größe"))
+        root.addView(info(
+            "Öffnet die Tastatur im Größen-Modus: nach oben/unten ziehen ändert die Tastenhöhe, " +
+            "„Abstand“ verschiebt die Tasten über die Systemknöpfe. Mit „Fertig“ speichern."
+        ))
+        root.addView(button("Größe anpassen") {
+            prefs.resizeRequest = true
+            testField.requestFocus()
+            getSystemService(InputMethodManager::class.java)?.showSoftInput(testField, 0)
         })
 
         // --- Hilfe ---
@@ -114,7 +109,8 @@ class SettingsActivity : Activity() {
             "• Lange drücken: Umlaute und Akzente (a → ä, s → ß)\n" +
             "• Leertaste seitlich wischen: Sprache wechseln\n" +
             "• Shift zweimal schnell: Feststelltaste\n" +
-            "• Zwei Leerzeichen: Punkt am Satzende"
+            "• Zwei Leerzeichen: Punkt am Satzende\n" +
+            "• Zwischenablage-Knopf: Verlauf der kopierten Texte. Antippen fügt ein, ☆ heftet an, ✕ löscht"
         ))
 
         setContentView(ScrollView(this).apply { addView(root) })

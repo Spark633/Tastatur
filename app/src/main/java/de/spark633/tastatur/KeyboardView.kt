@@ -178,8 +178,24 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     /** Websuche: Leiste zeigt den Suchbegriff (null = keine Suche). */
     fun setSearchText(text: String?) {
+        val starting = searchText == null && text != null
         searchText = text
+        cursorOn = true
+        removeCallbacks(blink)
+        if (text != null) postDelayed(blink, 530)
+        if (starting) cursorOn = true
         invalidate()
+    }
+
+    /** Blinkender Cursor im Suchfeld. */
+    private var cursorOn = true
+    private val blink: Runnable = object : Runnable {
+        override fun run() {
+            if (searchText == null) return
+            cursorOn = !cursorOn
+            invalidate()
+            postDelayed(this, 530)
+        }
     }
 
     /** Aktiver Schreibstil, wird in der Leiste angezeigt (antippen beendet ihn). */
@@ -497,9 +513,24 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         var shown = if (query.isEmpty()) "Suchbegriff eingeben …" else query
         // Lange Begriffe: das Ende bleibt sichtbar
         while (shown.length > 1 && searchPaint.measureText(shown) > avail) shown = shown.drop(1)
-        searchPaint.alpha = if (query.isEmpty()) 0x90 else 0xFF
-        canvas.drawText("🔍  $shown" + if (query.isEmpty()) "" else "|", box.left + 12 * dp,
-            centerY(searchPaint, box.centerY()), searchPaint)
+        val textX = box.left + 12 * dp
+        val textY = centerY(searchPaint, box.centerY())
+        val prefix = "🔍  "
+        searchPaint.alpha = 0xFF
+        canvas.drawText(prefix, textX, textY, searchPaint)
+        val startX = textX + searchPaint.measureText(prefix)
+        if (query.isEmpty()) {
+            searchPaint.alpha = 0x90
+            canvas.drawText(shown, startX + 4 * dp, textY, searchPaint)
+            searchPaint.alpha = 0xFF
+        } else {
+            canvas.drawText(shown, startX, textY, searchPaint)
+        }
+        // Cursor: blinkender Strich hinter dem Text
+        if (cursorOn) {
+            val cx = if (query.isEmpty()) startX + 1 * dp else startX + searchPaint.measureText(shown) + 2 * dp
+            canvas.drawRect(cx, box.top + 9 * dp, cx + 2 * dp, box.bottom - 9 * dp, accentPaint)
+        }
         canvas.drawText("✕", width - barHeight / 2f, centerY(barTextPaint, barHeight / 2f), barTextPaint)
     }
 

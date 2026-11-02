@@ -143,7 +143,7 @@ class SettingsActivity : Activity() {
 
         root.addView(header("Websuche"))
         root.addView(info(
-            "⚙ → 🔍 Suche: Der Text aus dem Eingabefeld wandert ins Suchfeld (✕ holt ihn zurück). " +
+            "⚙ → 🔍 Suche: Suchbegriff in der Leiste tippen (markierter Text wird übernommen). " +
                 "Enter öffnet den Standard-Browser."
         ))
         val engines = TastaturService.SEARCH_ENGINES.keys.toList()

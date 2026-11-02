@@ -44,14 +44,14 @@ object Layouts {
      * Langes Drücken liefert das kleine Zeichen der Taste (z. B. q → 1).
      */
     private fun accents(lang: Language): Map<Char, List<String>> = when (lang) {
-        // Umlaute; Akzente nur beim e
+        // Umlaute; beim e zusätzlich é
         Language.DE -> mapOf(
-            'a' to listOf("ä"), 'e' to listOf("é", "è", "ê"), 'o' to listOf("ö"), 'u' to listOf("ü"), 's' to listOf("ß"),
+            'a' to listOf("ä"), 'e' to listOf("é"), 'o' to listOf("ö"), 'u' to listOf("ü"), 's' to listOf("ß"),
         )
         Language.NL -> mapOf(
-            'e' to listOf("é", "ë", "è"), 'i' to listOf("ï"), 'o' to listOf("ó", "ö"), 'u' to listOf("ü"),
+            'e' to listOf("é", "ë"), 'i' to listOf("ï"), 'o' to listOf("ó", "ö"), 'u' to listOf("ü"),
         )
-        Language.EN -> mapOf('e' to listOf("é", "è"))
+        Language.EN -> mapOf('e' to listOf("é"))
     }
 
     private fun letter(c: Char, lang: Language, up: String? = null, down: String? = null) = Key(

@@ -57,6 +57,12 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     /** Nach einem Satzzeichen wurde automatisch ein Leerzeichen gesetzt. */
     private var autoSpacePending = false
 
+    /** Zuletzt kopierter Text, wird kurz in der Leiste zum Einfügen angeboten. */
+    private var recentClip: String? = null
+    private var recentClipTime = 0L
+    private var clipShown = false
+    private var isPasswordField = false
+
     /** Aktiver Unicode-Stil ("bold", "strike" …) oder null. */
     private var activeStyle: String? = null
     private var sarcasmCount = 0
@@ -147,6 +153,12 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             if (clip.description?.extras?.getBoolean("android.content.extra.IS_SENSITIVE") == true) return
             val text = clip.getItemAt(0).coerceToText(this)?.toString() ?: return
             clipHistory.add(text)
+            // Neu kopiert: für ein paar Minuten direkt in der Leiste anbieten
+            if (text.isNotBlank() && text != recentClip) {
+                recentClip = text
+                recentClipTime = SystemClock.uptimeMillis()
+                updateSuggestions()
+            }
             keyboard?.invalidate()
         } catch (_: Exception) {
         }
@@ -185,6 +197,12 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             cls == InputType.TYPE_CLASS_DATETIME
         if (!restarting) v.setMode(if (numeric) KeyboardView.Mode.SYMBOLS else KeyboardView.Mode.LETTERS)
 
+        isPasswordField = (cls == InputType.TYPE_CLASS_TEXT && variation in setOf(
+            InputType.TYPE_TEXT_VARIATION_PASSWORD,
+            InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD,
+            InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD,
+        )) || (cls == InputType.TYPE_CLASS_NUMBER &&
+            (info.inputType and InputType.TYPE_MASK_VARIATION) == InputType.TYPE_NUMBER_VARIATION_PASSWORD)
         isTextField = cls == InputType.TYPE_CLASS_TEXT && variation !in setOf(
             InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
             InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS,
@@ -387,6 +405,17 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         keyboard?.showMessage("Wiederhergestellt")
     }
 
+    // --- Zuletzt Kopiertes ---
+
+    /** Beschriftung für den Einfüge-Vorschlag, oder null wenn nichts Frisches kopiert wurde. */
+    private fun clipOffer(): String? {
+        val text = recentClip ?: return null
+        if (isPasswordField || SystemClock.uptimeMillis() - recentClipTime > CLIP_OFFER_MS) return null
+        val line = text.trim().lineSequence().firstOrNull()?.trim().orEmpty()
+        val short = if (line.length > 28) line.take(27) + "…" else line
+        return "📋 $short"
+    }
+
     // --- Nächstes Wort ---
 
     /** Nach einem fertigen Wort das Wortpaar lernen (Trennzeichen steht schon). */
@@ -432,11 +461,22 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     private fun updateSuggestions() {
         val v = keyboard ?: return
         val d = dict
+        clipShown = false
         if (restoreAvailable()) {
             current = null
             suggestSeq++
             v.setSuggestions(listOf("", RESTORE_LABEL, ""))
             return
+        }
+        // Gerade etwas kopiert und nicht mitten im Wort: zum Einfügen anbieten
+        clipOffer()?.let { label ->
+            if (currentWord() == null) {
+                current = null
+                suggestSeq++
+                clipShown = true
+                v.setSuggestions(listOf("", label, ""))
+                return
+            }
         }
         val word = if (suggestOn) currentWord() else null
         if (word == null || d == null) {
@@ -519,6 +559,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     override fun onText(text: String) {
         val ic = currentInputConnection ?: return
+        if (text == recentClip) recentClip = null // aus der Zwischenablage eingefügt
         captureReplacedSelection()
         activeStyle?.let {
             val styled = if (it == "sarcasm") {
@@ -574,6 +615,14 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             if (index == 1) restoreDeleted()
             return
         }
+        if (clipShown) {
+            if (index == 1) {
+                recentClip?.let { currentInputConnection?.commitText(it, 1) }
+                recentClip = null // eingefügt: nicht mehr anbieten
+                clipShown = false
+            }
+            return
+        }
         val s = current ?: return
         if (s.typed.isEmpty()) {
             // Vorhersage: Wort mit Leerzeichen anhängen
@@ -607,6 +656,12 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onSuggestionLongPress(index: Int) {
+        if (clipShown) {
+            recentClip = null
+            keyboard?.showMessage("Ausgeblendet")
+            updateSuggestions()
+            return
+        }
         val s = current ?: return
         if (index == 0 && s.correction != null) {
             keyboard?.showMessage("Antippen behält dein Wort")
@@ -868,6 +923,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     companion object {
         private const val PUNCTUATION = ".,!?;:"
         private const val RESTORE_MIN_CHARS = 15
+        private const val CLIP_OFFER_MS = 3 * 60 * 1000L
         const val RESTORE_LABEL = "↶ Wiederherstellen"
 
         /** Name → Such-URL (der Begriff wird angehängt). */

@@ -18,6 +18,7 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Lange drücken: gängigste Sonderbuchstaben je Sprache plus das Wisch-Zeichen (u → ü 7, a → ä @)
 - Leertaste seitlich wischen: Sprache wechseln (Deutsch, English, Nederlands)
 - Emoticon-Taste (^.^, :D, ¯\_(ツ)_/¯ …), Liste in der App bearbeitbar
+- Gerade Kopiertes erscheint 3 Minuten lang in der Vorschlagsleiste (📋 antippen = einfügen)
 - Zwischenablage-Verlauf als Kacheln (1–2 Spalten, 1–4 Zeilen), ⋮ zum Anheften/Löschen
 - Zahnrad in der Leiste öffnet ein Menü: Allgemein, Wörterbuch, Zwischenablage, Größe, Sprachen, Aussehen, Suche, Formatieren
 - Aussehen: 7 Farbschemata, Hintergrundbild aus der Galerie (abdunkeln, Ausschnitt), Tasten-Deckkraft, Eckenrundung, Schriftgröße – mit Live-Vorschau

@@ -57,6 +57,30 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("undo_correction", true)
         set(v) = sp.edit().putBoolean("undo_correction", v).apply()
 
+    /** Zwischenablage: Spalten (1 oder 2) und Zeilen pro Eintrag (1 bis 4). */
+    var clipColumns: Int
+        get() = sp.getInt("clip_columns", 2)
+        set(v) = sp.edit().putInt("clip_columns", v).apply()
+
+    var clipLines: Int
+        get() = sp.getInt("clip_lines", 3)
+        set(v) = sp.edit().putInt("clip_lines", v).apply()
+
+    /** Nach . , ! ? : ; automatisch ein Leerzeichen setzen. */
+    var autoSpacePunct: Boolean
+        get() = sp.getBoolean("auto_space_punct", true)
+        set(v) = sp.edit().putBoolean("auto_space_punct", v).apply()
+
+    /** Enter übernimmt den fetten Vorschlag wie das Leerzeichen. */
+    var correctOnEnter: Boolean
+        get() = sp.getBoolean("correct_on_enter", true)
+        set(v) = sp.edit().putBoolean("correct_on_enter", v).apply()
+
+    /** Unbekannte Wörter, die du öfter tippst, automatisch lernen. */
+    var learnWords: Boolean
+        get() = sp.getBoolean("learn_words", true)
+        set(v) = sp.edit().putBoolean("learn_words", v).apply()
+
     /** Zusätzlicher Abstand unter der Tastatur (für die Systemknöpfe). */
     var bottomPaddingDp: Int
         get() = sp.getInt("bottom_padding", 0)

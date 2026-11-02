@@ -6,6 +6,7 @@ enum class Action {
     TO_LETTERS, TO_SYMBOLS, TO_SYMBOLS2, TO_EMOTICONS,
     PAGE_PREV, PAGE_NEXT,
     TO_CLIPBOARD, CLIP_CLEAR,
+    MENU,
 }
 
 /**
@@ -109,6 +110,17 @@ object Layouts {
     const val EMOTICONS_PER_PAGE = 12
 
     val emoticonPages: Int get() = (EMOTICONS.size + EMOTICONS_PER_PAGE - 1) / EMOTICONS_PER_PAGE
+
+    /** Menü hinter dem Zahnrad. text = Bereich der Einstellungen. */
+    fun menu(): List<List<Key>> = listOf(
+        listOf(Key("⚙  Allgemein", Action.MENU, text = "general", width = 5f),
+            Key("📖  Wörterbuch", Action.MENU, text = "dictionary", width = 5f)),
+        listOf(Key("📋  Zwischenablage", Action.MENU, text = "clipboard", width = 5f),
+            Key("↕  Größe anpassen", Action.MENU, text = "resize", width = 5f)),
+        listOf(Key("🌍  Sprachen", Action.MENU, text = "languages", width = 5f),
+            Key("❓  Hilfe", Action.MENU, text = "help", width = 5f)),
+        listOf(Key("ABC", Action.TO_LETTERS, width = 10f)),
+    )
 
     /** Untere Reihe der Zwischenablage-Ansicht; darüber liegt die Liste. */
     fun clipboard(): List<List<Key>> = listOf(

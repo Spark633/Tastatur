@@ -22,6 +22,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     private lateinit var prefs: Prefs
     private lateinit var clipHistory: ClipboardHistory
+    private lateinit var userDict: UserDictionary
     private var keyboard: KeyboardView? = null
     private var language = Language.DE
     private var isTextField = true
@@ -43,6 +44,9 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     /** Wörter, deren Korrektur du abgelehnt hast (bleiben in dieser Sitzung unverändert). */
     private val ignored = HashSet<String>()
+
+    /** Nach einem Satzzeichen wurde automatisch ein Leerzeichen gesetzt. */
+    private var autoSpacePending = false
 
     private val vibrator: Vibrator? by lazy {
         if (Build.VERSION.SDK_INT >= 31) {
@@ -68,7 +72,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     override fun onCreate() {
         super.onCreate()
         prefs = Prefs(this)
-        clipHistory = ClipboardHistory(this)
+        clipHistory = ClipboardHistory.get(this)
+        userDict = UserDictionary.get(this)
         clipboard?.addPrimaryClipChangedListener(clipListener)
         prefs.registerListener(prefListener)
     }
@@ -156,6 +161,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         autocorrectOn = suggestOn && prefs.autocorrect && !noSuggestFlag &&
             variation != InputType.TYPE_TEXT_VARIATION_PERSON_NAME
         lastCorrection = null
+        autoSpacePending = false
+        current = null // eigene Wörter könnten sich in den Einstellungen geändert haben
         languageChanged()
 
         v.setEnterLabel(enterLabel(info))
@@ -254,7 +261,20 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         return word
     }
 
-    private fun isKnown(word: String) = ignored.contains(word.lowercase())
+    private fun isKnown(word: String) = ignored.contains(word.lowercase()) || userDict.isKnown(word)
+
+    /** Vorschläge sofort berechnen (für Leerzeichen, Satzzeichen, Enter). */
+    private fun suggestNow(d: Dictionary, word: String): Dictionary.Suggestions =
+        dotAbbreviation(word) ?: current?.takeIf { it.typed == word }
+            ?: d.suggest(word, neighbors, ::isKnown, userDict.knownWords(), userDict.blockedWords().toHashSet())
+
+    /** Ein Wort ist fertig getippt und blieb unverändert: unbekannte Wörter merken. */
+    private fun noteWordEnd(word: String?) {
+        if (word == null || !prefs.learnWords || word.length < 2) return
+        val d = dict ?: return
+        if (d.contains(word) || word.any { it.isDigit() }) return
+        userDict.noteTyped(word)
+    }
 
     /** "zb" → "z.B." (nur Deutsch). Am Satzanfang großgeschrieben: "Z.B.". */
     private fun dotAbbreviation(word: String): Dictionary.Suggestions? {
@@ -283,9 +303,14 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         }
         val seq = ++suggestSeq
         val nb = neighbors
+        val own = userDict.knownWords()
+        val ownLower = own.map { it.lowercase() }.toHashSet()
+        val blocked = userDict.blockedWords().toHashSet()
         val ign = HashSet(ignored)
         worker.execute {
-            val s = try { d.suggest(word, nb) { ign.contains(it.lowercase()) } } catch (_: Throwable) { null }
+            val s = try {
+                d.suggest(word, nb, { ign.contains(it.lowercase()) || ownLower.contains(it.lowercase()) }, own, blocked)
+            } catch (_: Throwable) { null }
             mainHandler.post {
                 if (seq == suggestSeq && s != null) {
                     current = s
@@ -300,7 +325,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         if (!autocorrectOn) return false
         val d = dict ?: return false
         val word = currentWord() ?: return false
-        val s = dotAbbreviation(word) ?: current?.takeIf { it.typed == word } ?: d.suggest(word, neighbors, ::isKnown)
+        val s = suggestNow(d, word)
         val corr = s.correction ?: return false
         if (corr == word) return false
         // "zb." getippt: kein doppelter Punkt hinter "z.B."
@@ -327,10 +352,12 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         if (before != expected) return false
         ic.beginBatchEdit()
         ic.deleteSurroundingText(expected.length, 0)
-        ic.commitText(original, 1)
+        ic.commitText(original + sep.trim(), 1) // Satzzeichen bleibt, Leerzeichen fällt weg
         ic.endBatchEdit()
         ignored.add(original.lowercase())
+        if (prefs.learnWords) userDict.learnNow(original)
         current = null
+        autoSpacePending = false
         return true
     }
 
@@ -339,9 +366,42 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     // ------------------------------------------------------------------
 
     override fun onText(text: String) {
-        if (text.length == 1 && text[0] in ".,!?;:" && correctAndCommit(text)) return
+        val ic = currentInputConnection ?: return
+        if (text.length == 1 && text[0] in PUNCTUATION) {
+            onPunctuation(text)
+            return
+        }
         lastCorrection = null
-        currentInputConnection?.commitText(text, 1)
+        autoSpacePending = false
+        ic.commitText(text, 1)
+    }
+
+    /** Satzzeichen: Wort davor korrigieren, danach ggf. automatisch ein Leerzeichen. */
+    private fun onPunctuation(p: String) {
+        val ic = currentInputConnection ?: return
+        var afterPunct = false
+        // "?" direkt nach "!" : das automatische Leerzeichen wieder entfernen
+        if (autoSpacePending && ic.getTextBeforeCursor(1, 0)?.toString() == " ") {
+            ic.deleteSurroundingText(1, 0)
+            afterPunct = true
+        }
+        autoSpacePending = false
+        val prev = ic.getTextBeforeCursor(1, 0)?.toString()?.firstOrNull()
+        val word = currentWord()
+        val corrected = correctAndCommit(p)
+        if (!corrected) {
+            noteWordEnd(word)
+            lastCorrection = null
+            ic.commitText(p, 1)
+        }
+        val wantsSpace = prefs.autoSpacePunct && isTextField &&
+            (afterPunct || (prev != null && (prev.isLetter() || prev in ")\"'")))
+        val nextIsSpace = ic.getTextAfterCursor(1, 0)?.toString()?.firstOrNull()?.isWhitespace() == true
+        if (wantsSpace && !nextIsSpace) {
+            ic.commitText(" ", 1)
+            autoSpacePending = true
+            lastCorrection = lastCorrection?.let { Triple(it.first, it.second, it.third + " ") }
+        }
     }
 
     override fun onSuggestion(index: Int) {
@@ -349,7 +409,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val word = currentWord() ?: return
         if (s.typed != word) return
         val chosen = if (index == 0 && s.correction != null) {
-            ignored.add(word.lowercase()) // eigenes Wort behalten
+            ignored.add(word.lowercase()) // eigenes Wort behalten und lernen
+            if (prefs.learnWords) userDict.learnNow(word)
             word
         } else {
             s.slots.getOrNull(index)?.takeIf { it.isNotEmpty() } ?: return
@@ -360,12 +421,32 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         ic.commitText("$chosen ", 1)
         ic.endBatchEdit()
         lastCorrection = null
+        autoSpacePending = false
         current = null
         lastSpaceTime = SystemClock.uptimeMillis()
     }
 
+    override fun onSuggestionLongPress(index: Int) {
+        val s = current ?: return
+        if (index == 0 && s.correction != null) {
+            keyboard?.showMessage("Antippen behält dein Wort")
+            return
+        }
+        val word = s.slots.getOrNull(index)?.takeIf { it.isNotEmpty() } ?: return
+        if (word.equals(s.typed, ignoreCase = true) && dict?.contains(word) == true) {
+            keyboard?.showMessage("Wörterbuch-Wörter lassen sich nur als Vorschlag entfernen")
+            return
+        }
+        userDict.block(word)
+        ignored.remove(word.lowercase())
+        keyboard?.showMessage("„$word“ wird nicht mehr vorgeschlagen")
+        current = null
+        updateSuggestions()
+    }
+
     override fun onDelete() {
         if (undoCorrection()) return
+        autoSpacePending = false
         val ic = currentInputConnection ?: return
         val selected = ic.getSelectedText(0)
         if (!selected.isNullOrEmpty()) ic.commitText("", 1)
@@ -393,8 +474,11 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onEnter() {
-        lastCorrection = null
         val ic = currentInputConnection ?: return
+        val word = currentWord()
+        if (!(prefs.correctOnEnter && correctAndCommit(""))) noteWordEnd(word)
+        lastCorrection = null
+        autoSpacePending = false
         val info = currentInputEditorInfo
         val action = info?.imeOptions?.and(EditorInfo.IME_MASK_ACTION) ?: EditorInfo.IME_ACTION_NONE
         val noEnterAction = info != null && (info.imeOptions and EditorInfo.IME_FLAG_NO_ENTER_ACTION) != 0
@@ -417,10 +501,18 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
                 return
             }
         }
+        // Leerzeichen kam schon automatisch nach dem Satzzeichen
+        if (autoSpacePending) {
+            autoSpacePending = false
+            lastSpaceTime = now
+            return
+        }
+        val word = currentWord()
         if (correctAndCommit(" ")) {
             lastSpaceTime = now
             return
         }
+        noteWordEnd(word)
         lastCorrection = null
         ic.commitText(" ", 1)
         lastSpaceTime = now
@@ -440,11 +532,16 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         keyboard?.showMessage(language.displayName)
     }
 
-    override fun onOpenSettings() {
+    override fun onMenu(section: String) {
+        if (section == "resize") {
+            keyboard?.startResize()
+            return
+        }
         requestHideSelf(0)
         startActivity(
             android.content.Intent(this, SettingsActivity::class.java)
-                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra(SettingsActivity.EXTRA_SECTION, section)
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
         )
     }
 
@@ -458,5 +555,9 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             vibrator?.vibrate(VibrationEffect.createOneShot(12, VibrationEffect.DEFAULT_AMPLITUDE))
         } catch (_: Exception) {
         }
+    }
+
+    companion object {
+        private const val PUNCTUATION = ".,!?;:"
     }
 }

@@ -34,13 +34,16 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         fun onLanguageSwipe(direction: Int)
         /** Zwischenablage wird geöffnet: aktuellen Inhalt in den Verlauf übernehmen. */
         fun onClipboardOpen()
-        fun onOpenSettings()
+        /** Menüpunkt hinter dem Zahnrad, z. B. "general" oder "dictionary". */
+        fun onMenu(section: String)
+        /** Vorschlag lange gedrückt: nicht mehr vorschlagen. */
+        fun onSuggestionLongPress(index: Int)
         /** Vorschlag angetippt: 0 = links, 1 = Mitte, 2 = rechts. */
         fun onSuggestion(index: Int)
         fun onKeyFeedback()
     }
 
-    enum class Mode { LETTERS, SYMBOLS, SYMBOLS2, EMOTICONS, CLIPBOARD }
+    enum class Mode { LETTERS, SYMBOLS, SYMBOLS2, EMOTICONS, CLIPBOARD, MENU }
     enum class Shift { OFF, ON, LOCK }
 
     private val dp = resources.displayMetrics.density
@@ -69,8 +72,12 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     // Zwischenablage-Ansicht
     private var clipScroll = 0f
     private var clearArmedUntil = 0L
-    private val clipEntryHeight = 52 * dp
     private val clipGap = 4 * dp
+    private var clipColumns = 2
+    private var clipLines = 3
+    private var clipMenuFor: ClipboardHistory.Entry? = null
+    private var swipeEntry: ClipboardHistory.Entry? = null
+    private var swipeDx = 0f
 
     // Größen-Modus
     private var resizing = false
@@ -122,6 +129,9 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         languageCount = prefs.enabledLanguages.size
         qwertz = prefs.isQwertz(language)
         clipboardRight = prefs.clipboardRight
+        clipColumns = prefs.clipColumns.coerceIn(1, 2)
+        clipLines = prefs.clipLines.coerceIn(1, 4)
+        clipLayouts.clear()
         rowHeight = prefs.rowHeightDp * dp
         bottomPad = prefs.bottomPaddingDp * dp
         requestLayout()
@@ -134,6 +144,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         if (m == Mode.CLIPBOARD) {
             clipScroll = 0f
             clearArmedUntil = 0L
+            clipMenuFor = null
         }
         layoutKeys()
         invalidate()
@@ -222,6 +233,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         Mode.SYMBOLS2 -> Layouts.symbols2()
         Mode.EMOTICONS -> Layouts.emoticons(emoticonPage)
         Mode.CLIPBOARD -> Layouts.clipboard()
+        Mode.MENU -> Layouts.menu()
     }
 
     private fun layoutKeys() {
@@ -277,22 +289,41 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     private val clipArea: RectF get() = RectF(0f, barHeight, width.toFloat(), barHeight + 3 * rowHeight)
 
+    private val clipTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textSize = sp(15f) }
+    private val clipTileHeight: Float get() = 16 * dp + clipLines * clipTextPaint.fontSpacing
+    private val clipMenuZone = 34 * dp
+
+    /** Kacheln in 1 oder 2 Spalten, wie in den Einstellungen gewählt. */
     private fun clipRects(): List<Pair<ClipboardHistory.Entry, RectF>> {
         val entries = clipHistory?.entries ?: return emptyList()
         val area = clipArea
+        val colW = (area.width() - clipGap) / clipColumns
+        val h = clipTileHeight
         return entries.mapIndexed { i, e ->
-            val top = area.top + clipGap + i * (clipEntryHeight + clipGap) - clipScroll
-            e to RectF(area.left + 2 * gapH, top, area.right - 2 * gapH, top + clipEntryHeight)
+            val left = area.left + clipGap + (i % clipColumns) * colW
+            val top = area.top + clipGap + (i / clipColumns) * (h + clipGap) - clipScroll
+            e to RectF(left, top, left + colW - clipGap, top + h)
         }
     }
 
     private fun maxClipScroll(): Float {
         val n = clipHistory?.entries?.size ?: 0
-        val content = clipGap + n * (clipEntryHeight + clipGap)
+        val rows = (n + clipColumns - 1) / clipColumns
+        val content = clipGap + rows * (clipTileHeight + clipGap)
         return max(0f, content - clipArea.height())
     }
 
-    private val clipTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textSize = sp(15f) }
+    private val clipLayouts = HashMap<String, android.text.StaticLayout>()
+
+    private fun clipLayout(text: String, width: Int): android.text.StaticLayout {
+        val key = "$width|$text"
+        return clipLayouts.getOrPut(key) {
+            android.text.StaticLayout.Builder.obtain(text, 0, text.length, clipTextPaint, max(1, width))
+                .setMaxLines(clipLines)
+                .setEllipsize(TextUtils.TruncateAt.END)
+                .build()
+        }
+    }
 
     private fun drawClipboard(canvas: Canvas) {
         val area = clipArea
@@ -305,39 +336,74 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         }
         canvas.save()
         canvas.clipRect(area)
-        val zone = 44 * dp
-        for ((e, r) in rects) {
+        val radius = 8 * dp
+        for ((e, base) in rects) {
+            val r = RectF(base)
+            if (e === swipeEntry) r.offset(swipeDx, 0f)
             if (r.bottom < area.top || r.top > area.bottom) continue
-            canvas.drawRoundRect(r, 6 * dp, 6 * dp, if (e.pinned) funcPaint else keyPaint)
-            val oneLine = e.text.replace(Regex("\\s+"), " ").trim()
-            val avail = r.width() - 2 * zone - 12 * dp
-            val shown = TextUtils.ellipsize(oneLine, clipTextPaint, avail, TextUtils.TruncateAt.END)
-            canvas.drawText(shown, 0, shown.length, r.left + 12 * dp, centerY(clipTextPaint, r.centerY()), clipTextPaint)
-            // Stern = anheften, Kreuz = löschen
-            canvas.drawText(if (e.pinned) "★" else "☆", r.right - zone * 1.5f, centerY(labelPaint, r.centerY()),
-                if (e.pinned) accentTextPaint else labelPaint)
-            canvas.drawText("✕", r.right - zone * 0.5f, centerY(funcLabelPaint, r.centerY()), funcLabelPaint)
+
+            if (e === clipMenuFor) {
+                // Aktionen: links anheften/lösen, rechts löschen
+                val half = r.width() / 2f
+                val left = RectF(r.left, r.top, r.left + half - 2 * dp, r.bottom)
+                val right = RectF(r.left + half + 2 * dp, r.top, r.right, r.bottom)
+                canvas.drawRoundRect(left, radius, radius, accentPaint)
+                canvas.drawRoundRect(right, radius, radius, popupPaint)
+                canvas.drawText(if (e.pinned) "☆ Lösen" else "★ Anheften", left.centerX(),
+                    centerY(barTextPaint, left.centerY()), barTextPaint)
+                canvas.drawText("✕ Löschen", right.centerX(), centerY(barTextPaint, right.centerY()), barTextPaint)
+                continue
+            }
+
+            canvas.drawRoundRect(r, radius, radius, keyPaint)
+            if (e.pinned) canvas.drawRoundRect(RectF(r.left, r.top, r.left + 4 * dp, r.bottom), 2 * dp, 2 * dp, accentPaint)
+            val textW = (r.width() - 14 * dp - clipMenuZone).toInt()
+            val layout = clipLayout(e.text.trim(), textW)
+            canvas.save()
+            canvas.translate(r.left + 10 * dp, r.top + 8 * dp)
+            layout.draw(canvas)
+            canvas.restore()
+            // ⋮ oben rechts
+            val mx = r.right - clipMenuZone / 2f
+            val my = r.top + 14 * dp
+            for (k in -1..1) canvas.drawCircle(mx, my + k * 5 * dp, 1.8f * dp, labelPaint)
+            if (e.pinned) canvas.drawText("★", mx, r.bottom - 8 * dp, accentTextPaint.apply { textSize = sp(14f) })
         }
         canvas.restore()
     }
 
     private val accentTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.rgb(0x4D, 0xB6, 0xAC); textAlign = Paint.Align.CENTER; textSize = sp(23f)
+        color = Color.rgb(0x4D, 0xB6, 0xAC); textAlign = Paint.Align.CENTER; textSize = sp(14f)
     }
+
+    private fun clipEntryAt(x: Float, y: Float) = clipRects().firstOrNull { it.second.contains(x, y) }
 
     private fun clipTap(x: Float, y: Float) {
         val hist = clipHistory ?: return
-        val (entry, r) = clipRects().firstOrNull { it.second.contains(x, y) } ?: return
-        val zone = 44 * dp
-        when {
-            x > r.right - zone -> {
-                hist.remove(entry)
-                clipScroll = clipScroll.coerceIn(0f, maxClipScroll())
+        val hit = clipEntryAt(x, y)
+        val menuEntry = clipMenuFor
+        if (menuEntry != null) {
+            clipMenuFor = null
+            if (hit != null && hit.first === menuEntry) {
+                val r = hit.second
+                if (x < r.centerX()) hist.togglePin(menuEntry) else deleteClip(menuEntry)
             }
-            x > r.right - 2 * zone -> hist.togglePin(entry)
-            else -> listener.onText(entry.text)
+            invalidate()
+            return
+        }
+        val (entry, r) = hit ?: return
+        if (x > r.right - clipMenuZone && y < r.top + clipMenuZone) {
+            clipMenuFor = entry
+        } else {
+            listener.onText(entry.text)
         }
         invalidate()
+    }
+
+    private fun deleteClip(e: ClipboardHistory.Entry) {
+        clipHistory?.remove(e)
+        clipScroll = clipScroll.coerceIn(0f, maxClipScroll())
+        showMessage("Gelöscht")
     }
 
     private fun clipClear() {
@@ -415,8 +481,13 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         canvas.drawLine(cx - 4 * dp, cy + 3 * dp, cx + 4 * dp, cy + 3 * dp, iconPaint)
 
         if (mode == Mode.CLIPBOARD) canvas.drawCircle(cx, cy, barHeight * 0.42f, funcPaint)
+        if (mode == Mode.MENU) canvas.drawCircle(settingsRect.centerX(), settingsRect.centerY(), barHeight * 0.42f, funcPaint)
         drawGear(canvas, settingsRect.centerX(), settingsRect.centerY())
-        val text = message ?: if (mode == Mode.CLIPBOARD) "Zwischenablage" else null
+        val text = message ?: when (mode) {
+            Mode.CLIPBOARD -> "Zwischenablage"
+            Mode.MENU -> "Einstellungen"
+            else -> null
+        }
         if (text != null) {
             canvas.drawText(text, width / 2f, centerY(barTextPaint, barHeight / 2f), barTextPaint)
             return
@@ -564,6 +635,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         var popupIndex = 0
         var languageSwitched = false
         var inClipList = false
+        var hSwipe = false
+        var barLong = false
         var dragging = false
         var scrollStart = 0f
         val longPress = Runnable { startPopup(this) }
@@ -607,7 +680,12 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             .toList().forEach { finish(it) }
 
         if (y < barHeight) {
-            touches[id] = Touch(id, null, true, x, y)
+            val t = Touch(id, null, true, x, y)
+            touches[id] = t
+            if (mode != Mode.CLIPBOARD && mode != Mode.MENU && message == null) {
+                val i = slotRects().indexOfFirst { it.contains(x, y) }
+                if (i >= 0 && slots.getOrNull(i)?.isNotEmpty() == true) postDelayed(t.longPress, 500)
+            }
             return
         }
         if (mode == Mode.CLIPBOARD && clipArea.contains(x, y)) {
@@ -635,6 +713,16 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         t.lastX = x
         t.lastY = y
         if (t.inClipList) {
+            val ddx = x - t.x0
+            if (!t.dragging && !t.hSwipe && abs(ddx) > 12 * dp && abs(ddx) > abs(y - t.y0)) {
+                t.hSwipe = true
+                swipeEntry = clipEntryAt(t.x0, t.y0)?.first
+            }
+            if (t.hSwipe) {
+                swipeDx = ddx
+                invalidate()
+                return
+            }
             if (abs(y - t.y0) > 8 * dp) t.dragging = true
             if (t.dragging) {
                 clipScroll = (t.scrollStart - (y - t.y0)).coerceIn(0f, maxClipScroll())
@@ -678,6 +766,15 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     }
 
     private fun startPopup(t: Touch) {
+        if (t.onBar) {
+            val i = slotRects().indexOfFirst { it.contains(t.lastX, t.lastY) }
+            if (i >= 0) {
+                t.barLong = true
+                listener.onKeyFeedback()
+                listener.onSuggestionLongPress(i)
+            }
+            return
+        }
         if (t.swipe != 0) return
         val options = t.target?.key?.longPress ?: return
         if (options.isEmpty()) return
@@ -705,6 +802,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         cancelTimers(t)
 
         if (t.onBar) {
+            if (t.barLong) return
             if (clipRect.contains(t.lastX, t.lastY) && clipRect.contains(t.x0, t.y0)) {
                 if (mode == Mode.CLIPBOARD) {
                     setMode(lettersMode)
@@ -714,8 +812,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                     setMode(Mode.CLIPBOARD)
                 }
             } else if (settingsRect.contains(t.lastX, t.lastY) && settingsRect.contains(t.x0, t.y0)) {
-                listener.onOpenSettings()
-            } else if (mode != Mode.CLIPBOARD && message == null) {
+                setMode(if (mode == Mode.MENU) Mode.LETTERS else Mode.MENU)
+            } else if (mode != Mode.CLIPBOARD && mode != Mode.MENU && message == null) {
                 val rects = slotRects()
                 val i = rects.indexOfFirst { it.contains(t.lastX, t.lastY) }
                 if (i >= 0 && rects[i].contains(t.x0, t.y0) && slots.getOrNull(i)?.isNotEmpty() == true) {
@@ -727,7 +825,15 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             return
         }
         if (t.inClipList) {
-            if (!t.dragging) clipTap(t.lastX, t.lastY)
+            if (t.hSwipe) {
+                val e = swipeEntry
+                if (e != null && abs(t.lastX - t.x0) > 80 * dp) deleteClip(e)
+                swipeEntry = null
+                swipeDx = 0f
+                invalidate()
+            } else if (!t.dragging) {
+                clipTap(t.lastX, t.lastY)
+            }
             return
         }
         val k = t.target?.key ?: return
@@ -764,6 +870,10 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 setMode(Mode.EMOTICONS)
             }
             Action.CLIP_CLEAR -> clipClear()
+            Action.MENU -> {
+                setMode(Mode.LETTERS)
+                listener.onMenu(k.text)
+            }
             Action.DELETE, Action.TO_CLIPBOARD -> {}
         }
         invalidate()

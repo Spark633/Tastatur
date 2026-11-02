@@ -18,8 +18,11 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Lange drücken: nur die gängigsten Sonderbuchstaben je Sprache (DE: ä ö ü ß, NL: é ë ï ó ö ü)
 - Leertaste seitlich wischen: Sprache wechseln (Deutsch, English, Nederlands)
 - Emoticon-Taste (^.^, :D, ¯\_(ツ)_/¯ …)
-- Zwischenablage-Verlauf (letzte 30 Einträge, anheften, löschen, leeren), Knopf links oder rechts
-- Zahnrad in der Leiste öffnet die Einstellungen (gegenüber der Zwischenablage)
+- Zwischenablage-Verlauf als Kacheln (1–2 Spalten, 1–4 Zeilen), ⋮ zum Anheften/Löschen, seitlich wischen löscht
+- Zahnrad in der Leiste öffnet ein Menü: Allgemein, Wörterbuch, Zwischenablage, Größe, Sprachen, Hilfe
+- Eigene Wörter: werden gelernt (2× getippt oder Korrektur abgelehnt), in der App bearbeiten
+- Vorschlag lange drücken: wird nicht mehr vorgeschlagen
+- Optional: Leerzeichen nach . , ! ? automatisch, Enter übernimmt den Vorschlag
 - Größe direkt auf der Tastatur durch Ziehen anpassen, Abstand zu den Systemknöpfen
 - Automatische Großschreibung, doppeltes Leerzeichen → Punkt
 - Wortvorschläge (Deutsch, Englisch, Niederländisch) mit Vervollständigung
@@ -33,6 +36,5 @@ Wörterbücher: siehe `app/src/main/assets/dict/LIZENZ.txt`.
 
 ## Geplant
 
-4. Eigene Wörter (lernen, hinzufügen, bearbeiten)
 5. Hintergrundbild und Design
 6. Nächstes Wort vorhersagen, gelöschten Text wiederherstellen

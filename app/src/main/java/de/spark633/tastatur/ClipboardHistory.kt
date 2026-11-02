@@ -9,7 +9,7 @@ import org.json.JSONObject
  * Angeheftete Einträge bleiben dauerhaft, die übrigen werden auf
  * [MAX_UNPINNED] begrenzt.
  */
-class ClipboardHistory(context: Context) {
+class ClipboardHistory private constructor(context: Context) {
 
     class Entry(val text: String, var pinned: Boolean, var time: Long)
 
@@ -78,6 +78,14 @@ class ClipboardHistory(context: Context) {
     }
 
     companion object {
+        @Volatile
+        private var instance: ClipboardHistory? = null
+
+        fun get(context: Context): ClipboardHistory =
+            instance ?: synchronized(this) {
+                instance ?: ClipboardHistory(context.applicationContext).also { instance = it }
+            }
+
         const val MAX_UNPINNED = 30
         const val MAX_LENGTH = 5000
     }

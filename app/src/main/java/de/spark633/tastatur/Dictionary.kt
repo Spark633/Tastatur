@@ -47,15 +47,26 @@ class Dictionary private constructor(
         val slots: List<String>,
     )
 
-    fun suggest(typed: String, neighbors: Map<Char, Set<Char>>, known: (String) -> Boolean): Suggestions {
+    /**
+     * @param extra   eigene Wörter (zählen als bekannt und werden bevorzugt vorgeschlagen)
+     * @param blocked gesperrte Vorschläge, kleingeschrieben
+     */
+    fun suggest(
+        typed: String,
+        neighbors: Map<Char, Set<Char>>,
+        known: (String) -> Boolean,
+        extra: List<String> = emptyList(),
+        blocked: Set<String> = emptySet(),
+    ): Suggestions {
+        val ok = { w: String -> !blocked.contains(w.lowercase()) }
         val valid = contains(typed) || known(typed)
-        val completions = completions(typed, 3)
+        val completions = completions(typed, 3, extra).filter(ok)
         if (valid) {
-            val others = (completions + fuzzy(typed, neighbors, 3).map { it.first })
-                .filter { !it.equals(typed, ignoreCase = true) }.distinct()
+            val others = (completions + fuzzy(typed, neighbors, 3, extra).map { it.first })
+                .filter { ok(it) && !it.equals(typed, ignoreCase = true) }.distinct()
             return Suggestions(typed, null, listOf(others.getOrElse(0) { "" }, typed, others.getOrElse(1) { "" }))
         }
-        val corrections = fuzzy(typed, neighbors, 3)
+        val corrections = fuzzy(typed, neighbors, 4, extra).filter { ok(it.first) }
         // Angefangenes Wort ("Verab" → Verabredung): nur bei sehr wahrscheinlichem
         // Tippfehler korrigieren, sonst die Vervollständigungen zeigen.
         val bestCost = corrections.firstOrNull()?.second ?: Float.MAX_VALUE
@@ -70,9 +81,11 @@ class Dictionary private constructor(
         return Suggestions(typed, null, listOf(others.getOrElse(0) { "" }, typed, others.getOrElse(1) { "" }))
     }
 
-    /** Wörter, die mit dem Getippten beginnen, die häufigsten zuerst. */
-    private fun completions(typed: String, n: Int): List<String> {
+    /** Wörter, die mit dem Getippten beginnen: eigene zuerst, dann die häufigsten. */
+    private fun completions(typed: String, n: Int, extra: List<String>): List<String> {
         val p = typed.lowercase()
+        val own = extra.filter { it.length > p.length && it.lowercase().startsWith(p) }
+            .map { applyCase(it, typed) }
         var lo = 0
         var hi = sortedIdx.size
         while (lo < hi) {
@@ -86,12 +99,12 @@ class Dictionary private constructor(
             if (lower[idx].length > p.length) found.add(idx)
             i++
         }
-        // Index = Häufigkeitsrang, kleiner ist häufiger
-        return found.sorted().take(n).map { applyCase(words[it], typed) }
+        // Index = Häufigkeitsrang, kleiner ist häufiger; Reserve für gesperrte
+        return (own + found.sorted().take(n + 5).map { applyCase(words[it], typed) }).distinct()
     }
 
     /** Ähnliche Wörter (Tippfehler), bestes zuerst. */
-    private fun fuzzy(typed: String, neighbors: Map<Char, Set<Char>>, n: Int): List<Pair<String, Float>> {
+    private fun fuzzy(typed: String, neighbors: Map<Char, Set<Char>>, n: Int, extra: List<String>): List<Pair<String, Float>> {
         val t = typed.lowercase()
         val maxCost = maxCost(t.length)
         val first = base(t[0])
@@ -99,17 +112,25 @@ class Dictionary private constructor(
             add(first)
             neighbors[t[0]]?.forEach { add(base(it)) }
         }
-        val scored = ArrayList<Triple<Int, Float, Float>>() // Index, Kosten, Punkte
+        val scored = ArrayList<Triple<String, Float, Float>>() // Wort, Kosten, Punkte
         for (b in starts) {
             val bucket = buckets[b] ?: continue
             for (idx in bucket) {
                 val w = lower[idx]
                 if (abs(w.length - t.length) > maxCost) continue
                 val cost = distance(t, w, maxCost, neighbors)
-                if (cost <= maxCost) scored.add(Triple(idx, cost, freqs[idx] - cost * COST_WEIGHT))
+                if (cost <= maxCost) scored.add(Triple(words[idx], cost, freqs[idx] - cost * COST_WEIGHT))
             }
         }
-        return scored.sortedByDescending { it.third }.take(n).map { applyCase(words[it.first], typed) to it.second }
+        // Eigene Wörter zählen wie sehr häufige Wörter
+        for (e in extra) {
+            val w = e.lowercase()
+            if (abs(w.length - t.length) > maxCost) continue
+            val cost = distance(t, w, maxCost, neighbors)
+            if (cost <= maxCost) scored.add(Triple(e, cost, OWN_WORD_FREQ - cost * COST_WEIGHT))
+        }
+        return scored.sortedByDescending { it.third }.distinctBy { it.first }.take(n + 5)
+            .map { applyCase(it.first, typed) to it.second }
     }
 
     private fun maxCost(len: Int) = when {
@@ -160,6 +181,7 @@ class Dictionary private constructor(
     companion object {
         private const val FUZZY_LIMIT = 100_000
         private const val COST_WEIGHT = 45f
+        private const val OWN_WORD_FREQ = 200f
 
         fun load(context: Context, lang: Language): Dictionary =
             context.assets.open("dict/${lang.code}.txt").bufferedReader().useLines { fromLines(it) }

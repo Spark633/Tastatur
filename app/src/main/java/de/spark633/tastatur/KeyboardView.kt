@@ -660,6 +660,9 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     private fun centerY(p: Paint, cy: Float) = cy - (p.descent() + p.ascent()) / 2f
 
+    /** Großschreiben, aber ß bleibt ß (sonst würde daraus "SS"). */
+    private fun upper(t: String) = if (t == "ß") t else t.uppercase()
+
     private fun displayText(k: Key): String {
         if (!k.cased || shift == Shift.OFF || k.text == "ß") return k.text
         return k.text.uppercase()
@@ -755,7 +758,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         options.forEachIndexed { i, opt ->
             val r = rects[i]
             if (i == t.popupIndex) canvas.drawRoundRect(r, 8 * dp, 8 * dp, accentPaint)
-            val text = if (t.target?.key?.cased == true && shift != Shift.OFF) opt.uppercase() else opt
+            val text = if (t.target?.key?.cased == true && shift != Shift.OFF) upper(opt) else opt
             canvas.drawText(text, r.centerX(), centerY(labelPaint, r.centerY()), labelPaint)
         }
     }
@@ -977,7 +980,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
         t.popup?.let { options ->
             val opt = options[t.popupIndex]
-            typeText(if (k.cased && shift != Shift.OFF) opt.uppercase() else opt, k.cased)
+            typeText(if (k.cased && shift != Shift.OFF) upper(opt) else opt, k.cased)
             invalidate()
             return
         }

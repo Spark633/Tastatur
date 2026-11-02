@@ -114,7 +114,10 @@ class Prefs(context: Context) {
     /** Deckkraft der Tasten in Prozent. */
     var keyOpacity: Int
         get() = sp.getInt("key_opacity", 25)
-        set(v) = sp.edit().putInt("key_opacity", v).apply()
+        set(v) {
+            sp.edit().putInt("key_opacity", v).apply()
+            rememberImageSettings()
+        }
 
     var cornerRadiusDp: Int
         get() = sp.getInt("corner_radius", 6)
@@ -123,12 +126,18 @@ class Prefs(context: Context) {
     /** Eigene Tastenfarbe (0 = aus dem Farbschema). */
     var keyColor: Int
         get() = sp.getInt("key_color", 0)
-        set(v) = sp.edit().putInt("key_color", v).apply()
+        set(v) {
+            sp.edit().putInt("key_color", v).apply()
+            rememberImageSettings()
+        }
 
     /** Eigene Schriftfarbe der Tasten (0 = aus dem Farbschema). */
     var keyTextColor: Int
         get() = sp.getInt("key_text_color", 0)
-        set(v) = sp.edit().putInt("key_text_color", v).apply()
+        set(v) {
+            sp.edit().putInt("key_text_color", v).apply()
+            rememberImageSettings()
+        }
 
     /** Schriftgröße in Prozent. */
     var textScale: Int
@@ -201,15 +210,23 @@ class Prefs(context: Context) {
         val o = org.json.JSONObject()
             .put("dim", sp.getInt("bg_dim", 30)).put("zoom", sp.getInt("bg_zoom", 100))
             .put("x", sp.getInt("bg_position_x", 50)).put("y", sp.getInt("bg_position", 50))
+            .put("key", sp.getInt("key_color", 0)).put("text", sp.getInt("key_text_color", 0))
+            .put("opacity", sp.getInt("key_opacity", 25))
         imageSp.edit().putString(name, o.toString()).apply()
     }
 
     /** Werte eines Bildes übernehmen (neue Bilder: Standardwerte). */
     fun loadImageSettings(name: String) {
-        val o = try { org.json.JSONObject(imageSp.getString(name, "{}") ?: "{}") } catch (_: Exception) { org.json.JSONObject() }
+        val raw = imageSp.getString(name, null)
+        val o = try { org.json.JSONObject(raw ?: "{}") } catch (_: Exception) { org.json.JSONObject() }
+        // Bilder von vor dieser Funktion: Tastenfarben bleiben wie sie gerade sind
+        val known = raw != null
         sp.edit()
             .putInt("bg_dim", o.optInt("dim", 30)).putInt("bg_zoom", o.optInt("zoom", 100))
             .putInt("bg_position_x", o.optInt("x", 50)).putInt("bg_position", o.optInt("y", 50))
+            .putInt("key_color", o.optInt("key", if (known) keyColor else 0))
+            .putInt("key_text_color", o.optInt("text", if (known) keyTextColor else 0))
+            .putInt("key_opacity", o.optInt("opacity", if (known) keyOpacity else 25))
             .apply()
     }
 

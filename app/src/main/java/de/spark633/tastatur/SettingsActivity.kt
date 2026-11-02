@@ -414,6 +414,9 @@ class SettingsActivity : Activity() {
     private var positionXBar: android.widget.SeekBar? = null
     private var zoomBar: android.widget.SeekBar? = null
     private var dimBar: android.widget.SeekBar? = null
+    private var opacityBar: android.widget.SeekBar? = null
+    private var keyColorList: android.widget.Spinner? = null
+    private var textColorList: android.widget.Spinner? = null
 
     /** Vorschau und Ausschnitt-Regler bei jeder Änderung aktualisieren. */
     private val previewListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
@@ -422,6 +425,16 @@ class SettingsActivity : Activity() {
         if (key == "bg_position_x") positionXBar?.progress = prefs.bgPositionX
         if (key == "bg_zoom") zoomBar?.progress = prefs.bgZoom - 100
         if (key == "bg_dim") dimBar?.progress = prefs.bgDim
+        if (key == "key_opacity") opacityBar?.progress = prefs.keyOpacity
+        val colorValues = Theme.COLOR_CHOICES.map { it.second }
+        if (key == "key_color") keyColorList?.let {
+            val i = colorValues.indexOf(prefs.keyColor).coerceAtLeast(0)
+            if (it.selectedItemPosition != i) it.setSelection(i)
+        }
+        if (key == "key_text_color") textColorList?.let {
+            val i = colorValues.indexOf(prefs.keyTextColor).coerceAtLeast(0)
+            if (it.selectedItemPosition != i) it.setSelection(i)
+        }
     }
 
     private fun buildDesign() {
@@ -458,7 +471,7 @@ class SettingsActivity : Activity() {
             Background.remove(this)
             updateBgStatus()
         })
-        root.addView(info("Frühere Bilder: antippen = verwenden, lange drücken = löschen. Jedes Bild merkt sich Abdunkeln, Zoom und Ausschnitt."))
+        root.addView(info("Frühere Bilder: antippen = verwenden, lange drücken = löschen. Jedes Bild merkt sich Abdunkeln, Zoom, Ausschnitt sowie Tastenfarbe, Schriftfarbe und Deckkraft."))
         gallery = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         root.addView(android.widget.HorizontalScrollView(this).apply { addView(gallery) })
         renderGallery()
@@ -488,12 +501,13 @@ class SettingsActivity : Activity() {
         root.addView(info("Tastenfarbe"))
         root.addView(colorDropdown(colorNames, colorValues, colorValues.indexOf(prefs.keyColor).coerceAtLeast(0)) {
             prefs.keyColor = colorValues[it]
-        })
+        }.also { keyColorList = it })
         root.addView(info("Schriftfarbe"))
         root.addView(colorDropdown(colorNames, colorValues, colorValues.indexOf(prefs.keyTextColor).coerceAtLeast(0)) {
             prefs.keyTextColor = colorValues[it]
-        })
-        root.addView(slider("Deckkraft der Tasten", 0, 100, prefs.keyOpacity, "%") { prefs.keyOpacity = it })
+        }.also { textColorList = it })
+        root.addView(slider("Deckkraft der Tasten", 0, 100, prefs.keyOpacity, "%") { prefs.keyOpacity = it }
+            .also { opacityBar = it.getChildAt(1) as android.widget.SeekBar })
         root.addView(slider("Eckenrundung", 0, 24, prefs.cornerRadiusDp, " dp") { prefs.cornerRadiusDp = it })
         root.addView(slider("Schriftgröße", 70, 150, prefs.textScale, "%") { prefs.textScale = it })
         root.addView(switch("Kleine Zeichen über/unter den Buchstaben anzeigen", prefs.showHints) { prefs.showHints = it })

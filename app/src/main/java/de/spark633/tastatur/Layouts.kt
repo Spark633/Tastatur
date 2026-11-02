@@ -154,22 +154,36 @@ object Layouts {
     )
 
     /** Formatieren: Listen, Unicode-Stile (überall sichtbar) und WhatsApp-Zeichen. */
-    fun format(): List<List<Key>> = listOf(
-        listOf(Key("•  Aufzählung", Action.FORMAT, text = "bullet", width = 5f),
-            Key("1.  Nummeriert", Action.FORMAT, text = "number", width = 5f)),
-        listOf(Key("𝗙𝗲𝘁𝘁", Action.FORMAT, text = "bold", width = 2f),
-            Key("𝘒𝘶𝘳𝘴𝘪𝘷", Action.FORMAT, text = "italic", width = 2f),
-            Key("D̶u̶r̶c̶h̶", Action.FORMAT, text = "strike", width = 2f),
-            Key("U̲n̲t̲e̲r̲", Action.FORMAT, text = "underline", width = 2f),
-            Key("sArKaSmUs", Action.FORMAT, text = "sarcasm", width = 2f)),
-        listOf(Key("*fett*", Action.FORMAT, text = "wa_bold", width = 2.5f),
-            Key("_kursiv_", Action.FORMAT, text = "wa_italic", width = 2.5f),
-            Key("~durch~", Action.FORMAT, text = "wa_strike", width = 2.5f),
-            Key("```mono```", Action.FORMAT, text = "wa_mono", width = 2.5f)),
-        listOf(Key("ABC", Action.TO_LETTERS, width = 3f),
-            Key(" ", Action.SPACE, width = 4f),
-            Key("⌫", Action.DELETE, width = 3f)),
-    )
+    const val FORMAT_PAGES = 2
+
+    /** Formatieren, Seite 1: Listen, Unicode-Stile, WhatsApp. Seite 2: Spaß-Stile (sArKaSmUs …). */
+    fun format(page: Int): List<List<Key>> {
+        val bottom = listOf(
+            Key("ABC", Action.TO_LETTERS, width = 2.5f),
+            Key("‹", Action.PAGE_PREV, width = 1.5f),
+            Key("${page + 1} / $FORMAT_PAGES", Action.SPACE, width = 2f),
+            Key("›", Action.PAGE_NEXT, width = 1.5f),
+            Key("⌫", Action.DELETE, width = 2.5f),
+        )
+        return if (page == 0) listOf(
+            listOf(Key("•  Aufzählung", Action.FORMAT, text = "bullet", width = 5f),
+                Key("1.  Nummeriert", Action.FORMAT, text = "number", width = 5f)),
+            listOf(Key("𝗙𝗲𝘁𝘁", Action.FORMAT, text = "bold", width = 2.5f),
+                Key("𝘒𝘶𝘳𝘴𝘪𝘷", Action.FORMAT, text = "italic", width = 2.5f),
+                Key("D̶u̶r̶c̶h̶", Action.FORMAT, text = "strike", width = 2.5f),
+                Key("U̲n̲t̲e̲r̲", Action.FORMAT, text = "underline", width = 2.5f)),
+            listOf(Key("*fett*", Action.FORMAT, text = "wa_bold", width = 2.5f),
+                Key("_kursiv_", Action.FORMAT, text = "wa_italic", width = 2.5f),
+                Key("~durch~", Action.FORMAT, text = "wa_strike", width = 2.5f),
+                Key("```mono```", Action.FORMAT, text = "wa_mono", width = 2.5f)),
+            bottom,
+        ) else listOf(
+            listOf(Key("sArKaSmUs", Action.FORMAT, text = "sarcasm", width = 5f)),
+            emptyList(),
+            emptyList(),
+            bottom,
+        )
+    }
 
     /** Untere Reihe der Zwischenablage-Ansicht; darüber liegt die Liste. */
     fun clipboard(): List<List<Key>> = listOf(

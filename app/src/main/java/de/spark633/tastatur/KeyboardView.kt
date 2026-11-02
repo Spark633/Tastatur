@@ -71,6 +71,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var shift = Shift.OFF
     private var lastShiftTap = 0L
     private var emoticonPage = 0
+    private var formatPage = 0
     private var emoticonList: List<String> = Layouts.EMOTICONS
     private var message: String? = null
     private var slots: List<String> = emptyList()
@@ -377,7 +378,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         Mode.EMOTICONS -> Layouts.emoticons(emoticonPage, emoticonList)
         Mode.CLIPBOARD -> Layouts.clipboard()
         Mode.MENU -> Layouts.menu()
-        Mode.FORMAT -> Layouts.format()
+        Mode.FORMAT -> Layouts.format(formatPage)
     }
 
     private fun layoutKeys() {
@@ -744,8 +745,11 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 }
             }
             Action.SPACE -> {
-                val name = if (languageCount > 1 && mode != Mode.EMOTICONS) "‹  ${language.displayName}  ›"
-                else language.displayName
+                val name = when {
+                    mode == Mode.FORMAT -> k.label // Seitenanzeige "1 / 2"
+                    languageCount > 1 && mode != Mode.EMOTICONS -> "‹  ${language.displayName}  ›"
+                    else -> language.displayName
+                }
                 canvas.drawText(name, r.centerX(), centerY(hintPaint, r.centerY()), hintPaint)
             }
             Action.SHIFT -> {
@@ -1109,17 +1113,20 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 emoticonPage = 0
                 setMode(Mode.EMOTICONS)
             }
-            Action.PAGE_PREV -> {
-                val pages = Layouts.emoticonPages(emoticonList)
-                emoticonPage = (emoticonPage - 1 + pages) % pages
-                setMode(Mode.EMOTICONS)
-            }
-            Action.PAGE_NEXT -> {
-                emoticonPage = (emoticonPage + 1) % Layouts.emoticonPages(emoticonList)
-                setMode(Mode.EMOTICONS)
+            Action.PAGE_PREV, Action.PAGE_NEXT -> {
+                val step = if (k.action == Action.PAGE_NEXT) 1 else -1
+                if (mode == Mode.FORMAT) {
+                    formatPage = (formatPage + step + Layouts.FORMAT_PAGES) % Layouts.FORMAT_PAGES
+                    setMode(Mode.FORMAT)
+                } else {
+                    val pages = Layouts.emoticonPages(emoticonList)
+                    emoticonPage = (emoticonPage + step + pages) % pages
+                    setMode(Mode.EMOTICONS)
+                }
             }
             Action.CLIP_CLEAR -> clipClear()
             Action.MENU -> if (k.text == "format") {
+                formatPage = 0
                 setMode(Mode.FORMAT)
             } else {
                 setMode(Mode.LETTERS)

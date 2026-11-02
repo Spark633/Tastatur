@@ -16,7 +16,7 @@ import kotlin.math.max
 object Background {
 
     private const val MAX_SIZE = 1440
-    private const val MAX_HISTORY = 10
+    private const val MAX_HISTORY = 5
 
     private fun dir(context: Context) = File(context.filesDir, "hintergruende").apply { mkdirs() }
 

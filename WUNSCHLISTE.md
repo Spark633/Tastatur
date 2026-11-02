@@ -15,5 +15,5 @@ _(gerade nichts offen)_
 - [x] Formatieren, Websuche, Emoticons bearbeiten
 - [x] Aussehen: Farbschemata, Hintergrundbild, Vorschau
 - [x] Nächstes Wort vorhersagen, gelöschten Text wiederherstellen
-- [x] Frühere Hintergrundbilder wieder auswählen (Verlauf der letzten 10)
+- [x] Frühere Hintergrundbilder wieder auswählen (Verlauf der letzten 5)
 - [x] Einstellungen als Profil speichern und laden, Sicherung als Datei

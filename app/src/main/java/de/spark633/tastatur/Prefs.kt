@@ -135,6 +135,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("space_cursor", true)
         set(v) = sp.edit().putBoolean("space_cursor", v).apply()
 
+    /** Regler unter "Aussehen" gesperrt. */
+    var slidersLocked: Boolean
+        get() = sp.getBoolean("sliders_locked", false)
+        set(v) = sp.edit().putBoolean("sliders_locked", v).apply()
+
     /** Kleine Zeichen über/unter den Buchstaben anzeigen. */
     var showHints: Boolean
         get() = sp.getBoolean("show_hints", true)

@@ -187,8 +187,11 @@ class KeyboardPreview(context: Context, private val prefs: Prefs) : View(context
     }
 
     @SuppressLint("ClickableViewAccessibility")
+    /** Regler gesperrt: Bild lässt sich nicht verschieben oder zoomen. */
+    var locked = false
+
     override fun onTouchEvent(e: MotionEvent): Boolean {
-        if (bitmap == null) return false
+        if (bitmap == null || locked) return false
         pinch.onTouchEvent(e)
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {

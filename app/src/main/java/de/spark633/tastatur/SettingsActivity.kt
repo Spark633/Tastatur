@@ -156,29 +156,15 @@ class SettingsActivity : Activity() {
             prefs.doubleSpacePeriod = it
         })
 
-        root.addView(header("Größe"))
-        root.addView(info(
-            "Öffnet die Tastatur im Größen-Modus: nach oben/unten ziehen ändert die Tastenhöhe, " +
-                "„Abstand“ verschiebt die Tasten über die Systemknöpfe. Mit „Fertig“ speichern. " +
-                "Geht auch direkt über das Zahnrad in der Tastatur."
-        ))
-        root.addView(button("Größe anpassen") {
-            prefs.resizeRequest = true
-            testField?.let {
-                it.requestFocus()
-                getSystemService(InputMethodManager::class.java)?.showSoftInput(it, 0)
-            }
-        })
-
         root.addView(header("Websuche"))
         root.addView(info(
             "⚙ → 🔍 Suche öffnet den Standard-Browser. Ist Text markiert, wird direkt danach gesucht."
         ))
         val engines = TastaturService.SEARCH_ENGINES.keys.toList()
         val names = listOf("Google", "DuckDuckGo", "Ecosia", "Bing", "Startpage")
-        root.addView(radio(names, engines.indexOf(prefs.searchEngine).coerceAtLeast(0)) {
+        root.addView(dropdown(names, engines.indexOf(prefs.searchEngine).coerceAtLeast(0)) {
             prefs.searchEngine = engines[it]
-        }.apply { orientation = RadioGroup.VERTICAL })
+        })
 
         root.addView(header("Leiste"))
         root.addView(info("Seite des Zwischenablage-Knopfs. Das Zahnrad sitzt gegenüber."))
@@ -395,14 +381,33 @@ class SettingsActivity : Activity() {
 
     private fun buildDesign() {
         title = "Aussehen"
-        preview = KeyboardPreview(this, prefs)
+        preview = KeyboardPreview(this, prefs).also { it.locked = prefs.slidersLocked }
         root.addView(info("Die Vorschau oben zeigt jede Änderung sofort. Bild darin ziehen = verschieben, mit zwei Fingern = zoomen."))
+
+        root.addView(switch("🔒 Regler sperren (nichts verstellt sich aus Versehen)", prefs.slidersLocked) {
+            prefs.slidersLocked = it
+            applySliderLock()
+        })
 
         root.addView(header("Farbschema"))
         val themes = Theme.ALL
-        root.addView(radio(themes.map { it.name }, themes.indexOfFirst { it.id == prefs.theme }.coerceAtLeast(0)) {
+        root.addView(dropdown(themes.map { it.name }, themes.indexOfFirst { it.id == prefs.theme }.coerceAtLeast(0)) {
             prefs.theme = themes[it].id
-        }.apply { orientation = RadioGroup.VERTICAL })
+        })
+
+        root.addView(header("Größe"))
+        root.addView(info(
+            "Öffnet die Tastatur im Größen-Modus: nach oben/unten ziehen ändert die Tastenhöhe, " +
+                "„Abstand“ verschiebt die Tasten über die Systemknöpfe. Mit „Fertig“ speichern. " +
+                "Geht auch direkt über das Zahnrad in der Tastatur."
+        ))
+        root.addView(button("Größe anpassen") {
+            prefs.resizeRequest = true
+            testField?.let {
+                it.requestFocus()
+                getSystemService(InputMethodManager::class.java)?.showSoftInput(it, 0)
+            }
+        })
 
         root.addView(header("Hintergrundbild"))
         bgStatus = info("")
@@ -509,6 +514,27 @@ class SettingsActivity : Activity() {
         }.start()
     }
 
+    private val sliders = ArrayList<android.widget.SeekBar>()
+
+    /** Gesperrt: Regler und Vorschau reagieren nicht. */
+    private fun applySliderLock() {
+        val locked = prefs.slidersLocked
+        sliders.forEach { it.isEnabled = !locked }
+        preview?.locked = locked
+    }
+
+    /** Aufklapp-Liste (braucht weniger Platz als Auswahlknöpfe). */
+    private fun dropdown(options: List<String>, selected: Int, onSelect: (Int) -> Unit) =
+        android.widget.Spinner(this).apply {
+            adapter = android.widget.ArrayAdapter(this@SettingsActivity, android.R.layout.simple_spinner_item, options)
+                .also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+            setSelection(selected.coerceIn(0, options.lastIndex), false)
+            onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(p: android.widget.AdapterView<*>?, v: View?, pos: Int, id: Long) = onSelect(pos)
+                override fun onNothingSelected(p: android.widget.AdapterView<*>?) {}
+            }
+        }
+
     private fun slider(label: String, min: Int, max: Int, value: Int, unit: String, onChange: (Int) -> Unit) =
         LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -518,6 +544,8 @@ class SettingsActivity : Activity() {
             show(value)
             addView(text)
             addView(android.widget.SeekBar(this@SettingsActivity).apply {
+                sliders.add(this)
+                isEnabled = !prefs.slidersLocked
                 this.max = max - min
                 progress = (value - min).coerceIn(0, max - min)
                 setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {

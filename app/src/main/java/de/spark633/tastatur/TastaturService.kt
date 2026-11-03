@@ -346,7 +346,14 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         if (word == null || !prefs.learnWords || word.length < 2) return
         val d = dict ?: return
         if (d.contains(word) || word.any { it.isDigit() }) return
-        userDict.noteTyped(word)
+        userDict.noteTyped(word, sentenceStartBefore(word.length))
+    }
+
+    /** Steht vor den letzten [chars] Zeichen ein Satzanfang (Textbeginn, . ! ? oder Zeilenumbruch)? */
+    private fun sentenceStartBefore(chars: Int): Boolean {
+        val text = currentInputConnection?.getTextBeforeCursor(chars + 4, 0)?.toString() ?: return false
+        val prefix = text.dropLast(chars).trimEnd(' ')
+        return prefix.isEmpty() || prefix.last() in ".!?\n"
     }
 
     /** "zb" → "z.B." (nur Deutsch). Am Satzanfang großgeschrieben: "Z.B.". */
@@ -555,12 +562,13 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val expected = corrected + sep
         val before = ic.getTextBeforeCursor(expected.length, 0)?.toString()
         if (before != expected) return false
+        val atStart = sentenceStartBefore(expected.length)
         ic.beginBatchEdit()
         ic.deleteSurroundingText(expected.length, 0)
         ic.commitText(original + sep.trim(), 1) // Satzzeichen bleibt, Leerzeichen fällt weg
         ic.endBatchEdit()
         ignored.add(original.lowercase())
-        if (prefs.learnWords) userDict.learnNow(original)
+        if (prefs.learnWords) userDict.learnNow(original, atStart)
         current = null
         autoSpacePending = false
         return true
@@ -699,7 +707,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         if (s.typed != word) return
         val chosen = if (index == 0 && s.correction != null) {
             ignored.add(word.lowercase()) // eigenes Wort behalten und lernen
-            if (prefs.learnWords) userDict.learnNow(word)
+            if (prefs.learnWords) userDict.learnNow(word, sentenceStartBefore(word.length))
             word
         } else {
             s.slots.getOrNull(index)?.takeIf { it.isNotEmpty() } ?: return

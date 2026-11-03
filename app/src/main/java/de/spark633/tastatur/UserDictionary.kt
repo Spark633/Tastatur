@@ -30,20 +30,40 @@ class UserDictionary private constructor(context: Context) {
     }
 
     /** Ein unbekanntes Wort wurde getippt und nicht korrigiert. */
-    fun noteTyped(word: String) {
+    /**
+     * Ein unbekanntes Wort wurde benutzt. Die Schreibweise wird sinnvoll gewählt:
+     * am Satzanfang nur wegen der Großschreibung groß → klein; deutsche Nomen-Endungen
+     * → groß; bewusst groß mitten im Satz (Namen), USA, iPhone → wie getippt.
+     */
+    fun noteTyped(word: String, atSentenceStart: Boolean = false) {
         val key = word.lowercase()
         val w = words[key]
-        if (w == null) words[key] = Word(word, 1, false) else { w.count++; w.text = word }
+        val deliberate = deliberateCase(word, atSentenceStart)
+        if (w == null) {
+            words[key] = Word(deliberate ?: autoCase(word), 1, false)
+        } else {
+            w.count++
+            // Klein getippt ändert eine bewusste Schreibweise nicht
+            if (!w.manual && deliberate != null) w.text = deliberate
+        }
         save()
+    }
+
+    /** Bewusst gewählte Schreibweise, oder null wenn sie nichts aussagt. */
+    private fun deliberateCase(word: String, atSentenceStart: Boolean): String? = when {
+        word.length > 1 && word == word.uppercase() && word != word.lowercase() -> word // USA
+        word.drop(1).any { it.isUpperCase() } -> word // iPhone
+        word[0].isUpperCase() && !atSentenceStart -> word // Name mitten im Satz
+        else -> null
     }
 
     /**
      * Korrektur abgelehnt: zählt wie einmal benutzt (nicht sofort gelernt,
      * damit Tippfehler nicht aus Versehen ins Wörterbuch kommen).
      */
-    fun learnNow(word: String) {
+    fun learnNow(word: String, atSentenceStart: Boolean = false) {
         blocked.remove(word.lowercase())
-        noteTyped(word)
+        noteTyped(word, atSentenceStart)
     }
 
     fun add(word: String) {
@@ -115,6 +135,15 @@ class UserDictionary private constructor(context: Context) {
             for (i in 0 until b.length()) blocked.add(b.getString(i))
         } catch (_: Exception) {
         }
+        // Einmalig: bisher gelernte Wörter in sinnvolle Schreibweise bringen
+        if (!sp.getBoolean("schreibweise_v2", false)) {
+            for (w in words.values) {
+                if (w.manual || w.text.drop(1).any { it.isUpperCase() }) continue
+                w.text = autoCase(w.text)
+            }
+            sp.edit().putBoolean("schreibweise_v2", true).apply()
+            save()
+        }
     }
 
     private fun save() {
@@ -126,6 +155,15 @@ class UserDictionary private constructor(context: Context) {
     }
 
     companion object {
+        private val NOUN_ENDINGS = listOf("ung", "heit", "keit", "schaft", "chen", "lein", "tion", "ität", "ismus", "nis", "tum")
+
+        /** Klein, außer bei typischen deutschen Nomen-Endungen (Vereinbarung, Freundschaft …). */
+        fun autoCase(word: String): String {
+            val lower = word.lowercase()
+            return if (lower.length >= 5 && NOUN_ENDINGS.any { lower.endsWith(it) })
+                lower.replaceFirstChar { it.uppercaseChar() } else lower
+        }
+
         /** So oft muss ein unbekanntes Wort getippt werden, bis es gelernt ist. */
         const val LEARN_AFTER = 5
 

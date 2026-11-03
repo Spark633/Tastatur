@@ -266,12 +266,16 @@ class SettingsActivity : Activity() {
             prefs.undoCorrection = it
         })
         root.addView(switch("Neue Wörter automatisch lernen", prefs.learnWords) { prefs.learnWords = it })
-        root.addView(switch("Nächstes Wort vorschlagen (lernt aus deinem Schreiben)", prefs.predictNext) {
+        root.addView(switch("Nächstes Wort vorschlagen", prefs.predictNext) {
             prefs.predictNext = it
         })
-        root.addView(button("Gelernte Wortfolgen vergessen") {
+        root.addView(info(
+            "Nach dem Leerzeichen schlägt die Tastatur vor, was du an dieser Stelle oft als Nächstes schreibst " +
+                "(z. B. nach „Guten“ → „Morgen“). Das lernt sie aus deinem Schreiben."
+        ))
+        root.addView(button("Gelernte Vorhersagen löschen") {
             AlertDialog.Builder(this)
-                .setMessage("Alles vergessen, was die Tastatur über deine Wortfolgen gelernt hat?")
+                .setMessage("Alles vergessen, welche Wörter du oft nacheinander schreibst? Eigene Wörter bleiben.")
                 .setPositiveButton("Vergessen") { _, _ -> NextWordModel.get(this).clear() }
                 .setNegativeButton("Abbrechen", null)
                 .show()
@@ -723,7 +727,7 @@ class SettingsActivity : Activity() {
         root.addView(header("Sicherung als Datei"))
         root.addView(info(
             "Für ein neues Handy oder eine Neuinstallation: Einstellungen, Profile, eigene und gelernte Wörter, " +
-                "gelernte Wortfolgen, Emoticons und das aktuelle Hintergrundbild in einer Datei, z. B. in Google Drive. " +
+                "gelernte Vorhersagen, Emoticons und das aktuelle Hintergrundbild in einer Datei, z. B. in Google Drive. " +
                 "Der Zwischenablage-Verlauf wird aus Datenschutzgründen nicht gesichert."
         ))
         backupStatus = info("")

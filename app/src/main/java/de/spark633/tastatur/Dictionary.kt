@@ -84,6 +84,14 @@ class Dictionary private constructor(
             val right = near.firstOrNull { it != left } ?: comp.firstOrNull { it != left }
             return Suggestions(typed, null, listOf(left ?: "", typed, right ?: ""))
         }
+        // Zusammengesetztes Nomen ("Wortfolgen" = Wort + Folgen): richtig, nicht korrigieren
+        if (isCompound(typed)) {
+            val cap = typed.replaceFirstChar { it.uppercaseChar() }
+            val fixed = if (typed[0].isLowerCase()) cap else null
+            val others = completions.filter(side)
+            return if (fixed != null) Suggestions(typed, fixed, listOf("\"$typed\"", fixed, others.getOrElse(0) { "" }))
+            else Suggestions(typed, null, listOf(others.getOrElse(0) { "" }, typed, others.getOrElse(1) { "" }))
+        }
         // Nur Groß-/Kleinschreibung falsch ("zeile" → "Zeile"): das hat Vorrang vor ähnlichen Wörtern
         dictForm(typed)?.let { form ->
             val fixed = applyCase(form, typed)
@@ -133,6 +141,33 @@ class Dictionary private constructor(
             }
         }
         return best
+    }
+
+    /** Ist das ein Nomen im Wörterbuch (großgeschriebene Form vorhanden)? */
+    private fun isNoun(w: String): Boolean {
+        if (w.length < 3) return false
+        val cap = w.lowercase().replaceFirstChar { it.uppercaseChar() }
+        return exact[cap]?.let { freqs[it] >= COMPOUND_MIN_FREQ } == true
+    }
+
+    /** Nomen oder seine Mehrzahl (Folgen, Hunde, Kinder, Autos), auch wenn nur die Einzahl bekannt ist. */
+    private fun isNounOrPlural(w: String): Boolean =
+        isNoun(w) || listOf("n", "en", "e", "er", "s").any { e -> w.endsWith(e) && isNoun(w.dropLast(e.length)) }
+
+    /**
+     * Deutsches zusammengesetztes Nomen aus zwei bekannten Nomen, auch mit Fugen-s:
+     * Wortfolgen (Wort + Folgen), Haustür, Arbeitsplatz (Arbeit + s + Platz).
+     */
+    private fun isCompound(typed: String): Boolean {
+        if (typed.length < 7 || typed.any { !it.isLetter() }) return false
+        for (i in 3..typed.length - 3) {
+            val a = typed.substring(0, i)
+            val b = typed.substring(i)
+            if (!isNounOrPlural(b)) continue
+            if (isNoun(a)) return true
+            if (a.endsWith("s") && isNoun(a.dropLast(1))) return true
+        }
+        return false
     }
 
     /** Schreibweise eines Wortes im Wörterbuch ("hund" → "Hund"), oder null. */
@@ -283,6 +318,7 @@ class Dictionary private constructor(
         private const val OWN_WORD_FREQ = 200f
         private const val UMLAUT_MARGIN = 40
         private const val SPLIT_MIN_FREQ = 110
+        private const val COMPOUND_MIN_FREQ = 80
         private val UMLAUT = mapOf('a' to 'ä', 'o' to 'ö', 'u' to 'ü', 'A' to 'Ä', 'O' to 'Ö', 'U' to 'Ü')
 
         fun load(context: Context, lang: Language): Dictionary =

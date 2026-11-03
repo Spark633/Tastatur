@@ -63,6 +63,9 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     private var clipShown = false
     private var isPasswordField = false
 
+    /** Leerzeichen kam automatisch nach einem angetippten Vorschlag (Satzzeichen rückt dann ans Wort). */
+    private var suggestionSpace = false
+
     /** Aktiver Unicode-Stil ("bold", "strike" …) oder null. */
     private var activeStyle: String? = null
     private var sarcasmCount = 0
@@ -603,6 +606,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             return
         }
         if (text.length == 1 && text[0] in CLOSING_QUOTES && onQuote(text)) return
+        suggestionSpace = false
         lastCorrection = null
         autoSpacePending = false
         forgetDeleted(false)
@@ -616,6 +620,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
      */
     private fun onQuote(q: String): Boolean {
         val ic = currentInputConnection ?: return false
+        pullBackSuggestionSpace()
         // Nach "Hallo. " das automatische Leerzeichen wieder entfernen: Hallo."
         var before = ic.getTextBeforeCursor(2, 0)?.toString().orEmpty()
         if (autoSpacePending && before.length == 2 && before[1] == ' ' && before[0] in ".!?") {
@@ -643,8 +648,17 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     /** Satzzeichen: Wort davor korrigieren, danach ggf. automatisch ein Leerzeichen. */
+    /** Nach einem Vorschlag: das automatische Leerzeichen weg, damit das Zeichen ans Wort rückt. */
+    private fun pullBackSuggestionSpace() {
+        if (!suggestionSpace) return
+        suggestionSpace = false
+        val ic = currentInputConnection ?: return
+        if (ic.getTextBeforeCursor(1, 0)?.toString() == " ") ic.deleteSurroundingText(1, 0)
+    }
+
     private fun onPunctuation(p: String) {
         val ic = currentInputConnection ?: return
+        pullBackSuggestionSpace()
         var afterPunct = false
         // "?" direkt nach "!" : das automatische Leerzeichen wieder entfernen
         if (autoSpacePending && ic.getTextBeforeCursor(1, 0)?.toString() == " ") {
@@ -700,6 +714,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             currentInputConnection?.commitText("$chosen ", 1)
             learnPair()
             current = null
+            suggestionSpace = true
             lastSpaceTime = SystemClock.uptimeMillis()
             return
         }
@@ -722,6 +737,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         lastCorrection = null
         autoSpacePending = false
         current = null
+        suggestionSpace = true
         lastSpaceTime = SystemClock.uptimeMillis()
     }
 
@@ -764,6 +780,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDelete() {
+        suggestionSpace = false
         if (activeStyle != null && styledPieces.isNotEmpty() && styledWordIntact()) {
             // Letzten formatierten Buchstaben samt Strichen/Akzenten löschen
             val piece = styledPieces.removeAt(styledPieces.lastIndex)
@@ -792,6 +809,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDeleteWord() {
+        suggestionSpace = false
         lastCorrection = null
         val ic = currentInputConnection ?: return
         val selected = ic.getSelectedText(0)
@@ -818,6 +836,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     override fun onEnter() {
         val ic = currentInputConnection ?: return
+        suggestionSpace = false
         captureReplacedSelection()
         val word = currentWord()
         if (!(prefs.correctOnEnter && correctAndCommit(""))) noteWordEnd(word)
@@ -837,6 +856,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     override fun onSpace() {
         val ic = currentInputConnection ?: return
+        suggestionSpace = false
         captureReplacedSelection()
         val now = SystemClock.uptimeMillis()
         if (prefs.doubleSpacePeriod && isTextField && now - lastSpaceTime < 700) {

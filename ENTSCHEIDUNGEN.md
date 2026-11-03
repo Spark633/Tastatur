@@ -28,6 +28,8 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Eigene Wörter erst ab 5× Benutzen gelernt; abgelehnte Korrektur zählt nur einmal (nicht sofort lernen)
 - Schreibweise gelernter Wörter automatisch: Satzanfang zählt nicht, Nomen-Endungen (-ung, -heit …) groß, bewusst groß mitten im Satz bleibt groß, sonst klein
 - Zusammengeklebte Wörter trennen (machdas → mach das)
+- Zusammengesetzte Nomen aus bekannten Nomen (auch Mehrzahl, Fugen-s) gelten als richtig: Wortfolgen, Haustür, Arbeitsplatz
+- Satzzeichen nach einem angetippten Vorschlag rückt ans Wort (Hallo. statt Hallo .); selbst gesetzte Leerzeichen bleiben
 - Nur Groß-/Kleinschreibung falsch hat Vorrang vor ähnlichen Wörtern (zeile → Zeile, nicht Teile)
 - Ähnlichkeit zählt mehr als Häufigkeit (toppen → tippen, nicht Typen); seitlich nur gängige Wörter, links Vervollständigung, rechts ähnliches Wort
 - Angefangene Wörter (Verab, Besch) mit gängiger Vervollständigung nur bei eindeutigem Fehler korrigieren

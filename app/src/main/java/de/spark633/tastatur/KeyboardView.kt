@@ -40,7 +40,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         fun onSuggestionLongPress(index: Int)
         /** ↶ neben den Vorschlägen angetippt (fragt nach: wiederherstellen oder verwerfen). */
         fun onRestore()
-        /** Formatieren: "bold", "strike", "bullet", "wa_bold" … oder "off" (Stil beenden). */
+        /** Formatieren: "bold", "strike", "bullet", "md_bold" … oder "off" (Stil beenden). */
         fun onFormat(code: String)
         /** Vorschlag angetippt: 0 = links, 1 = Mitte, 2 = rechts. */
         fun onSuggestion(index: Int)

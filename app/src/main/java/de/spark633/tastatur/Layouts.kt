@@ -153,10 +153,10 @@ object Layouts {
             Key("✎  Formatieren", Action.MENU, text = "format", width = 3.5f)),
     )
 
-    /** Formatieren: Listen, Unicode-Stile (überall sichtbar) und WhatsApp-Zeichen. */
+    /** Formatieren: Listen, Unicode-Stile (überall sichtbar) und Telegram-/Discord-Zeichen. */
     const val FORMAT_PAGES = 2
 
-    /** Formatieren, Seite 1: Listen, Unicode-Stile, WhatsApp. Seite 2: Spaß-Stile (sArKaSmUs …). */
+    /** Formatieren, Seite 1: Listen, Unicode-Stile, Telegram/Discord. Seite 2: Spaß-Stile (sArKaSmUs …). */
     fun format(page: Int): List<List<Key>> {
         val bottom = listOf(
             Key("ABC", Action.TO_LETTERS, width = 2.5f),
@@ -172,10 +172,11 @@ object Layouts {
                 Key("𝘒𝘶𝘳𝘴𝘪𝘷", Action.FORMAT, text = "italic", width = 2.5f),
                 Key("D̶u̶r̶c̶h̶", Action.FORMAT, text = "strike", width = 2.5f),
                 Key("U̲n̲t̲e̲r̲", Action.FORMAT, text = "underline", width = 2.5f)),
-            listOf(Key("*fett*", Action.FORMAT, text = "wa_bold", width = 2.5f),
-                Key("_kursiv_", Action.FORMAT, text = "wa_italic", width = 2.5f),
-                Key("~durch~", Action.FORMAT, text = "wa_strike", width = 2.5f),
-                Key("```mono```", Action.FORMAT, text = "wa_mono", width = 2.5f)),
+            // Telegram und Discord verstehen beide diese Zeichen
+            listOf(Key("**fett**", Action.FORMAT, text = "md_bold", width = 2.5f),
+                Key("~~durch~~", Action.FORMAT, text = "md_strike", width = 2.5f),
+                Key("`code`", Action.FORMAT, text = "md_code", width = 2.5f),
+                Key("||Spoiler||", Action.FORMAT, text = "md_spoiler", width = 2.5f)),
             bottom,
         ) else listOf(
             listOf(Key("sArKaSmUs", Action.FORMAT, text = "sarcasm", width = 5f),

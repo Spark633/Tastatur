@@ -852,12 +852,13 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
                     setStyle(if (activeStyle == code) null else code)
                 }
             }
-            "wa_bold", "wa_italic", "wa_strike", "wa_mono" -> {
+            "md_bold", "md_strike", "md_code", "md_spoiler" -> {
+                // Formatierung für Telegram und Discord
                 val mark = when (code) {
-                    "wa_bold" -> "*"
-                    "wa_italic" -> "_"
-                    "wa_strike" -> "~"
-                    else -> "```"
+                    "md_bold" -> "**"
+                    "md_strike" -> "~~"
+                    "md_code" -> "`"
+                    else -> "||"
                 }
                 if (selected.isNotEmpty()) {
                     ic.commitText(mark + selected + mark, 1)

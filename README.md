@@ -50,5 +50,5 @@ Wörterbücher: siehe `app/src/main/assets/dict/LIZENZ.txt`.
 
 ## Geplant
 
-Siehe [WUNSCHLISTE.md](WUNSCHLISTE.md).
+Siehe [WUNSCHLISTE.md](WUNSCHLISTE.md). Bewusste Festlegungen: [ENTSCHEIDUNGEN.md](ENTSCHEIDUNGEN.md).
 

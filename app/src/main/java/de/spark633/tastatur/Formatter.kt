@@ -16,7 +16,6 @@ object Formatter {
         "sarcasm" to "sArKaSmUs",
         "small" to "Klein",
         "glitch" to "Glitch",
-        "upside" to "Kopfüber",
     )
 
     /**
@@ -139,13 +138,13 @@ object Formatter {
             "u", "o", "d", "b", "ɹ", "s", "ʇ", "n", "ʌ", "ʍ", "x", "ʎ", "z"))
         val upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toList().zip(listOf("∀", "ꓭ", "Ɔ", "ꓷ", "Ǝ", "Ⅎ", "⅁", "H", "I", "ſ", "ꓘ", "˥", "W",
             "N", "O", "Ԁ", "Ό", "ꓤ", "S", "⊥", "∩", "Λ", "M", "X", "⅄", "Z"))
-        val other = "0123456789.,'!?&_\";".toList().zip(listOf("0", "Ɩ", "ᄅ", "Ɛ", "ㄣ", "ϛ", "9", "ㄥ", "8", "6", "˙", "'", ",",
-            "¡", "¿", "⅋", "‾", "„", "؛"))
+        val other = "0123456789.,'!?()[]{}<>&_\";".toList().zip(listOf("0", "Ɩ", "ᄅ", "Ɛ", "ㄣ", "ϛ", "9", "ㄥ", "8", "6", "˙", "'", ",",
+            "¡", "¿", ")", "(", "]", "[", "}", "{", ">", "<", "⅋", "‾", "„", "؛"))
         (lower + upper + other).forEach { (a, b) -> put(a, b) }
     }
 
-    /** Kopfüber: jedes Zeichen drehen, Reihenfolge bleibt (Hallo → Hɐllo). Geht auch beim Tippen. */
-    private fun upsideDown(text: String): String = mapClusters(text, reverse = false) { UPSIDE[it] }
+    /** Kopfüber: Text um 180° drehen (Hallo → ollɐH). */
+    private fun upsideDown(text: String): String = mapClusters(text, reverse = true) { UPSIDE[it] }
 
     private val MIRROR: Map<Char, String> = buildMap {
         val lower = "abcdefghijklmnopqrstuvwxyz".toList().zip(listOf("ɒ", "d", "ɔ", "b", "ɘ", "ʇ", "ϱ", "ʜ", "i", "ᒑ", "ʞ",

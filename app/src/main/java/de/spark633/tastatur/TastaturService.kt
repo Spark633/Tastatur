@@ -843,8 +843,9 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         when (code) {
             "off" -> setStyle(null)
             // Umdrehen geht nur am ganzen Text: Markierung, sonst alles im Feld
-            "mirror" -> transformWhole(code, selected)
-            "bold", "italic", "strike", "underline", "sarcasm", "small", "glitch", "upside" -> {
+            // Umdrehen geht nur am ganzen Text: Markierung, sonst alles im Feld
+            "upside", "mirror" -> transformWhole(code, selected)
+            "bold", "italic", "strike", "underline", "sarcasm", "small", "glitch" -> {
                 if (selected.isNotEmpty()) {
                     ic.commitText(Formatter.apply(code, selected), 1)
                 } else {

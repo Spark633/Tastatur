@@ -26,7 +26,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Zusammengeklebte Wörter trennen (machdas → mach das)
 
 **Unterseiten**
-- Zwischenablage: kein seitliches Wischen zum Löschen; nach dem Einfügen zurück zur Tastatur
+- Zwischenablage: dunkle Kacheln mit weißer Schrift (immer lesbar); kein seitliches Wischen zum Löschen; nach dem Einfügen zurück zur Tastatur
 - ⌫ in Emoticons, Zwischenablage und Formatieren = zurück zur Tastatur
 - Websuche öffnet direkt den Browser (kein Suchfeld in der Leiste)
 

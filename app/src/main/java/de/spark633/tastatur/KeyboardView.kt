@@ -196,7 +196,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         else withAlpha(Color.WHITE, min(1f, keyAlpha + 0.3f))
         accentPaint.color = t.accent
         accentTextPaint.color = t.accent
-        for (p in listOf(labelPaint, funcLabelPaint, barTextPaint, boldBarPaint, clipTextPaint, iconPaint)) p.color = colors.text
+        for (p in listOf(labelPaint, funcLabelPaint, barTextPaint, boldBarPaint, iconPaint)) p.color = colors.text
+        clipTextPaint.color = Color.WHITE // Zwischenablage: immer weiß auf dunklen Kacheln
         hintPaint.color = colors.hint
         // Dunkle Schrift: Auswahl- und Vorschau-Kästen hell, damit sie lesbar bleiben
         popupPaint.color = if (Color.luminance(colors.text) < 0.5f) Color.rgb(0xF2, 0xF2, 0xF2) else t.popup
@@ -444,6 +445,9 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     private val clipArea: RectF get() = RectF(0f, barHeight, width.toFloat(), barHeight + 3 * rowHeight)
 
+    /** Dunkle, fast deckende Kacheln, damit die Einträge auf jedem Hintergrund lesbar sind. */
+    private val clipTilePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(0xE0, 0x1C, 0x21, 0x25) }
+
     private val clipTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textSize = sp(15f) }
     private val clipTileHeight: Float get() = 16 * dp + clipLines * clipTextPaint.fontSpacing
     private val clipMenuZone = 34 * dp
@@ -509,7 +513,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 continue
             }
 
-            canvas.drawRoundRect(r, radius, radius, keyPaint)
+            canvas.drawRoundRect(r, radius, radius, clipTilePaint)
             if (e.pinned) canvas.drawRoundRect(RectF(r.left, r.top, r.left + 4 * dp, r.bottom), 2 * dp, 2 * dp, accentPaint)
             val textW = (r.width() - 14 * dp - clipMenuZone).toInt()
             val layout = clipLayout(e.text.trim(), textW)
@@ -520,7 +524,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             // ⋮ oben rechts
             val mx = r.right - clipMenuZone / 2f
             val my = r.top + 14 * dp
-            for (k in -1..1) canvas.drawCircle(mx, my + k * 5 * dp, 1.8f * dp, labelPaint)
+            for (k in -1..1) canvas.drawCircle(mx, my + k * 5 * dp, 1.8f * dp, clipTextPaint)
             if (e.pinned) canvas.drawText("★", mx, r.bottom - 8 * dp, accentTextPaint.apply { textSize = sp(14f) })
         }
         canvas.restore()

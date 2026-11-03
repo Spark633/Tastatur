@@ -60,5 +60,5 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Neue Emoticons kommen oben in die Liste
 - Sicherung ohne Zwischenablage-Verlauf
 - Startseite zeigt „Version x.y.z“ (ohne Build) und „(Neueste Version herunterladen)“ als unterstrichener Text-Link zur Release-Seite; APK heißt Tastatur-<Version>.apk; Link steht in AppLinks.kt; keine Update-Prüfung (App ohne Internetzugriff)
-- Emoticons: Option „zuletzt benutzte zuerst“ (bis zu 12, Standard aus)
+- Emoticons: Option „am häufigsten benutzte zuerst“ (bis zu 12, Standard aus; gezählt wird immer)
 - Zahlenreihe über den Buchstaben als Option (Standard aus); Reihe etwas flacher (80 %), in den anderen Ansichten werden die Reihen entsprechend höher, damit die Tastatur nicht springt

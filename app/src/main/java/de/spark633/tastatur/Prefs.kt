@@ -120,32 +120,34 @@ class Prefs(context: Context) {
 
     fun resetEmoticons() = sp.edit().remove("emoticons").apply()
 
-    /** Zuletzt benutzte Emoticons zuerst zeigen. */
-    var emoticonsRecentFirst: Boolean
-        get() = sp.getBoolean("emoticons_recent_first", false)
-        set(v) = sp.edit().putBoolean("emoticons_recent_first", v).apply()
+    /** Am häufigsten benutzte Emoticons zuerst zeigen. */
+    var emoticonsFrequentFirst: Boolean
+        get() = sp.getBoolean("emoticons_frequent_first", false)
+        set(v) = sp.edit().putBoolean("emoticons_frequent_first", v).apply()
 
-    /** Zuletzt benutzte Emoticons, neuestes zuerst. */
-    val recentEmoticons: List<String>
-        get() = try {
-            val arr = org.json.JSONArray(sp.getString("emoticons_recent", "[]"))
-            (0 until arr.length()).map { arr.getString(it) }
-        } catch (_: Exception) {
-            emptyList()
-        }
-
-    fun noteEmoticonUsed(e: String) {
-        val list = (listOf(e) + recentEmoticons.filter { it != e }).take(Layouts.EMOTICONS_PER_PAGE)
-        sp.edit().putString("emoticons_recent", org.json.JSONArray(list).toString()).apply()
+    /** Wie oft jedes Emoticon benutzt wurde. */
+    private fun emoticonCounts(): org.json.JSONObject = try {
+        org.json.JSONObject(sp.getString("emoticons_counts", "{}") ?: "{}")
+    } catch (_: Exception) {
+        org.json.JSONObject()
     }
 
-    /** Emoticons in Anzeige-Reihenfolge (ggf. zuletzt benutzte vorne). */
+    fun noteEmoticonUsed(e: String) {
+        val counts = emoticonCounts()
+        counts.put(e, counts.optInt(e, 0) + 1)
+        sp.edit().putString("emoticons_counts", counts.toString()).apply()
+    }
+
+    /** Emoticons in Anzeige-Reihenfolge: ggf. die bis zu 12 häufigsten vorne, sonst eigene Reihenfolge. */
     val emoticonsOrdered: List<String>
         get() {
             val all = emoticons
-            if (!emoticonsRecentFirst) return all
-            val recent = recentEmoticons.filter { it in all }
-            return recent + all.filter { it !in recent }
+            if (!emoticonsFrequentFirst) return all
+            val counts = emoticonCounts()
+            val top = all.filter { counts.optInt(it, 0) > 0 }
+                .sortedByDescending { counts.optInt(it, 0) } // stabil: bei Gleichstand eigene Reihenfolge
+                .take(Layouts.EMOTICONS_PER_PAGE)
+            return top + all.filter { it !in top }
         }
 
     /** Eigene Zahlenreihe über den Buchstaben. */

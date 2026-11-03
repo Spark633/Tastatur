@@ -886,8 +886,8 @@ class SettingsActivity : Activity() {
         root.addView(info(
             "Erscheinen hinter der ^.^-Taste, je 12 pro Seite. Neue kommen oben dazu, ▲ ▼ verschieben einen Eintrag."
         ))
-        root.addView(switch("Zuletzt benutzte zuerst zeigen (bis zu 12)", prefs.emoticonsRecentFirst) {
-            prefs.emoticonsRecentFirst = it
+        root.addView(switch("Am häufigsten benutzte zuerst zeigen (bis zu 12)", prefs.emoticonsFrequentFirst) {
+            prefs.emoticonsFrequentFirst = it
         })
         val addRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val input = EditText(this).apply {

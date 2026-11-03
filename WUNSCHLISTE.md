@@ -8,6 +8,7 @@ Ideen für später. Erledigte Punkte wandern nach unten.
   - Alle Texte an einer Stelle sammeln (Tabelle Text → DE / EN / NL …)
   - Einstellung „Sprache der App“: Automatisch (wie Handy) / Deutsch / English / …
   - Übersetzungen ergänzen; neue Sprachen kommen als weitere Spalte dazu
+- [ ] **Markieren und löschen mit ⌫ ziehen**: ⌫ halten und nach links ziehen markiert Wort für Wort, loslassen löscht, zurückziehen nimmt Wörter wieder raus
 
 ## Erledigt
 

@@ -120,6 +120,39 @@ class Prefs(context: Context) {
 
     fun resetEmoticons() = sp.edit().remove("emoticons").apply()
 
+    /** Zuletzt benutzte Emoticons zuerst zeigen. */
+    var emoticonsRecentFirst: Boolean
+        get() = sp.getBoolean("emoticons_recent_first", false)
+        set(v) = sp.edit().putBoolean("emoticons_recent_first", v).apply()
+
+    /** Zuletzt benutzte Emoticons, neuestes zuerst. */
+    val recentEmoticons: List<String>
+        get() = try {
+            val arr = org.json.JSONArray(sp.getString("emoticons_recent", "[]"))
+            (0 until arr.length()).map { arr.getString(it) }
+        } catch (_: Exception) {
+            emptyList()
+        }
+
+    fun noteEmoticonUsed(e: String) {
+        val list = (listOf(e) + recentEmoticons.filter { it != e }).take(Layouts.EMOTICONS_PER_PAGE)
+        sp.edit().putString("emoticons_recent", org.json.JSONArray(list).toString()).apply()
+    }
+
+    /** Emoticons in Anzeige-Reihenfolge (ggf. zuletzt benutzte vorne). */
+    val emoticonsOrdered: List<String>
+        get() {
+            val all = emoticons
+            if (!emoticonsRecentFirst) return all
+            val recent = recentEmoticons.filter { it in all }
+            return recent + all.filter { it !in recent }
+        }
+
+    /** Eigene Zahlenreihe über den Buchstaben. */
+    var numberRow: Boolean
+        get() = sp.getBoolean("number_row", false)
+        set(v) = sp.edit().putBoolean("number_row", v).apply()
+
     // --- Aussehen ---
     var theme: String
         get() = sp.getString("theme", "dunkel") ?: "dunkel"

@@ -116,6 +116,9 @@ object Layouts {
         "?" to listOf("¿"),
     )
 
+    /** Zahlenreihe über den Buchstaben (Option). */
+    fun numberRow(): List<Key> = chars("1 2 3 4 5 6 7 8 9 0")
+
     private fun chars(s: String) = s.split(" ").map { Key(it, longPress = SYMBOL_EXTRAS[it] ?: emptyList()) }
 
     fun symbols(): List<List<Key>> = listOf(

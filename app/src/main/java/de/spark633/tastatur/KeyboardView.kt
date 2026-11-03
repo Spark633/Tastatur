@@ -69,6 +69,10 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var qwertz = true
     private var clipboardRight = false
     private var langLeft = true
+    private var numberRowOn = false
+    /** Höhe der Zahlenreihe; in den anderen Ansichten werden die Reihen entsprechend höher. */
+    private val numRowH: Float get() = if (numberRowOn) rowHeight * 0.8f else 0f
+    private var rowTops = FloatArray(0)
     private var langCodeShown = false
     private var rowHeight = 54 * dp
     private var enterLabel = "↵"
@@ -170,7 +174,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         clipColumns = prefs.clipColumns.coerceIn(1, 2)
         clipLines = prefs.clipLines.coerceIn(1, 4)
         clipLayouts.clear()
-        emoticonList = prefs.emoticons
+        emoticonList = prefs.emoticonsOrdered
+        numberRowOn = prefs.numberRow
         emoticonPage = emoticonPage.coerceIn(0, Layouts.emoticonPages(emoticonList) - 1)
         applyTheme(prefs)
         rowHeight = prefs.rowHeightDp * dp
@@ -387,7 +392,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val w = MeasureSpec.getSize(widthMeasureSpec)
-        val h = (barHeight + 4 * rowHeight + 4 * dp + bottomPad).toInt() + systemInset
+        val h = (barHeight + 4 * rowHeight + numRowH + 4 * dp + bottomPad).toInt() + systemInset
         setMeasuredDimension(w, h)
     }
 
@@ -396,7 +401,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     }
 
     private fun rows(): List<List<Key>> = when (mode) {
-        Mode.LETTERS -> Layouts.letters(qwertz, language)
+        Mode.LETTERS -> Layouts.letters(qwertz, language).let { if (numberRowOn) listOf(Layouts.numberRow()) + it else it }
         Mode.SYMBOLS -> Layouts.symbols()
         Mode.SYMBOLS2 -> Layouts.symbols2()
         Mode.EMOTICONS -> Layouts.emoticons(emoticonPage, emoticonList)
@@ -411,13 +416,26 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         if (w <= 0f) return
         val unit = w / 10f
         val list = ArrayList<KeyRect>()
-        rows().forEachIndexed { r, row ->
+        val all = rows()
+        val withNumbers = numberRowOn && mode == Mode.LETTERS
+        val heights = all.indices.map { r ->
+            when {
+                withNumbers -> if (r == 0) numRowH else rowHeight
+                else -> rowHeight + numRowH / all.size
+            }
+        }
+        val tops = FloatArray(all.size)
+        var y = barHeight
+        for (r in all.indices) { tops[r] = y; y += heights[r] }
+        rowTops = tops
+        all.forEachIndexed { r, row ->
             val sum = row.sumOf { it.width.toDouble() }.toFloat()
             var x = (10f - sum) / 2f * unit
-            val top = barHeight + r * rowHeight
+            val top = tops[r]
+            val rh = heights[r]
             for (k in row) {
                 val kw = k.width * unit
-                list += KeyRect(k, RectF(x + gapH, top + gapV, x + kw - gapH, top + rowHeight - gapV), r)
+                list += KeyRect(k, RectF(x + gapH, top + gapV, x + kw - gapH, top + rh - gapV), r)
                 x += kw
             }
         }
@@ -434,7 +452,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     private fun keyAt(x: Float, y: Float): KeyRect? {
         if (y < barHeight) return null
-        val row = ((y - barHeight) / rowHeight).toInt().coerceIn(0, 3)
+        val row = rowTops.indexOfLast { it <= y }.coerceAtLeast(0)
         val inRow = keyRects.filter { it.row == row }
         if (inRow.isEmpty()) return null
         inRow.firstOrNull { x >= it.rect.left - gapH && x <= it.rect.right + gapH }?.let { return it }
@@ -458,7 +476,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     // --- Zwischenablage ---
 
-    private val clipArea: RectF get() = RectF(0f, barHeight, width.toFloat(), barHeight + 3 * rowHeight)
+    private val clipArea: RectF get() = RectF(0f, barHeight, width.toFloat(), barHeight + 3 * (rowHeight + numRowH / 4))
 
     /** Dunkle, fast deckende Kacheln, damit die Einträge auf jedem Hintergrund lesbar sind. */
     private val clipTilePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(0xE0, 0x1C, 0x21, 0x25) }
@@ -1228,7 +1246,13 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                         typeText(displayText(k), k.cased)
                     }
                 }
-                if (mode == Mode.EMOTICONS) setMode(Mode.LETTERS) // nach dem Emoticon zurück zur Tastatur
+                if (mode == Mode.EMOTICONS) {
+                    prefs?.let {
+                        it.noteEmoticonUsed(k.text)
+                        emoticonList = it.emoticonsOrdered
+                    }
+                    setMode(Mode.LETTERS) // nach dem Emoticon zurück zur Tastatur
+                }
             }
             Action.SPACE -> if (!t.languageSwitched && !t.cursorMode) listener.onSpace()
             Action.ENTER -> listener.onEnter()

@@ -150,11 +150,10 @@ class SettingsActivity : Activity() {
         root.addView(button("❓  Hilfe – Bedienung") { open("help") })
 
         // Version und Download der neuesten Version
-        root.addView(header("Version"))
         val version = try {
             packageManager.getPackageInfo(packageName, 0).versionName
         } catch (_: Exception) { null }
-        root.addView(info("Version ${version ?: "unbekannt"}"))
+        root.addView(info("Version ${version ?: "unbekannt"}").apply { setPadding(0, (24 * dp).toInt(), 0, (8 * dp).toInt()) })
         root.addView(button("Neueste Version herunterladen") {
             try {
                 startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(AppLinks.DOWNLOAD)))

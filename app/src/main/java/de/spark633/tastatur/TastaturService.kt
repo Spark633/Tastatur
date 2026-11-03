@@ -548,8 +548,15 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val lineBefore = before.substringAfterLast('\n')
         val lineAfter = after.substringBefore('\n')
         if (!lineAfter.isBlank()) return false
-        // Leere Zeile, oder direkt nach "Link: " / "Adresse: "
-        return lineBefore.isBlank() || lineBefore.trimEnd().endsWith(":")
+        // Leere Zeile, direkt nach "Link: " / "Adresse: " oder nach einem öffnenden Anführungszeichen
+        return lineBefore.isBlank() || lineBefore.trimEnd().endsWith(":") || opensQuote(lineBefore)
+    }
+
+    /** Endet mit einem öffnenden (nicht schließenden) Anführungszeichen: davor Zeilenanfang, Leerzeichen, : oder ( */
+    private fun opensQuote(line: String): Boolean {
+        if (line.isEmpty() || line.last() !in "\"„“”«»‚‘'") return false
+        val prev = line.dropLast(1).lastOrNull() ?: return true
+        return prev.isWhitespace() || prev in ":("
     }
 
     /** Beschriftung für den Einfüge-Vorschlag, oder null wenn nichts Frisches kopiert wurde. */
@@ -1316,26 +1323,29 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         ic.endBatchEdit()
         lastCorrection = null
         current = null
-        lastWordShift = word to changed
+        // Mehrfach Shift (Wort → WORT → wort): rückgängig führt immer zum Ausgangswort
+        val start = lastWordShift?.takeIf { it.second == word }?.first ?: word
+        lastWordShift = start to changed
         return true
     }
 
     /** Wort vor und nach der letzten Shift-Umwandlung (für baronDer). */
     private var lastWordShift: Pair<String, String>? = null
 
-    override fun onUndoWordShift() {
+    override fun onUndoWordShift(): Boolean {
         own()
-        val (original, changed) = lastWordShift ?: return
+        val (original, changed) = lastWordShift ?: return false
         lastWordShift = null
-        if (original == changed) return
-        val ic = currentInputConnection ?: return
-        val before = ic.getTextBeforeCursor(changed.length, 0)?.toString() ?: return
-        if (before != changed) return
+        if (original == changed) return false
+        val ic = currentInputConnection ?: return false
+        val before = ic.getTextBeforeCursor(changed.length, 0)?.toString() ?: return false
+        if (before != changed) return false
         ic.beginBatchEdit()
         ic.deleteSurroundingText(changed.length, 0)
         ic.commitText(original, 1)
         ic.endBatchEdit()
         current = null
+        return true
     }
 
     /**

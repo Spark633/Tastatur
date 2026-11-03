@@ -214,17 +214,17 @@ class SettingsActivity : Activity() {
         root.addView(switch("Leerzeichen nach . , ! ? automatisch", prefs.autoSpacePunct) { prefs.autoSpacePunct = it })
         root.addView(switch("Buchstabe beim Drücken groß anzeigen", prefs.keyPreview) { prefs.keyPreview = it })
         root.addView(switch("Zweimal ins selbe Wort tippen springt ans Wortende", prefs.tapWordEnd) { prefs.tapWordEnd = it })
-        root.addView(switch("⌫ kurz tippen und sofort halten löscht bis zum Leerzeichen", prefs.chunkDelete) { prefs.chunkDelete = it })
-        root.addView(info("Tempo beim Löschen (⌫ halten)"))
-        val speeds = listOf(280, 420, 560) // schnell, normal, langsam
-        val current = speeds.indexOfFirst { it >= prefs.deleteRepeatMs }.let { if (it < 0) 2 else it }
-        root.addView(radio(listOf("Schnell", "Normal", "Langsam"), current) { prefs.deleteRepeatMs = speeds[it] })
         root.addView(switch("Leertaste gedrückt halten und ziehen bewegt den Cursor", prefs.spaceCursor) {
             prefs.spaceCursor = it
         })
         root.addView(switch("Doppeltes Leerzeichen setzt einen Punkt", prefs.doubleSpacePeriod) {
             prefs.doubleSpacePeriod = it
         })
+        root.addView(switch("⌫ doppelt tippen und halten: löscht bis zum Leerzeichen", prefs.chunkDelete) { prefs.chunkDelete = it })
+        root.addView(info("Tempo beim Löschen (⌫ halten)"))
+        val speeds = listOf(280, 420, 560) // schnell, normal, langsam
+        val current = speeds.indexOfFirst { it >= prefs.deleteRepeatMs }.let { if (it < 0) 2 else it }
+        root.addView(radio(listOf("Schnell", "Normal", "Langsam"), current) { prefs.deleteRepeatMs = speeds[it] })
 
         root.addView(header("Websuche"))
         root.addView(info(

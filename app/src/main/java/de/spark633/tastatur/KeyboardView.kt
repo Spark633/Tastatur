@@ -51,8 +51,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         fun onPasteImage(name: String)
         /** Shift geändert (0 aus, 1 an, 2 Feststelltaste). true = auf das Wort am Cursor angewendet. */
         fun onShiftChanged(state: Int): Boolean
-        /** Letzte Shift-Umwandlung des Wortes rückgängig machen (baron → Baron → baron). */
-        fun onUndoWordShift()
+        /** Letzte Shift-Umwandlung des Wortes rückgängig machen (baron → Baron → baron). true = erledigt. */
+        fun onUndoWordShift(): Boolean
         /** Cursor um ein Zeichen bewegen: -1 = links, 1 = rechts. */
         fun onMoveCursor(direction: Int)
     }
@@ -957,6 +957,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         var scrollStart = 0f
         val longPress = Runnable { startPopup(this) }
         var chunkDelete = false
+        /** ⌫ hat nur die Shift-Umwandlung des Wortes zurückgenommen. */
+        var shiftUndone = false
         val repeat: Runnable = object : Runnable {
             override fun run() {
                 if (chunkDelete) listener.onDeleteChunk() else listener.onDeleteWord()
@@ -1017,8 +1019,13 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         listener.onKeyFeedback()
         val k = kr.key
         when (k.action) {
-            Action.DELETE -> if (!inSubPage()) {
-                // Kurz getippt und gleich wieder gedrückt: am Stück löschen (bis zum Leerzeichen)
+            Action.DELETE -> if (!inSubPage() && shiftAppliedToWord && listener.onUndoWordShift()) {
+                // Nach Shift aufs Wort: ⌫ nimmt nur die Umwandlung zurück (baronDerNacht ⇧ ⌫)
+                shiftAppliedToWord = false
+                shift = Shift.OFF
+                t.shiftUndone = true
+            } else if (!inSubPage()) {
+                // Doppelt getippt und gleich wieder gedrückt: am Stück löschen (bis zum Leerzeichen)
                 t.chunkDelete = chunkDeleteOn && SystemClock.uptimeMillis() - lastDeleteUp < 350
                 if (!t.chunkDelete) listener.onDelete()
                 postDelayed(t.repeat, if (t.chunkDelete) 250 else 400)
@@ -1257,7 +1264,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 listener.onFormat(k.text)
             }
             // In Emoticons, Zwischenablage und Formatieren: ⌫ führt zurück zur Tastatur
-            Action.DELETE -> if (inSubPage()) setMode(Mode.LETTERS) else {
+            Action.DELETE -> if (inSubPage()) setMode(Mode.LETTERS) else if (!t.shiftUndone) {
                 // Doppeltipp ohne Halten: zweites Zeichen löschen wie gewohnt
                 if (t.chunkDelete && SystemClock.uptimeMillis() - t.downTime < 250) listener.onDelete()
                 lastDeleteUp = SystemClock.uptimeMillis()

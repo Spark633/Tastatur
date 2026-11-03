@@ -8,7 +8,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Wischen: obere zwei Reihen nach oben (g → '), untere Buchstabenreihe nach unten (c → -, v → "); x lange drücken: € $ £ ¥ ¢
 - Lange drücken: nur Umlaute plus Wisch-Zeichen; beim e nur é (NL: é ë); keine weiteren Akzente
 - ß bleibt bei Shift ß (nicht SS), mit Feststelltaste ẞ
-- Shift wirkt nur am Wortende aufs Wort (1× Wort, Feststelltaste WORT, aus wort); mitten im Wort und am Wortanfang wie gewohnt (nächster Buchstabe groß); ist das Wort schon groß angefangen (Baron, BaronDer), macht 1× Shift den nächsten Buchstaben groß → BaronDerNacht; nach Shift aufs Wort direkt weitertippen nimmt die Umwandlung zurück und schreibt den Buchstaben groß (baron ⇧ D → baronD)
+- Shift wirkt nur am Wortende aufs Wort (1× Wort, Feststelltaste WORT, aus wort); mitten im Wort und am Wortanfang wie gewohnt (nächster Buchstabe groß); ist das Wort schon groß angefangen (Baron, BaronDer), macht 1× Shift den nächsten Buchstaben groß → BaronDerNacht; nach Shift aufs Wort direkt weitertippen nimmt die Umwandlung zurück und schreibt den Buchstaben groß (baron ⇧ D → baronD); ⌫ direkt nach Shift aufs Wort nimmt nur die Umwandlung zurück
 - Shift bei markiertem Text: Erster Groß → ALLES GROSS → alles klein, Markierung bleibt
 - Punkt-Taste: hoch !, runter ?, lange drücken ! , . ?; Komma: kein !, runter wischen und lange drücken ;; untere Reihe: 123 so breit wie ⇧ (nicht schmaler machen)
 - Symbolseite 1: ( ) mit [ { < bzw. ] } >, ' mit ‹ ›, + mit ±, * mit • × † ‡ ⸸ (Fußnotenzeichen beim *, nicht beim ✓)
@@ -21,7 +21,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Keine obere Leiste (Copilot o. Ä.); Zwischenablage links (wählbar), Zahnrad gegenüber
 - Sprachkürzel je Sprache an/aus (Kästchen DE EN NL nebeneinander, Standard EN+NL), nur Anzeige (kein Antippen), Seite neben den Vorschlägen wählbar (Standard links)
 - Wiederherstellen: ↶ neben den Vorschlägen mit Rückfrage, kein langes Drücken
-- Gerade Kopiertes 3 Minuten als 📋-Vorschlag (auch Bilder), nur in leerem Feld, auf leerer neuer Zeile oder direkt nach „:“
+- Gerade Kopiertes 3 Minuten als 📋-Vorschlag (auch Bilder), nur in leerem Feld, auf leerer neuer Zeile, direkt nach „:“ oder nach einem öffnenden Anführungszeichen
 
 **Korrektur**
 - Richtige Wörter werden nie geändert (konnte bleibt konnte)
@@ -41,7 +41,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Zwischenablage: ⋮-Menü offen → übrige Kacheln abgedunkelt
 - Zwischenablage: dunkle Kacheln mit weißer Schrift (immer lesbar); kein seitliches Wischen zum Löschen; nach dem Einfügen zurück zur Tastatur
 - Android-Zurück/˅ schließt die Tastatur sofort, auch aus Menüs (beim nächsten Öffnen Buchstaben)
-- ⌫ kurz tippen + sofort halten: alles bis zum letzten Leerzeichen am Stück löschen (abschaltbar; normales Halten: Wort für Wort); Lösch-Tempo in drei Stufen: Schnell 280, Normal 420 (Standard), Langsam 560 ms
+- ⌫ doppelt tippen + halten: alles bis zum letzten Leerzeichen am Stück löschen (abschaltbar; normales Halten: Wort für Wort); Lösch-Tempo in drei Stufen: Schnell 280, Normal 420 (Standard), Langsam 560 ms
 - ⌫ in Emoticons, Zwischenablage und Formatieren = zurück zur Tastatur; dort und im Zahnrad-Menü keine ABC-Taste (Zahnrad bzw. ⌫ führt zurück)
 - Websuche öffnet direkt den Browser (kein Suchfeld in der Leiste): ohne Markierung leere Seite, markierter Link direkt als Adresse, sonst Suche
 

@@ -173,7 +173,7 @@ class Prefs(context: Context) {
         get() = sp.getInt("delete_repeat_ms", 420)
         set(v) = sp.edit().putInt("delete_repeat_ms", v).apply()
 
-    /** ⌫ kurz tippen und sofort halten löscht alles bis zum Leerzeichen am Stück. */
+    /** ⌫ doppelt tippen und halten löscht alles bis zum Leerzeichen am Stück. */
     var chunkDelete: Boolean
         get() = sp.getBoolean("chunk_delete", true)
         set(v) = sp.edit().putBoolean("chunk_delete", v).apply()

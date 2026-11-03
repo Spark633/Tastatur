@@ -45,6 +45,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         /** Vorschlag angetippt: 0 = links, 1 = Mitte, 2 = rechts. */
         fun onSuggestion(index: Int)
         fun onKeyFeedback()
+        /** Shift geändert (0 aus, 1 an, 2 Feststelltaste). true = auf das Wort am Cursor angewendet. */
+        fun onShiftChanged(state: Int): Boolean
         /** Cursor um ein Zeichen bewegen: -1 = links, 1 = rechts. */
         fun onMoveCursor(direction: Int)
     }
@@ -248,7 +250,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     /** Automatische Großschreibung am Satzanfang. Feststelltaste bleibt unberührt. */
     fun setAutoShift(on: Boolean) {
-        if (shift == Shift.LOCK) return
+        if (shift == Shift.LOCK || shiftAppliedToWord) return
         val new = if (on) Shift.ON else Shift.OFF
         if (new != shift) {
             shift = new
@@ -1152,11 +1154,16 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             return
         }
 
+        if (k.action != Action.SHIFT && k.action != Action.CHAR) shiftAppliedToWord = false
         when (k.action) {
             Action.CHAR -> {
+                // Nach Shift aufs Wort: im selben Wort klein weiterschreiben
+                val afterWordShift = shiftAppliedToWord && shift == Shift.ON
+                shiftAppliedToWord = false
                 when {
                     t.swipe == 1 && k.up != null -> typeText(k.up, false)
                     t.swipe == -1 && k.down != null -> typeText(k.down, false)
+                    afterWordShift && k.cased -> typeText(k.text, true)
                     else -> typeText(displayText(k), k.cased)
                 }
                 if (mode == Mode.EMOTICONS) setMode(Mode.LETTERS) // nach dem Emoticon zurück zur Tastatur
@@ -1209,6 +1216,9 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         }
     }
 
+    /** Shift wurde gerade auf das Wort am Cursor angewendet (nicht auf den nächsten Buchstaben). */
+    private var shiftAppliedToWord = false
+
     private fun onShiftTap() {
         val now = SystemClock.uptimeMillis()
         shift = when (shift) {
@@ -1217,6 +1227,9 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             Shift.LOCK -> Shift.OFF
         }
         lastShiftTap = now
+        // Steht der Cursor am Ende eines Wortes: Wort umwandeln (Wort / WORT / wort)
+        shiftAppliedToWord = mode == Mode.LETTERS &&
+            listener.onShiftChanged(when (shift) { Shift.OFF -> 0; Shift.ON -> 1; Shift.LOCK -> 2 })
         invalidate()
     }
 }

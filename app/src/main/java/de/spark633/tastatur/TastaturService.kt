@@ -1104,6 +1104,27 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         sendDownUpKeyEvents(if (direction < 0) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT)
     }
 
+    /** Shift auf das Wort am Cursor anwenden: 1 = Wort, 2 = WORT, 0 = wort. */
+    override fun onShiftChanged(state: Int): Boolean {
+        if (activeStyle != null) return false
+        val word = currentWord() ?: return false
+        val ic = currentInputConnection ?: return false
+        val changed = when (state) {
+            1 -> word.lowercase().replaceFirstChar { it.uppercaseChar() }
+            2 -> word.replace("ß", "ẞ").uppercase()
+            else -> word.lowercase()
+        }
+        if (changed != word) {
+            ic.beginBatchEdit()
+            ic.deleteSurroundingText(word.length, 0)
+            ic.commitText(changed, 1)
+            ic.endBatchEdit()
+            lastCorrection = null
+            current = null
+        }
+        return true
+    }
+
     override fun onKeyFeedback() {
         if (!prefs.vibrate) return
         try {

@@ -77,6 +77,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var shift = Shift.OFF
     private var lastShiftTap = 0L
     private var lastDeleteUp = 0L
+    private var chunkDeleteOn = true
     private var emoticonPage = 0
     private var formatPage = 0
     private var numpadKind = Layouts.NumpadKind.NUMBER
@@ -216,6 +217,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         keyRadius = prefs.cornerRadiusDp.coerceIn(0, 24) * dp
         showHints = prefs.showHints
         keyPreview = prefs.keyPreview
+        chunkDeleteOn = prefs.chunkDelete
         spaceCursor = prefs.spaceCursor
 
         bgPos = prefs.bgPosition.coerceIn(0, 100) / 100f
@@ -1007,7 +1009,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         when (k.action) {
             Action.DELETE -> if (!inSubPage()) {
                 // Kurz getippt und gleich wieder gedrückt: am Stück löschen (bis zum Leerzeichen)
-                t.chunkDelete = SystemClock.uptimeMillis() - lastDeleteUp < 350
+                t.chunkDelete = chunkDeleteOn && SystemClock.uptimeMillis() - lastDeleteUp < 350
                 if (!t.chunkDelete) listener.onDelete()
                 postDelayed(t.repeat, if (t.chunkDelete) 250 else 400)
             }

@@ -214,6 +214,7 @@ class SettingsActivity : Activity() {
         root.addView(switch("Leerzeichen nach . , ! ? automatisch", prefs.autoSpacePunct) { prefs.autoSpacePunct = it })
         root.addView(switch("Buchstabe beim Drücken groß anzeigen", prefs.keyPreview) { prefs.keyPreview = it })
         root.addView(switch("Zweimal ins selbe Wort tippen springt ans Wortende", prefs.tapWordEnd) { prefs.tapWordEnd = it })
+        root.addView(switch("⌫ kurz tippen und sofort halten löscht bis zum Leerzeichen", prefs.chunkDelete) { prefs.chunkDelete = it })
         root.addView(switch("Leertaste gedrückt halten und ziehen bewegt den Cursor", prefs.spaceCursor) {
             prefs.spaceCursor = it
         })

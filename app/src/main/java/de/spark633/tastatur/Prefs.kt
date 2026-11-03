@@ -159,6 +159,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("tap_word_end", true)
         set(v) = sp.edit().putBoolean("tap_word_end", v).apply()
 
+    /** ⌫ kurz tippen und sofort halten löscht alles bis zum Leerzeichen am Stück. */
+    var chunkDelete: Boolean
+        get() = sp.getBoolean("chunk_delete", true)
+        set(v) = sp.edit().putBoolean("chunk_delete", v).apply()
+
     /** Leertaste gedrückt halten und ziehen bewegt den Cursor. */
     var spaceCursor: Boolean
         get() = sp.getBoolean("space_cursor", true)

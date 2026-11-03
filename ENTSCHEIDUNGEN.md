@@ -41,7 +41,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Zwischenablage: ⋮-Menü offen → übrige Kacheln abgedunkelt
 - Zwischenablage: dunkle Kacheln mit weißer Schrift (immer lesbar); kein seitliches Wischen zum Löschen; nach dem Einfügen zurück zur Tastatur
 - Android-Zurück/˅ schließt die Tastatur sofort, auch aus Menüs (beim nächsten Öffnen Buchstaben)
-- ⌫ kurz tippen + sofort halten: alles bis zum letzten Leerzeichen am Stück löschen (abschaltbar; normales Halten: Wort für Wort); Pause zwischen Wörtern/Blöcken einstellbar (Standard 420 ms)
+- ⌫ kurz tippen + sofort halten: alles bis zum letzten Leerzeichen am Stück löschen (abschaltbar; normales Halten: Wort für Wort); Lösch-Tempo in drei Stufen: Schnell 280, Normal 420 (Standard), Langsam 630 ms
 - ⌫ in Emoticons, Zwischenablage und Formatieren = zurück zur Tastatur; dort und im Zahnrad-Menü keine ABC-Taste (Zahnrad bzw. ⌫ führt zurück)
 - Websuche öffnet direkt den Browser (kein Suchfeld in der Leiste): ohne Markierung leere Seite, markierter Link direkt als Adresse, sonst Suche
 

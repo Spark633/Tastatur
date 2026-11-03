@@ -68,6 +68,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var languageCount = 1
     private var qwertz = true
     private var clipboardRight = false
+    private var langLeft = true
     private var rowHeight = 54 * dp
     private var enterLabel = "↵"
     private var systemInset = 0
@@ -163,6 +164,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         languageCount = prefs.enabledLanguages.size
         qwertz = prefs.isQwertz(language)
         clipboardRight = prefs.clipboardRight
+        langLeft = prefs.langLeft
         clipColumns = prefs.clipColumns.coerceIn(1, 2)
         clipLines = prefs.clipLines.coerceIn(1, 4)
         clipLayouts.clear()
@@ -748,7 +750,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private val styleStopWidth = 44 * dp
 
     private val styleStopRect: RectF get() {
-        val right = width - barHeight - if (restoreVisible) barHeight else 0f
+        val right = width - barHeight - (if (restoreVisible) barHeight else 0f) -
+            (if (showLang && !langLeft) langWidth else 0f)
         return RectF(right - styleStopWidth, 0f, right, barHeight)
     }
 
@@ -757,14 +760,19 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     /** Drei gleich breite Felder zwischen den Knöpfen; links ggf. Sprachkürzel, rechts ggf. ✎✕ und ↶. */
     private fun slotRects(): List<RectF> {
         val cs = barHeight
-        val left = cs + if (showLang) langWidth else 0f
-        val right = width - cs - (if (restoreVisible) cs else 0f) - (if (showStyleStop) styleStopWidth else 0f)
+        val left = cs + if (showLang && langLeft) langWidth else 0f
+        val right = width - cs - (if (restoreVisible) cs else 0f) - (if (showStyleStop) styleStopWidth else 0f) -
+            (if (showLang && !langLeft) langWidth else 0f)
         val w = (right - left) / 3f
         return (0 until 3).map { RectF(left + it * w, 0f, left + (it + 1) * w, barHeight) }
     }
 
-    /** Kleines Sprachkürzel (EN/NL) links neben den Vorschlägen, nur zur Anzeige. */
-    private val langRect: RectF get() = RectF(barHeight, 0f, barHeight + langWidth, barHeight)
+    /** Kleines Sprachkürzel (EN/NL) links oder rechts neben den Vorschlägen, nur zur Anzeige. */
+    private val langRect: RectF get() {
+        if (langLeft) return RectF(barHeight, 0f, barHeight + langWidth, barHeight)
+        val right = width - barHeight - if (restoreVisible) barHeight else 0f
+        return RectF(right - langWidth, 0f, right, barHeight)
+    }
 
     private val langPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
 

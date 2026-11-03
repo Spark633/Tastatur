@@ -801,7 +801,7 @@ class SettingsActivity : Activity() {
         title = "Emoticons"
         addTestField()
         root.addView(info(
-            "Erscheinen hinter der ^.^-Taste, je 12 pro Seite. ▲ schiebt einen Eintrag nach vorne."
+            "Erscheinen hinter der ^.^-Taste, je 12 pro Seite. ▲ ▼ verschieben einen Eintrag."
         ))
         val addRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val input = EditText(this).apply {
@@ -848,6 +848,14 @@ class SettingsActivity : Activity() {
                     if (i > 0) {
                         val l = prefs.emoticons.toMutableList()
                         l.add(i - 1, l.removeAt(i))
+                        prefs.emoticons = l
+                        renderEmoticons()
+                    }
+                },
+                "▼" to {
+                    val l = prefs.emoticons.toMutableList()
+                    if (i < l.lastIndex) {
+                        l.add(i + 1, l.removeAt(i))
                         prefs.emoticons = l
                         renderEmoticons()
                     }

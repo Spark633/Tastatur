@@ -13,6 +13,7 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 ## Funktionen
 
 - QWERTZ-Layout (pro Sprache auf QWERTY umschaltbar)
+- Reine Zahlenfelder (z. B. Authenticator-Codes, PIN, Telefonnummer): großer Ziffernblock
 - Nach oben wischen: Zahlen und Zeichen auf den oberen beiden Reihen
 - Nach unten wischen: Zeichen auf der unteren Buchstabenreihe
 - Lange drücken: gängigste Sonderbuchstaben je Sprache plus das Wisch-Zeichen (u → ü 7, a → ä @)

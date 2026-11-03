@@ -49,7 +49,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         fun onMoveCursor(direction: Int)
     }
 
-    enum class Mode { LETTERS, SYMBOLS, SYMBOLS2, EMOTICONS, CLIPBOARD, MENU, FORMAT }
+    enum class Mode { LETTERS, SYMBOLS, SYMBOLS2, EMOTICONS, CLIPBOARD, MENU, FORMAT, NUMPAD }
     enum class Shift { OFF, ON, LOCK }
 
     private val dp = resources.displayMetrics.density
@@ -72,6 +72,13 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var lastShiftTap = 0L
     private var emoticonPage = 0
     private var formatPage = 0
+    private var numpadKind = Layouts.NumpadKind.NUMBER
+
+    /** Reines Zahlenfeld: großer Ziffernblock. */
+    fun showNumpad(kind: Layouts.NumpadKind) {
+        numpadKind = kind
+        setMode(Mode.NUMPAD)
+    }
     private var emoticonList: List<String> = Layouts.EMOTICONS
     private var message: String? = null
     private var slots: List<String> = emptyList()
@@ -318,7 +325,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             clearConfirm()
             return true
         }
-        if (mode != Mode.LETTERS) {
+        // Ziffernblock ist die passende Ansicht fürs Feld: Zurück schließt die Tastatur
+        if (mode != Mode.LETTERS && mode != Mode.NUMPAD) {
             setMode(Mode.LETTERS)
             return true
         }
@@ -379,6 +387,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         Mode.CLIPBOARD -> Layouts.clipboard()
         Mode.MENU -> Layouts.menu()
         Mode.FORMAT -> Layouts.format(formatPage)
+        Mode.NUMPAD -> Layouts.numpad(numpadKind)
     }
 
     private fun layoutKeys() {

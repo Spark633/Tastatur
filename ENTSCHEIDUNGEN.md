@@ -11,6 +11,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Punkt-Taste: hoch !, runter ?, lange drücken ! ?
 - Symbolseite 2: `© ✓ [ ] { } < > ^ °` in der Mitte, `= \` unten; ° nicht auf Seite 1; < > mit ≤ ≥
 - Seitlich ziehen öffnet die Auswahl sofort
+- Reine Zahlenfelder bekommen einen Ziffernblock (Zahl: - , . / Telefon: + * # / Datum: : / .); Zurück schließt dort die Tastatur
 
 **Leiste**
 - Keine obere Leiste (Copilot o. Ä.); Zwischenablage links (wählbar), Zahnrad gegenüber

@@ -200,7 +200,15 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val variation = info.inputType and InputType.TYPE_MASK_VARIATION
         val numeric = cls == InputType.TYPE_CLASS_NUMBER || cls == InputType.TYPE_CLASS_PHONE ||
             cls == InputType.TYPE_CLASS_DATETIME
-        if (!restarting) v.setMode(if (numeric) KeyboardView.Mode.SYMBOLS else KeyboardView.Mode.LETTERS)
+        if (!restarting) {
+            when (cls) {
+                // Nur Zahlen gefragt (z. B. Authenticator-Code): Ziffernblock
+                InputType.TYPE_CLASS_NUMBER -> v.showNumpad(Layouts.NumpadKind.NUMBER)
+                InputType.TYPE_CLASS_PHONE -> v.showNumpad(Layouts.NumpadKind.PHONE)
+                InputType.TYPE_CLASS_DATETIME -> v.showNumpad(Layouts.NumpadKind.DATETIME)
+                else -> v.setMode(KeyboardView.Mode.LETTERS)
+            }
+        }
 
         isPasswordField = (cls == InputType.TYPE_CLASS_TEXT && variation in setOf(
             InputType.TYPE_TEXT_VARIATION_PASSWORD,

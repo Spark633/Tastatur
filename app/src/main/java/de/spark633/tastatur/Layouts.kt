@@ -154,6 +154,24 @@ object Layouts {
     )
 
     /** Formatieren: Listen, Unicode-Stile (überall sichtbar) und Telegram-/Discord-Zeichen. */
+    /** Ziffernblock für reine Zahlenfelder (z. B. Codes in der Authenticator-App). */
+    enum class NumpadKind { NUMBER, PHONE, DATETIME }
+
+    fun numpad(kind: NumpadKind): List<List<Key>> {
+        fun digit(d: String) = Key(d, width = 2.5f)
+        val (side1, side2, extra) = when (kind) {
+            NumpadKind.NUMBER -> Triple(Key("-", width = 2.5f), Key(",", longPress = listOf("."), width = 2.5f), Key(".", width = 2.5f))
+            NumpadKind.PHONE -> Triple(Key("+", width = 2.5f), Key("*", longPress = listOf("(", ")", "/", "-"), width = 2.5f), Key("#", width = 2.5f))
+            NumpadKind.DATETIME -> Triple(Key(":", width = 2.5f), Key("/", longPress = listOf("-", "."), width = 2.5f), Key(".", width = 2.5f))
+        }
+        return listOf(
+            listOf(digit("1"), digit("2"), digit("3"), side1),
+            listOf(digit("4"), digit("5"), digit("6"), side2),
+            listOf(digit("7"), digit("8"), digit("9"), Key("⌫", Action.DELETE, width = 2.5f)),
+            listOf(Key("ABC", Action.TO_LETTERS, width = 2.5f), digit("0"), extra, Key("↵", Action.ENTER, width = 2.5f)),
+        )
+    }
+
     const val FORMAT_PAGES = 2
 
     /** Formatieren, Seite 1: Listen, Unicode-Stile, Telegram/Discord. Seite 2: Spaß-Stile (sPoNgEbOb …). */

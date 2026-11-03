@@ -24,15 +24,9 @@ class Prefs(context: Context) {
         }
         set(value) = sp.edit().putString("current_lang", value.code).apply()
 
-    /** Sprachkürzel (EN/NL) neben den Vorschlägen anzeigen. */
-    var showLangCode: Boolean
-        get() = sp.getBoolean("show_lang_code", true)
-        set(v) = sp.edit().putBoolean("show_lang_code", v).apply()
-
-    /** Sprachkürzel auch bei Deutsch (DE) anzeigen. */
-    var showLangCodeDe: Boolean
-        get() = sp.getBoolean("show_lang_code_de", false)
-        set(v) = sp.edit().putBoolean("show_lang_code_de", v).apply()
+    /** Sprachkürzel neben den Vorschlägen je Sprache anzeigen (Standard: EN/NL ja, DE nein). */
+    fun isLangCodeShown(lang: Language) = sp.getBoolean("lang_code_${lang.code}", lang != Language.DE)
+    fun setLangCodeShown(lang: Language, on: Boolean) = sp.edit().putBoolean("lang_code_${lang.code}", on).apply()
 
     /** Sprachkürzel (EN/NL) links neben den Vorschlägen (sonst rechts). */
     var langLeft: Boolean

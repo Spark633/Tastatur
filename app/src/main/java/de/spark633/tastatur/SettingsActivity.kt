@@ -270,11 +270,17 @@ class SettingsActivity : Activity() {
             }.apply { setPadding((32 * dp).toInt(), 0, 0, (8 * dp).toInt()) })
         }
         root.addView(header("Sprachkürzel"))
-        root.addView(switch("EN / NL neben den Vorschlägen anzeigen", prefs.showLangCode) {
-            prefs.showLangCode = it
-        })
-        root.addView(switch("Auch DE anzeigen", prefs.showLangCodeDe) {
-            prefs.showLangCodeDe = it
+        root.addView(info("Neben den Vorschlägen anzeigen bei:"))
+        root.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            for (lang in Language.entries) {
+                addView(CheckBox(this@SettingsActivity).apply {
+                    text = lang.code.uppercase()
+                    textSize = 16f
+                    isChecked = prefs.isLangCodeShown(lang)
+                    setOnCheckedChangeListener { _, checked -> prefs.setLangCodeShown(lang, checked) }
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            }
         })
         root.addView(info("Seite:"))
         root.addView(radio(listOf("Links", "Rechts"), if (prefs.langLeft) 0 else 1) {

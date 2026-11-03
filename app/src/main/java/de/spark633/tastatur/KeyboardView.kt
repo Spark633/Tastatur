@@ -69,8 +69,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var qwertz = true
     private var clipboardRight = false
     private var langLeft = true
-    private var langCodeOn = true
-    private var langCodeDe = false
+    private var langCodeShown = false
     private var rowHeight = 54 * dp
     private var enterLabel = "↵"
     private var systemInset = 0
@@ -167,8 +166,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         qwertz = prefs.isQwertz(language)
         clipboardRight = prefs.clipboardRight
         langLeft = prefs.langLeft
-        langCodeOn = prefs.showLangCode
-        langCodeDe = prefs.showLangCodeDe
+        langCodeShown = prefs.isLangCodeShown(language)
         clipColumns = prefs.clipColumns.coerceIn(1, 2)
         clipLines = prefs.clipLines.coerceIn(1, 4)
         clipLayouts.clear()
@@ -745,8 +743,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     /** Drei gleich breite Felder zwischen Zwischenablage-Knopf und gegenüberliegendem Rand. */
     private val langWidth = 30 * dp
 
-    /** Sprachkürzel: EN/NL und DE getrennt abschaltbar. */
-    private val showLang: Boolean get() = if (language == Language.DE) langCodeDe else langCodeOn
+    /** Sprachkürzel: je Sprache abschaltbar. */
+    private val showLang: Boolean get() = langCodeShown
 
     /** Formatierung aktiv: eigener Knopf zum Beenden neben den Vorschlägen. */
     private val showStyleStop: Boolean

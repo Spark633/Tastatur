@@ -27,8 +27,6 @@ jobs:
       - name: APK umbenennen (mit Versionsnummer)
         run: |
           cp app/build/outputs/apk/release/app-release.apk Tastatur-0.1.${{ github.run_number }}.apk
-          # Fester Name bleibt für den alten Direkt-Link erhalten
-          cp app/build/outputs/apk/release/app-release.apk Tastatur.apk
 
       - name: Als Artefakt speichern
         uses: actions/upload-artifact@v4
@@ -41,7 +39,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete neueste --yes --cleanup-tag || true
-          gh release create neueste Tastatur-0.1.${{ github.run_number }}.apk Tastatur.apk \
+          gh release create neueste Tastatur-0.1.${{ github.run_number }}.apk \
             --title "Neueste Version 0.1.${{ github.run_number }}" \
             --notes "Automatisch gebaut aus ${{ github.sha }}. Tastatur-0.1.${{ github.run_number }}.apk herunterladen und installieren." \
             --target ${{ github.sha }}

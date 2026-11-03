@@ -4,7 +4,7 @@ Eigene Android-Tastatur, angepasst an meine Wünsche.
 
 ## Installieren
 
-1. Unter **Releases → Neueste Version** die Datei `Tastatur.apk` auf dem Handy herunterladen.
+1. Unter **Releases → Neueste Version** die Datei `Tastatur-<Version>.apk` auf dem Handy herunterladen (oder in der App: „(Neueste Version herunterladen)“).
 2. Öffnen und installieren (beim ersten Mal „Unbekannte Apps installieren“ für den Browser bzw. Dateimanager erlauben).
 3. App **Tastatur** öffnen → Schritt 1 (aktivieren) und Schritt 2 (auswählen).
 

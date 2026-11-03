@@ -211,7 +211,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
                 val mime = clip.description?.getMimeType(0)?.takeIf { it.startsWith("image/") }
                     ?: contentResolver.getType(uri)?.takeIf { it.startsWith("image/") }
                 if (mime != null) {
-                    captureImage(uri, mime)
+                    if (prefs.clipImages) captureImage(uri, mime)
                     return
                 }
             }

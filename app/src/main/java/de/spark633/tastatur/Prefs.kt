@@ -66,6 +66,11 @@ class Prefs(context: Context) {
         get() = sp.getInt("clip_lines", 3)
         set(v) = sp.edit().putInt("clip_lines", v).apply()
 
+    /** Kopierte Bilder im Zwischenablage-Verlauf speichern. */
+    var clipImages: Boolean
+        get() = sp.getBoolean("clip_images", true)
+        set(v) = sp.edit().putBoolean("clip_images", v).apply()
+
     /** Nach . , ! ? : ; automatisch ein Leerzeichen setzen. */
     var autoSpacePunct: Boolean
         get() = sp.getBoolean("auto_space_punct", true)

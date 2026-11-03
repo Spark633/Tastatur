@@ -36,7 +36,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Angefangene Wörter (Verab, Besch) mit gängiger Vervollständigung nur bei eindeutigem Fehler korrigieren
 
 **Unterseiten**
-- Zwischenablage mit Bildern (letzte 10): Einfügen über die normale Einfügen-Funktion der App (kein Sticker-Weg)
+- Zwischenablage mit Bildern (letzte 10, abschaltbar): Einfügen über die normale Einfügen-Funktion der App (kein Sticker-Weg)
 - Zwischenablage: dunkle Kacheln mit weißer Schrift (immer lesbar); kein seitliches Wischen zum Löschen; nach dem Einfügen zurück zur Tastatur
 - ⌫ in Emoticons, Zwischenablage und Formatieren = zurück zur Tastatur; dort und im Zahnrad-Menü keine ABC-Taste (Zahnrad bzw. ⌫ führt zurück)
 - Websuche öffnet direkt den Browser (kein Suchfeld in der Leiste): ohne Markierung leere Seite, markierter Link direkt als Adresse, sonst Suche

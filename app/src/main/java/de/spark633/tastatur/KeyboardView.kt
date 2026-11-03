@@ -633,7 +633,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         if (mode == Mode.CLIPBOARD) canvas.drawCircle(cx, cy, barHeight * 0.42f, funcPaint)
         if (mode == Mode.MENU) canvas.drawCircle(settingsRect.centerX(), settingsRect.centerY(), barHeight * 0.42f, funcPaint)
         drawGear(canvas, settingsRect.centerX(), settingsRect.centerY())
-        if (mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT) {
+        if (showLang && mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT) {
             val r = langRect
             langPaint.color = hintPaint.color
             langPaint.textSize = sp(12f)
@@ -675,15 +675,18 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     /** Drei gleich breite Felder zwischen Zwischenablage-Knopf und gegenüberliegendem Rand. */
     private val langWidth = 30 * dp
 
-    /** Drei gleich breite Felder zwischen den Knöpfen; rechts Sprachkürzel und ggf. ↶. */
+    /** Sprachkürzel nur zeigen, wenn nicht Deutsch aktiv ist. */
+    private val showLang: Boolean get() = language != Language.DE
+
+    /** Drei gleich breite Felder zwischen den Knöpfen; rechts ggf. Sprachkürzel und ↶. */
     private fun slotRects(): List<RectF> {
         val cs = barHeight
-        val right = width - cs - (if (restoreVisible) cs else 0f) - langWidth
+        val right = width - cs - (if (restoreVisible) cs else 0f) - (if (showLang) langWidth else 0f)
         val w = (right - cs) / 3f
         return (0 until 3).map { RectF(cs + it * w, 0f, cs + (it + 1) * w, barHeight) }
     }
 
-    /** Kleines Sprachkürzel (DE/EN/NL) rechts neben den Vorschlägen; Antippen wechselt die Sprache. */
+    /** Kleines Sprachkürzel (EN/NL) rechts neben den Vorschlägen, nur zur Anzeige. */
     private val langRect: RectF get() {
         val right = width - barHeight - if (restoreVisible) barHeight else 0f
         return RectF(right - langWidth, 0f, right, barHeight)
@@ -1074,10 +1077,6 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                     listener.onClipboardOpen()
                     setMode(Mode.CLIPBOARD)
                 }
-            } else if (mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT && message == null &&
-                langRect.contains(t.lastX, t.lastY) && langRect.contains(t.x0, t.y0)) {
-                listener.onKeyFeedback()
-                listener.onLanguageSwipe(1)
             } else if (restoreVisible && mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT &&
                 restoreRect.contains(t.lastX, t.lastY) && restoreRect.contains(t.x0, t.y0)) {
                 listener.onKeyFeedback()

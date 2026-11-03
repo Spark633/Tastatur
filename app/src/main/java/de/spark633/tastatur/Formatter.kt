@@ -16,6 +16,7 @@ object Formatter {
         "sarcasm" to "sArKaSmUs",
         "small" to "Klein",
         "glitch" to "Glitch",
+        "upside" to "Kopfüber",
     )
 
     /**
@@ -41,7 +42,7 @@ object Formatter {
         "small" -> mapLetters(text) { SMALL[it]?.code }
         "glitch" -> glitch(text)
         "upside" -> upsideDown(text)
-        "reverse" -> clusters(text).reversed().joinToString("")
+        "mirror" -> mirror(text)
         "bold" -> mapLetters(text, ::bold)
         "italic" -> mapLetters(text, ::italic)
         "strike" -> combine(text, '̶')
@@ -138,17 +139,30 @@ object Formatter {
             "u", "o", "d", "b", "ɹ", "s", "ʇ", "n", "ʌ", "ʍ", "x", "ʎ", "z"))
         val upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toList().zip(listOf("∀", "ꓭ", "Ɔ", "ꓷ", "Ǝ", "Ⅎ", "⅁", "H", "I", "ſ", "ꓘ", "˥", "W",
             "N", "O", "Ԁ", "Ό", "ꓤ", "S", "⊥", "∩", "Λ", "M", "X", "⅄", "Z"))
-        val other = "0123456789.,'!?()[]{}<>&_\";".toList().zip(listOf("0", "Ɩ", "ᄅ", "Ɛ", "ㄣ", "ϛ", "9", "ㄥ", "8", "6", "˙", "'", ",",
-            "¡", "¿", ")", "(", "]", "[", "}", "{", ">", "<", "⅋", "‾", "„", "؛"))
+        val other = "0123456789.,'!?&_\";".toList().zip(listOf("0", "Ɩ", "ᄅ", "Ɛ", "ㄣ", "ϛ", "9", "ㄥ", "8", "6", "˙", "'", ",",
+            "¡", "¿", "⅋", "‾", "„", "؛"))
         (lower + upper + other).forEach { (a, b) -> put(a, b) }
     }
 
-    /** Kopfüber: Zeichen spiegeln und die Reihenfolge umdrehen (Hallo → ollɐH). */
-    private fun upsideDown(text: String): String {
+    /** Kopfüber: jedes Zeichen drehen, Reihenfolge bleibt (Hallo → Hɐllo). Geht auch beim Tippen. */
+    private fun upsideDown(text: String): String = mapClusters(text, reverse = false) { UPSIDE[it] }
+
+    private val MIRROR: Map<Char, String> = buildMap {
+        val lower = "abcdefghijklmnopqrstuvwxyz".toList().zip(listOf("ɒ", "d", "ɔ", "b", "ɘ", "ʇ", "ϱ", "ʜ", "i", "ᒑ", "ʞ",
+            "l", "m", "n", "o", "q", "p", "ɿ", "ꙅ", "ƚ", "u", "v", "w", "x", "γ", "z"))
+        val upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toList().zip(listOf("A", "ᙠ", "Ɔ", "ᗡ", "Ǝ", "ꟻ", "Ꭾ", "H", "I", "Ⴑ", "ꓘ",
+            "⅃", "M", "И", "O", "ꟼ", "Ọ", "Я", "Ƨ", "T", "U", "V", "W", "X", "Y", "Ƹ"))
+        val other = "()[]{}<>?/\\".toList().zip(listOf(")", "(", "]", "[", "}", "{", ">", "<", "⸮", "\\", "/"))
+        (lower + upper + other).forEach { (a, b) -> put(a, b) }
+    }
+
+    /** Spiegelschrift: Zeichen spiegeln und von rechts nach links (Hallo → ollɒH). */
+    private fun mirror(text: String): String = mapClusters(text, reverse = true) { MIRROR[it] }
+
+    private fun mapClusters(text: String, reverse: Boolean, map: (Char) -> String?): String {
         val decomposed = Normalizer.normalize(text, Normalizer.Form.NFD)
-        return clusters(decomposed).reversed().joinToString("") { cl ->
-            val base = cl[0]
-            (UPSIDE[base] ?: base.toString()) + cl.substring(1)
-        }.let { Normalizer.normalize(it, Normalizer.Form.NFC) }
+        val parts = clusters(decomposed).let { if (reverse) it.reversed() else it }
+        return parts.joinToString("") { cl -> (map(cl[0]) ?: cl[0].toString()) + cl.substring(1) }
+            .let { Normalizer.normalize(it, Normalizer.Form.NFC) }
     }
 }

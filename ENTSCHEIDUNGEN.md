@@ -19,7 +19,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 
 **Leiste**
 - Keine obere Leiste (Copilot o. Ä.); Zwischenablage links (wählbar), Zahnrad gegenüber
-- Sprachkürzel nur bei EN/NL, nur Anzeige (kein Antippen), Seite neben den Vorschlägen wählbar (Standard links)
+- Sprachkürzel nur bei EN/NL, nur Anzeige (kein Antippen), Seite neben den Vorschlägen wählbar (Standard links), abschaltbar
 - Wiederherstellen: ↶ neben den Vorschlägen mit Rückfrage, kein langes Drücken
 - Gerade Kopiertes 3 Minuten als 📋-Vorschlag (auch Bilder), nur in leerem Feld, auf leerer neuer Zeile oder direkt nach „:“
 

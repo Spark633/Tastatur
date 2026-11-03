@@ -69,6 +69,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var qwertz = true
     private var clipboardRight = false
     private var langLeft = true
+    private var langCodeOn = true
     private var rowHeight = 54 * dp
     private var enterLabel = "↵"
     private var systemInset = 0
@@ -165,6 +166,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         qwertz = prefs.isQwertz(language)
         clipboardRight = prefs.clipboardRight
         langLeft = prefs.langLeft
+        langCodeOn = prefs.showLangCode
         clipColumns = prefs.clipColumns.coerceIn(1, 2)
         clipLines = prefs.clipLines.coerceIn(1, 4)
         clipLayouts.clear()
@@ -742,7 +744,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private val langWidth = 30 * dp
 
     /** Sprachkürzel nur zeigen, wenn nicht Deutsch aktiv ist. */
-    private val showLang: Boolean get() = language != Language.DE
+    private val showLang: Boolean get() = langCodeOn && language != Language.DE
 
     /** Formatierung aktiv: eigener Knopf zum Beenden neben den Vorschlägen. */
     private val showStyleStop: Boolean

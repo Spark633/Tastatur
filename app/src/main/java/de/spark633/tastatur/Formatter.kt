@@ -187,6 +187,16 @@ object Formatter {
             }
             if (keep != null) sb.append(keep)
         }
+        // sArKaSmUs-Wörter komplett klein: hAlLo → hallo
         return Normalizer.normalize(sb.toString(), Normalizer.Form.NFC)
+            .replace(Regex("[\\p{L}']+")) { m -> if (isSarcasm(m.value)) m.value.lowercase() else m.value }
+    }
+
+    /** Wechselt fast jeder Buchstabe zwischen groß und klein? (hAlLo ja, Hallo/iPhone nein) */
+    private fun isSarcasm(word: String): Boolean {
+        val letters = word.filter { it.isLetter() && it.lowercaseChar() != it.uppercaseChar() }
+        if (letters.length < 3 || letters.none { it.isUpperCase() } || letters.none { it.isLowerCase() }) return false
+        val switches = letters.zipWithNext().count { (a, b) -> a.isUpperCase() != b.isUpperCase() }
+        return switches >= (letters.length - 1) * 0.75
     }
 }

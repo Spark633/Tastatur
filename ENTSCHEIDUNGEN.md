@@ -53,3 +53,4 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Bild-Verlauf: die letzten 5; pro Bild gespeichert: Abdunkeln, Zoom, Ausschnitt, Tastenfarbe, Schriftfarbe, Deckkraft
 - Zoom-Anzeige beginnt bei 0 %
 - Sicherung ohne Zwischenablage-Verlauf
+- Startseite zeigt „Version x.y.z“ (ohne Build) und „Neueste Version herunterladen“; Link steht in AppLinks.kt; keine Update-Prüfung (App ohne Internetzugriff)

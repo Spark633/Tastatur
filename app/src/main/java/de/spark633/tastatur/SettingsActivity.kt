@@ -148,6 +148,19 @@ class SettingsActivity : Activity() {
         root.addView(button("^.^  Emoticons bearbeiten") { open("emoticons") })
         root.addView(button("💾  Profile & Sicherung") { open("profiles") })
         root.addView(button("❓  Hilfe – Bedienung") { open("help") })
+
+        // Version und Download der neuesten Version
+        root.addView(header("Version"))
+        val version = try {
+            packageManager.getPackageInfo(packageName, 0).versionName
+        } catch (_: Exception) { null }
+        root.addView(info("Version ${version ?: "unbekannt"}"))
+        root.addView(button("Neueste Version herunterladen") {
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(AppLinks.DOWNLOAD)))
+            } catch (_: Exception) {
+            }
+        })
     }
 
     private var setupHeader: TextView? = null

@@ -1276,7 +1276,9 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         }
         lastShiftTap = now
         // Steht der Cursor am Ende eines Wortes: Wort umwandeln (Wort / WORT / wort)
-        shiftAppliedToWord = mode == Mode.LETTERS &&
+        // Ausschalten ändert das Wort nur, wenn das Einschalten es auch geändert hat
+        val wasOnWord = shiftAppliedToWord
+        shiftAppliedToWord = mode == Mode.LETTERS && (shift != Shift.OFF || wasOnWord) &&
             listener.onShiftChanged(when (shift) { Shift.OFF -> 0; Shift.ON -> 1; Shift.LOCK -> 2 })
         invalidate()
     }

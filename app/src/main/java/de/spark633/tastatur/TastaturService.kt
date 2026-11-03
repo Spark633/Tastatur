@@ -1285,6 +1285,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     /**
      * Shift auf das Wort direkt vor dem Cursor anwenden: 1 = Wort, 2 = WORT, 0 = wort.
      * Nur am Wortende; mitten im Wort und am Wortanfang wie gewohnt (nächster Buchstabe groß).
+     * Ist das Wort schon groß geschrieben, macht Shift den nächsten Buchstaben groß (zusammengeschriebene Namen).
      */
     override fun onShiftChanged(state: Int): Boolean {
         own()
@@ -1302,6 +1303,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         if (after.isNotEmpty() && isWordChar(after[0])) return false
         val tail = ""
         val word = head
+        // Wort schon groß angefangen (Baron, BaronDer): Shift gilt dem nächsten Buchstaben → BaronDerNacht
+        if (state == 1 && word.first().isUpperCase() && word.any { it.isLowerCase() }) return false
         val changed = when (state) {
             1 -> word.lowercase().replaceFirstChar { it.uppercaseChar() }
             2 -> word.replace("ß", "ẞ").uppercase()

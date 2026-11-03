@@ -68,8 +68,8 @@ object Layouts {
     private fun bottomRow(modeKey: Key) = listOf(
         modeKey,
         Key("^.^", Action.TO_EMOTICONS),
-        Key(",", longPress = listOf(";")),
-        Key(" ", Action.SPACE, width = 4f),
+        Key(",", down = ";", longPress = listOf(";")),
+        Key(" ", Action.SPACE, width = 4.5f),
         Key(".", up = "!", down = "?", longPress = listOf("!", ",", ".", "?")),
         Key("↵", Action.ENTER, width = 1.5f),
     )
@@ -87,7 +87,7 @@ object Layouts {
             (if (qwertz) "yxcvbnm" else "zxcvbnm").toList()
                 .zip(listOf("_", "€", "-", "\"", ":", ";", "/")) { c, s -> letter(c, lang, down = s) } +
             deleteKey
-        return listOf(r1, r2, r3, bottomRow(Key("123", Action.TO_SYMBOLS, width = 1.5f)))
+        return listOf(r1, r2, r3, bottomRow(Key("123", Action.TO_SYMBOLS, width = 1f)))
     }
 
     /** Extras beim langen Drücken (oder seitlich ziehen) auf den Symbolseiten. */
@@ -122,7 +122,7 @@ object Layouts {
         chars("1 2 3 4 5 6 7 8 9 0"),
         chars("@ # € _ & - + ( ) /"),
         listOf(Key("=\\<", Action.TO_SYMBOLS2, width = 1.5f)) + chars("* \" ' : ; ! ?") + deleteKey,
-        bottomRow(Key("ABC", Action.TO_LETTERS, width = 1.5f)),
+        bottomRow(Key("ABC", Action.TO_LETTERS, width = 1f)),
     )
 
     fun symbols2(): List<List<Key>> = listOf(
@@ -130,7 +130,7 @@ object Layouts {
         // Klammern paarweise nebeneinander, ^ gleich daneben
         chars("© ✓ [ ] { } < > ^ °"),
         listOf(Key("?123", Action.TO_SYMBOLS, width = 1.5f)) + chars("£ ¥ $ ¢ % = \\") + deleteKey,
-        bottomRow(Key("ABC", Action.TO_LETTERS, width = 1.5f)),
+        bottomRow(Key("ABC", Action.TO_LETTERS, width = 1f)),
     )
 
     val EMOTICONS = listOf(

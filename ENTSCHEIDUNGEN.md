@@ -10,7 +10,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - ß bleibt bei Shift ß (nicht SS), mit Feststelltaste ẞ
 - Shift wirkt nur am Wortende aufs Wort (1× Wort, Feststelltaste WORT, aus wort); mitten im Wort und am Wortanfang wie gewohnt (nächster Buchstabe groß)
 - Shift bei markiertem Text: Erster Groß → ALLES GROSS → alles klein, Markierung bleibt
-- Punkt-Taste: hoch !, runter ?, lange drücken ! , . ?; Komma: kein !, lange drücken ;
+- Punkt-Taste: hoch !, runter ?, lange drücken ! , . ?; Komma: kein !, runter wischen und lange drücken ;; untere Reihe: 123 schmal, Komma mittig zwischen y und x, Leertaste breiter
 - Symbolseite 1: ( ) mit [ { < bzw. ] } >, ' mit ‹ ›, + mit ±, * mit • × † ‡ ⸸ (Fußnotenzeichen beim *, nicht beim ✓)
 - Symbolseite 2: `© ✓ [ ] { } < > ^ °` in der Mitte, `= \` unten; ° nicht auf Seite 1; < > mit ≤ ≥
 - Seitlich ziehen öffnet die Auswahl sofort, aber nur bei Symbolen/Satzzeichen, nicht bei Buchstaben

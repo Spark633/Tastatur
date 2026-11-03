@@ -60,6 +60,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     /** Zuletzt kopierter Text, wird kurz in der Leiste zum Einfügen angeboten. */
     private var recentClip: String? = null
     private var recentClipImage: String? = null
+    private var lastImageStamp = 0L
     private var recentClipTime = 0L
     private var clipShown = false
     private var isPasswordField = false
@@ -211,6 +212,10 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
                 val mime = clip.description?.getMimeType(0)?.takeIf { it.startsWith("image/") }
                     ?: contentResolver.getType(uri)?.takeIf { it.startsWith("image/") }
                 if (mime != null) {
+                    // Jeder Kopiervorgang nur einmal (sonst doppelt beim Öffnen der Zwischenablage)
+                    val stamp = clip.description?.timestamp ?: 0L
+                    if (stamp != 0L && stamp == lastImageStamp) return
+                    lastImageStamp = stamp
                     if (prefs.clipImages) captureImage(uri, mime)
                     return
                 }
@@ -309,6 +314,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     override fun onFinishInputView(finishingInput: Boolean) {
         super.onFinishInputView(finishingInput)
         nextWords.save()
+        keyboard?.leaveSubPage()
         keyboard?.cancelTouches()
     }
 
@@ -534,6 +540,16 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     // --- Zuletzt Kopiertes ---
 
+    /** Leeres Feld oder Cursor am Anfang einer leeren neuen Zeile (dort passt Eingefügtes hin). */
+    private fun atEmptySpot(): Boolean {
+        val ic = currentInputConnection ?: return false
+        val before = ic.getTextBeforeCursor(200, 0)?.toString() ?: return false
+        val after = ic.getTextAfterCursor(200, 0)?.toString().orEmpty()
+        val lineBefore = before.substringAfterLast('\n')
+        val lineAfter = after.substringBefore('\n')
+        return lineBefore.isBlank() && lineAfter.isBlank()
+    }
+
     /** Beschriftung für den Einfüge-Vorschlag, oder null wenn nichts Frisches kopiert wurde. */
     private fun clipOffer(): String? {
         if (isPasswordField || SystemClock.uptimeMillis() - recentClipTime > CLIP_OFFER_MS) return null
@@ -591,9 +607,9 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val d = dict
         clipShown = false
         v.setRestoreVisible(restoreAvailable()) // ↶ neben den Vorschlägen, Vorschläge laufen weiter
-        // Gerade etwas kopiert und nicht mitten im Wort: zum Einfügen anbieten
+        // Gerade etwas kopiert: nur in leerem Feld oder am Anfang einer neuen Zeile anbieten
         clipOffer()?.let { label ->
-            if (currentWord() == null) {
+            if (atEmptySpot()) {
                 current = null
                 suggestSeq++
                 clipShown = true

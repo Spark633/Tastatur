@@ -10,9 +10,9 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - ß bleibt bei Shift ß (nicht SS), mit Feststelltaste ẞ
 - Shift wirkt nur am Wortende aufs Wort (1× Wort, Feststelltaste WORT, aus wort); mitten im Wort und am Wortanfang wie gewohnt (nächster Buchstabe groß)
 - Shift bei markiertem Text: Erster Groß → ALLES GROSS → alles klein, Markierung bleibt
-- Punkt-Taste: hoch !, runter ?, lange drücken ! ?
+- Punkt-Taste: hoch !, runter ?, lange drücken ! , . ?; Komma: kein !, lange drücken ;
 - Symbolseite 2: `© ✓ [ ] { } < > ^ °` in der Mitte, `= \` unten; ° nicht auf Seite 1; < > mit ≤ ≥
-- Seitlich ziehen öffnet die Auswahl sofort
+- Seitlich ziehen öffnet die Auswahl sofort, aber nur bei Symbolen/Satzzeichen, nicht bei Buchstaben
 - Zweiter Tipp ins selbe Wort (nicht Doppeltipp) setzt den Cursor ans Wortende; abschaltbar
 - Reine Zahlenfelder bekommen einen Ziffernblock (Zahl: - , . / Telefon: + * # / Datum: : / .); Zurück schließt dort die Tastatur
 
@@ -20,7 +20,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Keine obere Leiste (Copilot o. Ä.); Zwischenablage links (wählbar), Zahnrad gegenüber
 - Sprachkürzel nur bei EN/NL, nur Anzeige (kein Antippen)
 - Wiederherstellen: ↶ neben den Vorschlägen mit Rückfrage, kein langes Drücken
-- Gerade Kopiertes 3 Minuten als 📋-Vorschlag (auch Bilder: „📋 Bild einfügen“)
+- Gerade Kopiertes 3 Minuten als 📋-Vorschlag (auch Bilder), nur in leerem Feld oder auf leerer neuer Zeile
 
 **Korrektur**
 - Richtige Wörter werden nie geändert (konnte bleibt konnte)
@@ -38,6 +38,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 **Unterseiten**
 - Zwischenablage mit Bildern (letzte 10, abschaltbar; Ausschalten löscht nicht angeheftete Bilder): Einfügen über die normale Einfügen-Funktion der App (kein Sticker-Weg)
 - Zwischenablage: dunkle Kacheln mit weißer Schrift (immer lesbar); kein seitliches Wischen zum Löschen; nach dem Einfügen zurück zur Tastatur
+- Android-Zurück/˅ schließt die Tastatur sofort, auch aus Menüs (beim nächsten Öffnen Buchstaben)
 - ⌫ in Emoticons, Zwischenablage und Formatieren = zurück zur Tastatur; dort und im Zahnrad-Menü keine ABC-Taste (Zahnrad bzw. ⌫ führt zurück)
 - Websuche öffnet direkt den Browser (kein Suchfeld in der Leiste): ohne Markierung leere Seite, markierter Link direkt als Adresse, sonst Suche
 
@@ -53,4 +54,4 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Bild-Verlauf: die letzten 5; pro Bild gespeichert: Abdunkeln, Zoom, Ausschnitt, Tastenfarbe, Schriftfarbe, Deckkraft
 - Zoom-Anzeige beginnt bei 0 %
 - Sicherung ohne Zwischenablage-Verlauf
-- Startseite zeigt „Version x.y.z“ (ohne Build) und „Neueste Version herunterladen“; Link steht in AppLinks.kt; keine Update-Prüfung (App ohne Internetzugriff)
+- Startseite zeigt „Version x.y.z“ (ohne Build) und „(Neueste Version herunterladen)“ als unterstrichener Text-Link zur Release-Seite; APK heißt Tastatur-<Version>.apk; Link steht in AppLinks.kt; keine Update-Prüfung (App ohne Internetzugriff)

@@ -154,10 +154,19 @@ class SettingsActivity : Activity() {
             packageManager.getPackageInfo(packageName, 0).versionName
         } catch (_: Exception) { null }
         root.addView(info("Version ${version ?: "unbekannt"}").apply { setPadding(0, (24 * dp).toInt(), 0, (8 * dp).toInt()) })
-        root.addView(button("Neueste Version herunterladen") {
-            try {
-                startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(AppLinks.DOWNLOAD)))
-            } catch (_: Exception) {
+        // Unterstrichener Text-Link statt großem Knopf
+        root.addView(TextView(this).apply {
+            text = android.text.SpannableString("(Neueste Version herunterladen)").apply {
+                setSpan(android.text.style.UnderlineSpan(), 0, length, 0)
+            }
+            textSize = 14f
+            setTextColor(android.graphics.Color.rgb(0x4D, 0xB6, 0xAC))
+            setPadding(0, 0, 0, (16 * dp).toInt())
+            setOnClickListener {
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(AppLinks.DOWNLOAD)))
+                } catch (_: Exception) {
+                }
             }
         })
     }

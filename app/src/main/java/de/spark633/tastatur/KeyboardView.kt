@@ -326,16 +326,14 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             finishResize()
             return true
         }
-        if (confirmText != null) {
-            clearConfirm()
-            return true
-        }
-        // Ziffernblock ist die passende Ansicht fürs Feld: Zurück schließt die Tastatur
-        if (mode != Mode.LETTERS && mode != Mode.NUMPAD) {
-            setMode(Mode.LETTERS)
-            return true
-        }
+        // Sonst schließt Zurück die Tastatur sofort, auch aus Menüs (beim nächsten Öffnen: Buchstaben)
         return false
+    }
+
+    /** Beim Schließen: Unterseiten verlassen, damit beim nächsten Öffnen die Buchstaben kommen. */
+    fun leaveSubPage() {
+        clearConfirm()
+        if (mode != Mode.LETTERS && mode != Mode.NUMPAD) setMode(Mode.LETTERS)
     }
 
     fun cancelTouches() {
@@ -1063,7 +1061,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             }
             Action.CHAR -> {
                 // Zur Seite ziehen: Auswahl sofort öffnen (ohne langes Drücken)
-                if (k.longPress.isNotEmpty() && abs(dx) > sideThreshold && abs(dx) > abs(dy)) {
+                if (!k.cased && k.longPress.isNotEmpty() && abs(dx) > sideThreshold && abs(dx) > abs(dy)) {
                     removeCallbacks(t.longPress)
                     t.swipe = 0
                     startPopup(t)

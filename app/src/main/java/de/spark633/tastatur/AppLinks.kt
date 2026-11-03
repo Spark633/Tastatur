@@ -6,6 +6,6 @@ package de.spark633.tastatur
  * (etwa "market://details?id=de.spark633.tastatur").
  */
 object AppLinks {
-    /** "Neueste Version herunterladen" in den Einstellungen. */
-    const val DOWNLOAD = "https://github.com/Spark633/Tastatur/releases/download/neueste/Tastatur.apk"
+    /** "Neueste Version herunterladen" in den Einstellungen (Release-Seite mit Tastatur-<Version>.apk). */
+    const val DOWNLOAD = "https://github.com/Spark633/Tastatur/releases/tag/neueste"
 }

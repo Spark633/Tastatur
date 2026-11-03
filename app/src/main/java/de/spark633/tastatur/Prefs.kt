@@ -150,11 +150,6 @@ class Prefs(context: Context) {
             return top + all.filter { it !in top }
         }
 
-    /** Eigene Zahlenreihe über den Buchstaben. */
-    var numberRow: Boolean
-        get() = sp.getBoolean("number_row", false)
-        set(v) = sp.edit().putBoolean("number_row", v).apply()
-
     // --- Aussehen ---
     var theme: String
         get() = sp.getString("theme", "dunkel") ?: "dunkel"

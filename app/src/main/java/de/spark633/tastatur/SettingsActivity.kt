@@ -220,7 +220,6 @@ class SettingsActivity : Activity() {
         root.addView(switch("Doppeltes Leerzeichen setzt einen Punkt", prefs.doubleSpacePeriod) {
             prefs.doubleSpacePeriod = it
         })
-        root.addView(switch("Eigene Zahlenreihe über den Buchstaben", prefs.numberRow) { prefs.numberRow = it })
         root.addView(switch("⌫ doppelt tippen und halten: löscht bis zum Leerzeichen", prefs.chunkDelete) { prefs.chunkDelete = it })
         root.addView(info("Tempo beim Löschen (⌫ halten)"))
         val speeds = listOf(280, 420, 560) // schnell, normal, langsam

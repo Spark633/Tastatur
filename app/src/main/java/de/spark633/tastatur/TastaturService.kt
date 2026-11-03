@@ -291,8 +291,10 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         )
 
         val noSuggestFlag = (info.inputType and InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS) != 0
-        suggestOn = isTextField && prefs.suggestions
-        autocorrectOn = suggestOn && prefs.autocorrect && !noSuggestFlag &&
+        // Adress-/Suchleiste im Browser: Vorschläge ja, aber keine Autokorrektur
+        val isUri = cls == InputType.TYPE_CLASS_TEXT && variation == InputType.TYPE_TEXT_VARIATION_URI
+        suggestOn = (isTextField || isUri) && prefs.suggestions
+        autocorrectOn = suggestOn && !isUri && prefs.autocorrect && !noSuggestFlag &&
             variation != InputType.TYPE_TEXT_VARIATION_PERSON_NAME
         lastCorrection = null
         autoSpacePending = false

@@ -39,7 +39,7 @@ class KeyboardPreview(context: Context, private val prefs: Prefs) : View(context
 
     /** Echte Tastaturhöhe, verkleinert auf die Breite der Vorschau. */
     private fun keyboardHeight(w: Float): Float {
-        val real = 44 * dp + (4 + if (prefs.numberRow) 0.8f else 0f) * prefs.rowHeightDp * dp + 4 * dp
+        val real = 44 * dp + 4 * prefs.rowHeightDp * dp + 4 * dp
         return real * (w / screenW)
     }
 
@@ -99,12 +99,11 @@ class KeyboardPreview(context: Context, private val prefs: Prefs) : View(context
         text.textSize = sp(23f) * scaleText * k
 
         val rowH = prefs.rowHeightDp * dp * k
-        val numH = if (prefs.numberRow) rowH * 0.8f else 0f
         val unit = w / 10f
         val gapH = 3 * dp * k
         val gapV = 4 * dp * k
-        fun key(x: Float, y: Float, units: Float, label: String, function: Boolean, up: String?, down: String?, hgt: Float = rowH) {
-            val r = RectF(x + gapH, y + gapV, x + units * unit - gapH, y + hgt - gapV)
+        fun key(x: Float, y: Float, units: Float, label: String, function: Boolean, up: String?, down: String?) {
+            val r = RectF(x + gapH, y + gapV, x + units * unit - gapH, y + rowH - gapV)
             fill.color = if (function) funcColor else keyColor
             canvas.drawRoundRect(r, radius, radius, fill)
             val showHints = prefs.showHints
@@ -119,9 +118,8 @@ class KeyboardPreview(context: Context, private val prefs: Prefs) : View(context
                 down?.let { canvas.drawText(it, r.centerX(), r.bottom - 3 * dp * k, hint) }
             }
         }
-        if (numH > 0f) "1234567890".forEachIndexed { j, c -> key(j * unit, bar, 1f, c.toString(), false, null, null, numH) }
         rows.forEachIndexed { i, letters ->
-            val y = bar + numH + i * rowH
+            val y = bar + i * rowH
             var x = (10 - letters.length - if (i == 2) 3 else 0) / 2f * unit
             if (i == 2) {
                 key(0f, y, 1.5f, "⇧", true, null, null)
@@ -134,7 +132,7 @@ class KeyboardPreview(context: Context, private val prefs: Prefs) : View(context
             }
             if (i == 2) key(x, y, 1.5f, "⌫", true, null, null)
         }
-        val y = bar + numH + 3 * rowH
+        val y = bar + 3 * rowH
         key(0f, y, 1.5f, "123", true, null, null)
         key(1.5f * unit, y, 1f, "^.^", true, null, null)
         key(2.5f * unit, y, 1f, ",", false, null, ";")

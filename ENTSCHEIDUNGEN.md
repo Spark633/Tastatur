@@ -23,6 +23,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Richtige Wörter werden nie geändert (konnte bleibt konnte)
 - Umlaut-Regel nur, wenn die Umlaut-Form deutlich häufiger ist (schon/schön, gedruckt/gedrückt bleiben)
 - Chat-Abkürzungen nicht korrigieren; Punkt-Abkürzungen zb → z.B., oä → o.Ä. (aber mfg nicht ausschreiben)
+- Eigene Wörter erst ab 5× Benutzen gelernt; abgelehnte Korrektur zählt nur einmal (nicht sofort lernen)
 - Zusammengeklebte Wörter trennen (machdas → mach das)
 - Nur Groß-/Kleinschreibung falsch hat Vorrang vor ähnlichen Wörtern (zeile → Zeile, nicht Teile)
 

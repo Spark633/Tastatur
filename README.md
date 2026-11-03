@@ -27,7 +27,7 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Aussehen: 7 Farbschemata, Hintergrundbild aus der Galerie (abdunkeln, zoomen, Ausschnitt), Tasten- und Schriftfarbe, Tasten-Deckkraft, Eckenrundung, Schriftgröße – mit Live-Vorschau
 - Frühere Hintergrundbilder wieder auswählen (die letzten 5)
 - Profile: alle Einstellungen unter einem Namen speichern und laden; Sicherung als Datei (inkl. eigener Wörter, gelernter Wortfolgen und Bild)
-- Eigene Wörter: werden gelernt (2× getippt oder Korrektur abgelehnt), in der App bearbeiten
+- Eigene Wörter: werden nach 5× Benutzen gelernt, in der App bearbeiten
 - Vorschlag lange drücken: Rückfrage, ob er nicht mehr vorgeschlagen werden soll
 - Optional: Leerzeichen nach . , ! ? und schließendem " automatisch, Enter übernimmt den Vorschlag
 - Punkt-Taste: hoch wischen !, runter wischen ?, lange drücken oder zur Seite ziehen ! und ?

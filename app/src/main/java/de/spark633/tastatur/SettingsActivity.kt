@@ -280,7 +280,8 @@ class SettingsActivity : Activity() {
         root.addView(header("Eigene Wörter"))
         root.addView(info(
             "Gelten in allen Sprachen und werden nie korrigiert. Gelernt wird ein Wort, wenn du es " +
-                "${UserDictionary.LEARN_AFTER}× tippst oder eine Korrektur ablehnst."
+                "${UserDictionary.LEARN_AFTER}× benutzt hast (eine abgelehnte Korrektur zählt einmal). " +
+                "Von Hand hinzugefügte Wörter gelten sofort."
         ))
         val addRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val input = EditText(this).apply {

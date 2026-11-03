@@ -37,13 +37,13 @@ class UserDictionary private constructor(context: Context) {
         save()
     }
 
-    /** Sofort lernen (z. B. wenn du eine Korrektur abgelehnt hast). */
+    /**
+     * Korrektur abgelehnt: zählt wie einmal benutzt (nicht sofort gelernt,
+     * damit Tippfehler nicht aus Versehen ins Wörterbuch kommen).
+     */
     fun learnNow(word: String) {
-        val key = word.lowercase()
-        val w = words[key]
-        if (w == null) words[key] = Word(word, LEARN_AFTER, false) else { w.count = maxOf(w.count, LEARN_AFTER); w.text = word }
-        blocked.remove(key)
-        save()
+        blocked.remove(word.lowercase())
+        noteTyped(word)
     }
 
     fun add(word: String) {
@@ -127,7 +127,7 @@ class UserDictionary private constructor(context: Context) {
 
     companion object {
         /** So oft muss ein unbekanntes Wort getippt werden, bis es gelernt ist. */
-        const val LEARN_AFTER = 2
+        const val LEARN_AFTER = 5
 
         @Volatile
         private var instance: UserDictionary? = null

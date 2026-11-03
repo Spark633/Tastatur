@@ -270,8 +270,11 @@ class SettingsActivity : Activity() {
             }.apply { setPadding((32 * dp).toInt(), 0, 0, (8 * dp).toInt()) })
         }
         root.addView(header("Sprachkürzel"))
-        root.addView(switch("EN / NL neben den Vorschlägen anzeigen (nicht bei Deutsch)", prefs.showLangCode) {
+        root.addView(switch("EN / NL neben den Vorschlägen anzeigen", prefs.showLangCode) {
             prefs.showLangCode = it
+        })
+        root.addView(switch("Auch DE anzeigen", prefs.showLangCodeDe) {
+            prefs.showLangCodeDe = it
         })
         root.addView(info("Seite:"))
         root.addView(radio(listOf("Links", "Rechts"), if (prefs.langLeft) 0 else 1) {

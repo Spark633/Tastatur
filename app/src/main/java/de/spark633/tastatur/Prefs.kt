@@ -29,6 +29,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("show_lang_code", true)
         set(v) = sp.edit().putBoolean("show_lang_code", v).apply()
 
+    /** Sprachkürzel auch bei Deutsch (DE) anzeigen. */
+    var showLangCodeDe: Boolean
+        get() = sp.getBoolean("show_lang_code_de", false)
+        set(v) = sp.edit().putBoolean("show_lang_code_de", v).apply()
+
     /** Sprachkürzel (EN/NL) links neben den Vorschlägen (sonst rechts). */
     var langLeft: Boolean
         get() = sp.getBoolean("lang_left", true)

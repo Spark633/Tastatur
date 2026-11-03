@@ -148,9 +148,8 @@ object Layouts {
             Key("↕  Größe anpassen", Action.MENU, text = "resize", width = 5f)),
         listOf(Key("🌍  Sprachen", Action.MENU, text = "languages", width = 5f),
             Key("🎨  Aussehen", Action.MENU, text = "design", width = 5f)),
-        listOf(Key("ABC", Action.TO_LETTERS, width = 3f),
-            Key("🔍  Suche", Action.MENU, text = "search", width = 3.5f),
-            Key("✎  Formatieren", Action.MENU, text = "format", width = 3.5f)),
+        listOf(Key("🔍  Suche", Action.MENU, text = "search", width = 5f),
+            Key("✎  Formatieren", Action.MENU, text = "format", width = 5f)),
     )
 
     /** Formatieren: Listen, Unicode-Stile (überall sichtbar) und Telegram-/Discord-Zeichen. */
@@ -177,10 +176,9 @@ object Layouts {
     /** Formatieren, Seite 1: Listen, Unicode-Stile, Telegram/Discord. Seite 2: Spaß-Stile (sPoNgEbOb …). */
     fun format(page: Int): List<List<Key>> {
         val bottom = listOf(
-            Key("ABC", Action.TO_LETTERS, width = 2.5f),
-            Key("‹", Action.PAGE_PREV, width = 1.5f),
-            Key("${page + 1} / $FORMAT_PAGES", Action.SPACE, width = 2f),
-            Key("›", Action.PAGE_NEXT, width = 1.5f),
+            Key("‹", Action.PAGE_PREV, width = 2.5f),
+            Key("${page + 1} / $FORMAT_PAGES", Action.SPACE, width = 2.5f),
+            Key("›", Action.PAGE_NEXT, width = 2.5f),
             Key("⌫", Action.DELETE, width = 2.5f),
         )
         return if (page == 0) listOf(
@@ -210,9 +208,8 @@ object Layouts {
     fun clipboard(): List<List<Key>> = listOf(
         emptyList(), emptyList(), emptyList(),
         listOf(
-            Key("ABC", Action.TO_LETTERS, width = 2.5f),
-            Key("Leeren", Action.CLIP_CLEAR, width = 5f),
-            Key("⌫", Action.DELETE, width = 2.5f),
+            Key("Leeren", Action.CLIP_CLEAR, width = 7f),
+            Key("⌫", Action.DELETE, width = 3f),
         ),
     )
 
@@ -222,10 +219,9 @@ object Layouts {
         while (rows.size < 3) rows.add(emptyList())
         rows.add(
             listOf(
-                Key("ABC", Action.TO_LETTERS, width = 2f),
-                Key("‹", Action.PAGE_PREV, width = 1.5f),
-                Key(" ", Action.SPACE, width = 3f),
-                Key("›", Action.PAGE_NEXT, width = 1.5f),
+                Key("‹", Action.PAGE_PREV, width = 2f),
+                Key(" ", Action.SPACE, width = 4f),
+                Key("›", Action.PAGE_NEXT, width = 2f),
                 Key("⌫", Action.DELETE, width = 2f),
             )
         )

@@ -59,6 +59,12 @@ class Dictionary private constructor(
         blocked: Set<String> = emptySet(),
     ): Suggestions {
         val ok = { w: String -> !blocked.contains(w.lowercase()) }
+        // Für die Seiten nur gängige Wörter, eigene Wörter immer; keine Wortreste wie "ich-ich"
+        val ownLower = extra.map { it.lowercase() }.toHashSet()
+        val side = { w: String ->
+            ok(w) && !w.equals(typed, ignoreCase = true) && (('-' !in w) || ('-' in typed)) &&
+                (ownLower.contains(w.lowercase()) || freqOf(w) >= SIDE_MIN_FREQ)
+        }
         // "ware" ist ein Wort, aber "wäre" ist viel häufiger: Umlaut einsetzen
         if (!known(typed)) {
             umlautVariant(typed)?.takeIf(ok)?.let { v ->
@@ -68,9 +74,15 @@ class Dictionary private constructor(
         val valid = contains(typed) || known(typed)
         val completions = completions(typed, 3, extra).filter(ok)
         if (valid) {
-            val others = (completions + fuzzy(typed, neighbors, 3, extra).map { it.first })
-                .filter { ok(it) && !it.equals(typed, ignoreCase = true) }.distinct()
-            return Suggestions(typed, null, listOf(others.getOrElse(0) { "" }, typed, others.getOrElse(1) { "" }))
+            // Links die beste Vervollständigung, rechts das ähnlichste andere Wort (Tippfehler-Alternative)
+            // Nicht viel seltener als das getippte Wort (sonst "ich" → "ick", "mir" → "Miranda")
+            val minFreq = freqOf(typed) - 50
+            val common = { w: String -> ownLower.contains(w.lowercase()) || freqOf(w) >= minFreq }
+            val comp = completions.filter(side).filter(common)
+            val near = fuzzy(typed, neighbors, 3, extra).map { it.first }.filter(side).filter(common)
+            val left = comp.firstOrNull() ?: near.getOrNull(1)
+            val right = near.firstOrNull { it != left } ?: comp.firstOrNull { it != left }
+            return Suggestions(typed, null, listOf(left ?: "", typed, right ?: ""))
         }
         // Nur Groß-/Kleinschreibung falsch ("zeile" → "Zeile"): das hat Vorrang vor ähnlichen Wörtern
         dictForm(typed)?.let { form ->
@@ -86,16 +98,18 @@ class Dictionary private constructor(
         // Angefangenes Wort ("Verab" → Verabredung): nur bei sehr wahrscheinlichem
         // Tippfehler korrigieren, sonst die Vervollständigungen zeigen.
         val bestCost = corrections.firstOrNull()?.second ?: Float.MAX_VALUE
-        var best = if (completions.isNotEmpty() && bestCost >= 1f) null else corrections.firstOrNull()?.first
+        // Gibt es Wörter, die so anfangen, wird nur bei eindeutigen Fehlern (Umlaut, Groß/klein) korrigiert
+        // (seltene Vervollständigungen zählen nicht: "hane" → habe)
+        var best = if (completions.any(side) && bestCost >= 0.5f) null else corrections.firstOrNull()?.first
         // Getrennte Wörter schlagen eine unsichere Korrektur
         if (split != null && (best == null || bestCost >= 1f)) best = split
         if (best != null) {
             val rest = (listOfNotNull(split) + corrections.map { it.first } + completions)
-                .filter { it != best && !it.equals(typed, ignoreCase = true) }.distinct()
+                .filter { it != best && side(it) }.distinct()
             return Suggestions(typed, best, listOf("\"$typed\"", best, rest.getOrElse(0) { "" }))
         }
         // Unbekannt und nichts Ähnliches: Wort bleibt, Vervollständigungen daneben
-        val others = completions.filter { !it.equals(typed, ignoreCase = true) }
+        val others = completions.filter(side)
         return Suggestions(typed, null, listOf(others.getOrElse(0) { "" }, typed, others.getOrElse(1) { "" }))
     }
 
@@ -262,7 +276,10 @@ class Dictionary private constructor(
 
     companion object {
         private const val FUZZY_LIMIT = 100_000
-        private const val COST_WEIGHT = 45f
+        // Ähnlichkeit zählt mehr als Häufigkeit (toppen → tippen statt Typen)
+        private const val COST_WEIGHT = 80f
+        // Seitenvorschläge nur mit gängigen Wörtern (keine seltenen Namen wie Miranda, Nurmi)
+        private const val SIDE_MIN_FREQ = 100
         private const val OWN_WORD_FREQ = 200f
         private const val UMLAUT_MARGIN = 40
         private const val SPLIT_MIN_FREQ = 110

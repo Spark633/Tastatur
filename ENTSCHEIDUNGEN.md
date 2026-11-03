@@ -27,6 +27,8 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Schreibweise gelernter Wörter automatisch: Satzanfang zählt nicht, Nomen-Endungen (-ung, -heit …) groß, bewusst groß mitten im Satz bleibt groß, sonst klein
 - Zusammengeklebte Wörter trennen (machdas → mach das)
 - Nur Groß-/Kleinschreibung falsch hat Vorrang vor ähnlichen Wörtern (zeile → Zeile, nicht Teile)
+- Ähnlichkeit zählt mehr als Häufigkeit (toppen → tippen, nicht Typen); seitlich nur gängige Wörter, links Vervollständigung, rechts ähnliches Wort
+- Angefangene Wörter (Verab, Besch) mit gängiger Vervollständigung nur bei eindeutigem Fehler korrigieren
 
 **Unterseiten**
 - Zwischenablage: dunkle Kacheln mit weißer Schrift (immer lesbar); kein seitliches Wischen zum Löschen; nach dem Einfügen zurück zur Tastatur

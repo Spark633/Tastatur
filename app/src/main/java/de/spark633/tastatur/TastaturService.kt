@@ -1105,9 +1105,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     /**
-     * Shift auf das Wort am Cursor anwenden: 1 = Wort, 2 = WORT, 0 = wort.
-     * Gilt am Wortende und mitten im Wort, nicht am Wortanfang (dort wie gewohnt
-     * nur der nächste Buchstabe groß). Der Cursor bleibt an seiner Stelle.
+     * Shift auf das Wort direkt vor dem Cursor anwenden: 1 = Wort, 2 = WORT, 0 = wort.
+     * Nur am Wortende; mitten im Wort und am Wortanfang wie gewohnt (nächster Buchstabe groß).
      */
     override fun onShiftChanged(state: Int): Boolean {
         if (activeStyle != null) return false
@@ -1120,10 +1119,10 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         while (i > 0 && isWordChar(before[i - 1])) i--
         val head = before.substring(i)
         if (head.isEmpty() || !head.any { it.isLetter() }) return false // Wortanfang
-        var j = 0
-        while (j < after.length && isWordChar(after[j])) j++
-        val tail = after.substring(0, j)
-        val word = head + tail
+        // Nur am Wortende: mitten im Wort wird wie gewohnt der nächste Buchstabe groß
+        if (after.isNotEmpty() && isWordChar(after[0])) return false
+        val tail = ""
+        val word = head
         val changed = when (state) {
             1 -> word.lowercase().replaceFirstChar { it.uppercaseChar() }
             2 -> word.replace("ß", "ẞ").uppercase()
@@ -1131,7 +1130,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         }
         ic.beginBatchEdit()
         ic.deleteSurroundingText(head.length, tail.length)
-        ic.commitText(changed, 1) // Cursor landet am Wortende, dort geht's weiter
+        ic.commitText(changed, 1)
         ic.endBatchEdit()
         lastCorrection = null
         current = null

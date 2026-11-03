@@ -35,7 +35,7 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Formatieren (⚙ → ✎): Listen (• und 1.), die bei Enter weiterlaufen; 𝗳𝗲𝘁𝘁, 𝘬𝘶𝘳𝘴𝘪𝘷, d̶u̶r̶c̶h̶, u̲n̲t̲e̲r̲ als Unicode; Seite 2: sPoNgEbOb (SpongeBob-Schrift), ᵏˡᵉⁱⁿ, Glitch, Kopfüber, Spiegelschrift; ||Spoiler|| (Telegram/Discord); „Aa Normal“ macht formatierten Text wieder normal; Korrektur auch beim formatierten Schreiben
 - Größe direkt auf der Tastatur durch Ziehen anpassen, Abstand zu den Systemknöpfen
 - Automatische Großschreibung, doppeltes Leerzeichen → Punkt
-- Shift im oder am Ende eines Wortes: Wort → Wort / WORT / wort; markierter Text wechselt bei jedem Shift
+- Shift direkt nach einem Wort: Wort → Wort / WORT / wort; markierter Text wechselt bei jedem Shift
 - Wortvorschläge (Deutsch, Englisch, Niederländisch) mit Vervollständigung
 - Abkürzungen wie vllt, bzw, bzgl, lg, lol, wss werden nicht korrigiert
 - Punkt-Abkürzungen: zb → z.B., oä → o.Ä., idr → i.d.R., dh → d.h. …

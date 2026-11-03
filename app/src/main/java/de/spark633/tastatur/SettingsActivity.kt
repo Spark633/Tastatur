@@ -396,8 +396,12 @@ class SettingsActivity : Activity() {
                 "Antippen fügt ein. ⋮ oben rechts: anheften oder löschen. " +
                 "Angeheftete Einträge bleiben dauerhaft. Alles bleibt nur auf dem Handy."
         ))
-        root.addView(switch("Kopierte Bilder speichern", prefs.clipImages) { prefs.clipImages = it })
-        root.addView(info("Aus: Nur Texte kommen in den Verlauf. Bereits gespeicherte Bilder bleiben, bis du sie löschst."))
+        root.addView(switch("Kopierte Bilder speichern", prefs.clipImages) {
+            prefs.clipImages = it
+            // Ausschalten: vorhandene Bilder entfernen, angeheftete bleiben
+            if (!it) ClipboardHistory.get(this).clearUnpinnedImages()
+        })
+        root.addView(info("Aus: Nur Texte kommen in den Verlauf, vorhandene Bilder werden gelöscht (angeheftete bleiben)."))
         root.addView(header("Ansicht"))
         root.addView(info("Spalten"))
         root.addView(radio(listOf("1 Spalte (breit)", "2 Spalten"), prefs.clipColumns.coerceIn(1, 2) - 1) {

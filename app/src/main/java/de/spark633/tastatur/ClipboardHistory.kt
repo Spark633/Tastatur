@@ -59,6 +59,14 @@ class ClipboardHistory private constructor(context: Context) {
         save()
     }
 
+    /** Löscht alle Bilder außer den angehefteten. */
+    fun clearUnpinnedImages() {
+        val gone = items.filter { !it.pinned && it.image != null }
+        items.removeAll(gone.toSet())
+        gone.forEach { e -> e.image?.let { File(imageDir, it).delete() } }
+        save()
+    }
+
     /** Löscht alles außer den angehefteten Einträgen. */
     fun clearUnpinned() {
         val gone = items.filter { !it.pinned }

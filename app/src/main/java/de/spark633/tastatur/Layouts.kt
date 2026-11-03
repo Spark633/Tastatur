@@ -166,13 +166,13 @@ object Layouts {
             Key("⌫", Action.DELETE, width = 2.5f),
         )
         return if (page == 0) listOf(
-            // Oben die Unicode-Stile, darunter zentriert der Rest
+            // Listen oben in voller Breite, dann die Unicode-Stile, darunter zentriert der Rest
+            listOf(Key("•  Aufzählung", Action.FORMAT, text = "bullet", width = 5f),
+                Key("1.  Nummeriert", Action.FORMAT, text = "number", width = 5f)),
             listOf(Key("𝗙𝗲𝘁𝘁", Action.FORMAT, text = "bold", width = 2.5f),
                 Key("𝘒𝘶𝘳𝘴𝘪𝘷", Action.FORMAT, text = "italic", width = 2.5f),
                 Key("D̶u̶r̶c̶h̶", Action.FORMAT, text = "strike", width = 2.5f),
                 Key("U̲n̲t̲e̲r̲", Action.FORMAT, text = "underline", width = 2.5f)),
-            listOf(Key("•  Aufzählung", Action.FORMAT, text = "bullet", width = 3.5f),
-                Key("1.  Nummeriert", Action.FORMAT, text = "number", width = 3.5f)),
             // Spoiler (Telegram/Discord) und alles wieder normal machen
             listOf(Key("||Spoiler||", Action.FORMAT, text = "md_spoiler", width = 3.5f),
                 Key("Aa  Normal", Action.FORMAT, text = "plain", width = 3.5f)),

@@ -1104,20 +1104,38 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         sendDownUpKeyEvents(if (direction < 0) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT)
     }
 
-    /** Shift auf das Wort am Cursor anwenden: 1 = Wort, 2 = WORT, 0 = wort. */
+    /**
+     * Shift auf das Wort am Cursor anwenden: 1 = Wort, 2 = WORT, 0 = wort.
+     * Gilt am Wortende und mitten im Wort, nicht am Wortanfang (dort wie gewohnt
+     * nur der nächste Buchstabe groß). Der Cursor bleibt an seiner Stelle.
+     */
     override fun onShiftChanged(state: Int): Boolean {
         if (activeStyle != null) return false
-        val word = currentWord() ?: return false
         val ic = currentInputConnection ?: return false
+        if (!ic.getSelectedText(0).isNullOrEmpty()) return false
+        val before = ic.getTextBeforeCursor(48, 0)?.toString() ?: return false
+        val after = ic.getTextAfterCursor(48, 0)?.toString().orEmpty()
+        var i = before.length
+        while (i > 0 && isWordChar(before[i - 1])) i--
+        val head = before.substring(i)
+        if (head.isEmpty() || !head.any { it.isLetter() }) return false // Wortanfang
+        var j = 0
+        while (j < after.length && isWordChar(after[j])) j++
+        val tail = after.substring(0, j)
+        val word = head + tail
         val changed = when (state) {
             1 -> word.lowercase().replaceFirstChar { it.uppercaseChar() }
             2 -> word.replace("ß", "ẞ").uppercase()
             else -> word.lowercase()
         }
         if (changed != word) {
+            val pos = ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
+                ?.let { it.startOffset + it.selectionStart }
             ic.beginBatchEdit()
-            ic.deleteSurroundingText(word.length, 0)
+            ic.deleteSurroundingText(head.length, tail.length)
             ic.commitText(changed, 1)
+            // Cursor zurück an die alte Stelle im Wort (Länge kann sich bei ß/ẞ nicht ändern)
+            if (pos != null && tail.isNotEmpty()) ic.setSelection(pos, pos)
             ic.endBatchEdit()
             lastCorrection = null
             current = null

@@ -8,7 +8,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Wischen: obere zwei Reihen nach oben, untere Buchstabenreihe nach unten; c → ', v → "
 - Lange drücken: nur Umlaute plus Wisch-Zeichen; beim e nur é (NL: é ë); keine weiteren Akzente
 - ß bleibt bei Shift ß (nicht SS), mit Feststelltaste ẞ
-- Shift mit Cursor am Wortende wirkt aufs Wort: 1× Wort, Feststelltaste WORT, aus wort
+- Shift mit Cursor am Wortende oder im Wort wirkt aufs ganze Wort: 1× Wort, Feststelltaste WORT, aus wort; am Wortanfang wie gewohnt (nächster Buchstabe groß)
 - Punkt-Taste: hoch !, runter ?, lange drücken ! ?
 - Symbolseite 2: `© ✓ [ ] { } < > ^ °` in der Mitte, `= \` unten; ° nicht auf Seite 1; < > mit ≤ ≥
 - Seitlich ziehen öffnet die Auswahl sofort

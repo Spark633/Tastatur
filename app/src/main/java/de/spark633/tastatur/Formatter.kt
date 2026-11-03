@@ -43,6 +43,7 @@ object Formatter {
         "upside" -> upsideDown(text)
         "mirror" -> mirror(text)
         "plain" -> plain(text)
+        "binary" -> binary(text)
         "bold" -> mapLetters(text, ::bold)
         "italic" -> mapLetters(text, ::italic)
         "strike" -> combine(text, '̶')
@@ -198,5 +199,20 @@ object Formatter {
         if (letters.length < 3 || letters.none { it.isUpperCase() } || letters.none { it.isLowerCase() }) return false
         val switches = letters.zipWithNext().count { (a, b) -> a.isUpperCase() != b.isUpperCase() }
         return switches >= (letters.length - 1) * 0.75
+    }
+
+    /**
+     * Binär: Text → 8er-Blöcke (UTF-8, also auch Umlaute und Emojis), z. B. "Hi" → "01001000 01101001".
+     * Besteht der Text schon nur aus 0, 1 und Leerzeichen, wird er zurückverwandelt.
+     */
+    fun binary(text: String): String {
+        val compact = text.filter { !it.isWhitespace() }
+        if (compact.isNotEmpty() && compact.all { it == '0' || it == '1' } && compact.length % 8 == 0) {
+            val bytes = compact.chunked(8).map { it.toInt(2).toByte() }.toByteArray()
+            return String(bytes, Charsets.UTF_8)
+        }
+        return text.toByteArray(Charsets.UTF_8).joinToString(" ") {
+            (it.toInt() and 0xFF).toString(2).padStart(8, '0')
+        }
     }
 }

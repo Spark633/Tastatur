@@ -199,7 +199,7 @@ object Layouts {
             listOf(Key("G̷l̶i̷t̵c̶h̷", Action.FORMAT, text = "glitch", width = 3.4f),
                 Key("↕  Kopfüber", Action.FORMAT, text = "upside", width = 3.3f),
                 Key("⇄  Spiegel", Action.FORMAT, text = "mirror", width = 3.3f)),
-            emptyList(),
+            listOf(Key("01  Binär", Action.FORMAT, text = "binary", width = 3.5f)),
             bottom,
         )
     }

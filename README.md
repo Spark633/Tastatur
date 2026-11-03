@@ -32,7 +32,7 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Optional: Leerzeichen nach . , ! ? und schließendem " automatisch, Enter übernimmt den Vorschlag
 - Punkt-Taste: hoch wischen !, runter wischen ?, lange drücken oder zur Seite ziehen ! und ?
 - Websuche (⚙ → 🔍): öffnet den Standard-Browser, markierter Text wird direkt gesucht (Google, DuckDuckGo, Ecosia, Bing, Startpage)
-- Formatieren (⚙ → ✎): Listen (• und 1.), die bei Enter weiterlaufen; 𝗳𝗲𝘁𝘁, 𝘬𝘶𝘳𝘴𝘪𝘷, d̶u̶r̶c̶h̶, u̲n̲t̲e̲r̲ als Unicode; Seite 2: sPoNgEbOb (SpongeBob-Schrift), ᵏˡᵉⁱⁿ, Glitch, Kopfüber, Spiegelschrift; ||Spoiler|| (Telegram/Discord); „Aa Normal“ macht formatierten Text wieder normal; Korrektur auch beim formatierten Schreiben
+- Formatieren (⚙ → ✎): Listen (• und 1.), die bei Enter weiterlaufen; 𝗳𝗲𝘁𝘁, 𝘬𝘶𝘳𝘴𝘪𝘷, d̶u̶r̶c̶h̶, u̲n̲t̲e̲r̲ als Unicode; Seite 2: sPoNgEbOb (SpongeBob-Schrift), ᵏˡᵉⁱⁿ, Glitch, Kopfüber, Spiegelschrift, Binär; ||Spoiler|| (Telegram/Discord); „Aa Normal“ macht formatierten Text wieder normal; Korrektur auch beim formatierten Schreiben
 - Größe direkt auf der Tastatur durch Ziehen anpassen, Abstand zu den Systemknöpfen
 - Automatische Großschreibung, doppeltes Leerzeichen → Punkt
 - Shift direkt nach einem Wort: Wort → Wort / WORT / wort; markierter Text wechselt bei jedem Shift

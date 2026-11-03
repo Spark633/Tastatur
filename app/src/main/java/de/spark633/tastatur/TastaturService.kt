@@ -974,7 +974,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             "off" -> setStyle(null)
             // Umdrehen geht nur am ganzen Text: Markierung, sonst alles im Feld
             // Umdrehen geht nur am ganzen Text: Markierung, sonst alles im Feld
-            "upside", "mirror" -> transformWhole(code, selected)
+            "upside", "mirror", "binary" -> transformWhole(code, selected)
             // Formatierten Text wieder normal machen (und Stil beenden)
             "plain" -> {
                 setStyle(null)

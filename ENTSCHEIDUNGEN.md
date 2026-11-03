@@ -20,7 +20,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Keine obere Leiste (Copilot o. Ä.); Zwischenablage links (wählbar), Zahnrad gegenüber
 - Sprachkürzel nur bei EN/NL, nur Anzeige (kein Antippen)
 - Wiederherstellen: ↶ neben den Vorschlägen mit Rückfrage, kein langes Drücken
-- Gerade Kopiertes 3 Minuten als 📋-Vorschlag (auch Bilder), nur in leerem Feld oder auf leerer neuer Zeile
+- Gerade Kopiertes 3 Minuten als 📋-Vorschlag (auch Bilder), nur in leerem Feld, auf leerer neuer Zeile oder direkt nach „:“
 
 **Korrektur**
 - Richtige Wörter werden nie geändert (konnte bleibt konnte)

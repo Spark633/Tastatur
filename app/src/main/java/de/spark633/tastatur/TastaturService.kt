@@ -540,14 +540,16 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     // --- Zuletzt Kopiertes ---
 
-    /** Leeres Feld oder Cursor am Anfang einer leeren neuen Zeile (dort passt Eingefügtes hin). */
+    /** Leeres Feld, leere neue Zeile oder direkt nach einem Doppelpunkt (dort passt Eingefügtes hin). */
     private fun atEmptySpot(): Boolean {
         val ic = currentInputConnection ?: return false
         val before = ic.getTextBeforeCursor(200, 0)?.toString() ?: return false
         val after = ic.getTextAfterCursor(200, 0)?.toString().orEmpty()
         val lineBefore = before.substringAfterLast('\n')
         val lineAfter = after.substringBefore('\n')
-        return lineBefore.isBlank() && lineAfter.isBlank()
+        if (!lineAfter.isBlank()) return false
+        // Leere Zeile, oder direkt nach "Link: " / "Adresse: "
+        return lineBefore.isBlank() || lineBefore.trimEnd().endsWith(":")
     }
 
     /** Beschriftung für den Einfüge-Vorschlag, oder null wenn nichts Frisches kopiert wurde. */

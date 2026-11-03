@@ -241,10 +241,6 @@ class SettingsActivity : Activity() {
         root.addView(radio(listOf("Links", "Rechts"), if (prefs.clipboardRight) 1 else 0) {
             prefs.clipboardRight = it == 1
         })
-        root.addView(info("Seite des Sprachkürzels (EN/NL) neben den Vorschlägen"))
-        root.addView(radio(listOf("Links", "Rechts"), if (prefs.langLeft) 0 else 1) {
-            prefs.langLeft = it == 0
-        })
     }
 
     // ------------------------------------------------------------------
@@ -273,6 +269,11 @@ class SettingsActivity : Activity() {
                 prefs.setQwertz(lang, !it)
             }.apply { setPadding((32 * dp).toInt(), 0, 0, (8 * dp).toInt()) })
         }
+        root.addView(header("Sprachkürzel"))
+        root.addView(info("EN oder NL erscheint neben den Vorschlägen, wenn nicht Deutsch aktiv ist. Seite:"))
+        root.addView(radio(listOf("Links", "Rechts"), if (prefs.langLeft) 0 else 1) {
+            prefs.langLeft = it == 0
+        })
     }
 
     // ------------------------------------------------------------------

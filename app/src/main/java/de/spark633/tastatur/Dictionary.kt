@@ -73,18 +73,53 @@ class Dictionary private constructor(
             return Suggestions(typed, null, listOf(others.getOrElse(0) { "" }, typed, others.getOrElse(1) { "" }))
         }
         val corrections = fuzzy(typed, neighbors, 4, extra).filter { ok(it.first) }
+        // Leerzeichen vergessen? "machdas" → "mach das"
+        val split = splitWords(typed)?.takeIf(ok)
         // Angefangenes Wort ("Verab" → Verabredung): nur bei sehr wahrscheinlichem
         // Tippfehler korrigieren, sonst die Vervollständigungen zeigen.
         val bestCost = corrections.firstOrNull()?.second ?: Float.MAX_VALUE
-        val best = if (completions.isNotEmpty() && bestCost >= 1f) null else corrections.firstOrNull()?.first
+        var best = if (completions.isNotEmpty() && bestCost >= 1f) null else corrections.firstOrNull()?.first
+        // Getrennte Wörter schlagen eine unsichere Korrektur
+        if (split != null && (best == null || bestCost >= 1f)) best = split
         if (best != null) {
-            val rest = (corrections.drop(1).map { it.first } + completions)
+            val rest = (listOfNotNull(split) + corrections.map { it.first } + completions)
                 .filter { it != best && !it.equals(typed, ignoreCase = true) }.distinct()
             return Suggestions(typed, best, listOf("\"$typed\"", best, rest.getOrElse(0) { "" }))
         }
         // Unbekannt und nichts Ähnliches: Wort bleibt, Vervollständigungen daneben
         val others = completions.filter { !it.equals(typed, ignoreCase = true) }
         return Suggestions(typed, null, listOf(others.getOrElse(0) { "" }, typed, others.getOrElse(1) { "" }))
+    }
+
+    /**
+     * Zwei zusammengeklebte Wörter erkennen ("machdas", "ichbin"). Beide Teile müssen
+     * bekannt und recht häufig sein, sonst lieber nichts vorschlagen.
+     */
+    private fun splitWords(typed: String): String? {
+        if (typed.length < 5) return null
+        var best: String? = null
+        var bestScore = SPLIT_MIN_FREQ - 1
+        for (i in 2..typed.length - 2) {
+            val a = typed.substring(0, i)
+            val b = typed.substring(i)
+            if (!contains(a)) continue
+            val bForm = dictForm(b) ?: continue
+            val score = minOf(freqOf(a), freqOf(bForm))
+            if (score > bestScore) {
+                bestScore = score
+                best = "$a $bForm"
+            }
+        }
+        return best
+    }
+
+    /** Schreibweise eines Wortes im Wörterbuch ("hund" → "Hund"), oder null. */
+    private fun dictForm(w: String): String? {
+        if (exact.containsKey(w)) return w
+        val lower = w.lowercase()
+        if (exact.containsKey(lower)) return lower
+        val cap = lower.replaceFirstChar { it.uppercaseChar() }
+        return if (exact.containsKey(cap)) cap else null
     }
 
     private fun freqOf(word: String): Int {
@@ -222,6 +257,7 @@ class Dictionary private constructor(
         private const val COST_WEIGHT = 45f
         private const val OWN_WORD_FREQ = 200f
         private const val UMLAUT_MARGIN = 40
+        private const val SPLIT_MIN_FREQ = 110
         private val UMLAUT = mapOf('a' to 'ä', 'o' to 'ö', 'u' to 'ü', 'A' to 'Ä', 'O' to 'Ö', 'U' to 'Ü')
 
         fun load(context: Context, lang: Language): Dictionary =

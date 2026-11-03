@@ -39,6 +39,7 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Punkt-Abkürzungen: zb → z.B., oä → o.Ä., idr → i.d.R., dh → d.h. …
 - Tippfehler-Korrektur beim Leerzeichen oder Satzzeichen, richtige Wörter bleiben immer unverändert
 - Vergessene Umlaute: offnen → öffnen, ware → wäre (bei schon/schön bleibt dein Wort)
+- Vergessenes Leerzeichen: machdas → mach das
 - ⌫ direkt nach einer Korrektur stellt das getippte Wort wieder her
 - ⌫ gedrückt halten löscht ganze Wörter
 - Versehentlich gelöscht oder markierten Text übertippt: ↶ neben den Vorschlägen antippen, dann „Wiederherstellen“ oder ✕

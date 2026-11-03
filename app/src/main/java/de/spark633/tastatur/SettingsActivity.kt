@@ -281,6 +281,7 @@ class SettingsActivity : Activity() {
                 .setNegativeButton("Abbrechen", null)
                 .show()
         })
+        root.addView(info("Löscht nur, was die Tastatur über deine Wortfolgen gelernt hat. Eigene Wörter bleiben erhalten."))
 
         root.addView(header("Eigene Wörter"))
         root.addView(info(
@@ -370,11 +371,13 @@ class SettingsActivity : Activity() {
                 addView(Button(this@SettingsActivity, null, android.R.attr.borderlessButtonStyle).apply {
                     this.text = label
                     isAllCaps = false
-                    // Schmal und dicht beieinander (▲ ▼ ✎ ✕), statt der breiten Standardknöpfe
-                    minWidth = 0
-                    minimumWidth = 0
-                    val pad = (10 * dp).toInt()
-                    setPadding(pad, paddingTop, pad, paddingBottom)
+                    // ▲ ▼ schmal und dicht beieinander, die übrigen Knöpfe in normaler Breite
+                    if (label == "▲" || label == "▼") {
+                        minWidth = 0
+                        minimumWidth = 0
+                        val pad = (8 * dp).toInt()
+                        setPadding(pad, paddingTop, pad, paddingBottom)
+                    }
                     setOnClickListener { action() }
                 })
             }

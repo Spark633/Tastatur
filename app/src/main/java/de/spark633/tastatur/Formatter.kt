@@ -13,7 +13,7 @@ object Formatter {
         "italic" to "Kursiv",
         "strike" to "Durchgestrichen",
         "underline" to "Unterstrichen",
-        "sarcasm" to "SpongeBob",
+        "sarcasm" to "sPoNgEbOb",
         "small" to "Klein",
         "glitch" to "Glitch",
     )

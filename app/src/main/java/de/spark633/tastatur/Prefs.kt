@@ -159,6 +159,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("tap_word_end", true)
         set(v) = sp.edit().putBoolean("tap_word_end", v).apply()
 
+    /** Pause zwischen zwei Wörtern beim Löschen mit gehaltenem ⌫ (Millisekunden). */
+    var deleteRepeatMs: Int
+        get() = sp.getInt("delete_repeat_ms", 420)
+        set(v) = sp.edit().putInt("delete_repeat_ms", v).apply()
+
     /** ⌫ kurz tippen und sofort halten löscht alles bis zum Leerzeichen am Stück. */
     var chunkDelete: Boolean
         get() = sp.getBoolean("chunk_delete", true)

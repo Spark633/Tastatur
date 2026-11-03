@@ -78,6 +78,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var lastShiftTap = 0L
     private var lastDeleteUp = 0L
     private var chunkDeleteOn = true
+    private var deleteRepeatMs = 420L
     private var emoticonPage = 0
     private var formatPage = 0
     private var numpadKind = Layouts.NumpadKind.NUMBER
@@ -218,6 +219,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         showHints = prefs.showHints
         keyPreview = prefs.keyPreview
         chunkDeleteOn = prefs.chunkDelete
+        deleteRepeatMs = prefs.deleteRepeatMs.coerceIn(150, 1000).toLong()
         spaceCursor = prefs.spaceCursor
 
         bgPos = prefs.bgPosition.coerceIn(0, 100) / 100f
@@ -949,7 +951,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         val repeat: Runnable = object : Runnable {
             override fun run() {
                 if (chunkDelete) listener.onDeleteChunk() else listener.onDeleteWord()
-                postDelayed(this, 420)
+                postDelayed(this, deleteRepeatMs)
             }
         }
     }

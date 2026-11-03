@@ -215,6 +215,7 @@ class SettingsActivity : Activity() {
         root.addView(switch("Buchstabe beim Drücken groß anzeigen", prefs.keyPreview) { prefs.keyPreview = it })
         root.addView(switch("Zweimal ins selbe Wort tippen springt ans Wortende", prefs.tapWordEnd) { prefs.tapWordEnd = it })
         root.addView(switch("⌫ kurz tippen und sofort halten löscht bis zum Leerzeichen", prefs.chunkDelete) { prefs.chunkDelete = it })
+        root.addView(slider("Pause beim Löschen (⌫ halten)", 200, 800, prefs.deleteRepeatMs, " ms") { prefs.deleteRepeatMs = it })
         root.addView(switch("Leertaste gedrückt halten und ziehen bewegt den Cursor", prefs.spaceCursor) {
             prefs.spaceCursor = it
         })

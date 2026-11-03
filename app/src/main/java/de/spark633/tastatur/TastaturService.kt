@@ -1112,7 +1112,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     override fun onShiftChanged(state: Int): Boolean {
         if (activeStyle != null) return false
         val ic = currentInputConnection ?: return false
-        if (!ic.getSelectedText(0).isNullOrEmpty()) return false
+        val selected = ic.getSelectedText(0)?.toString()
+        if (!selected.isNullOrEmpty()) return cycleSelectionCase(selected)
         val before = ic.getTextBeforeCursor(48, 0)?.toString() ?: return false
         val after = ic.getTextAfterCursor(48, 0)?.toString().orEmpty()
         var i = before.length
@@ -1128,18 +1129,36 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             2 -> word.replace("ß", "ẞ").uppercase()
             else -> word.lowercase()
         }
-        if (changed != word) {
-            val pos = ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
-                ?.let { it.startOffset + it.selectionStart }
-            ic.beginBatchEdit()
-            ic.deleteSurroundingText(head.length, tail.length)
-            ic.commitText(changed, 1)
-            // Cursor zurück an die alte Stelle im Wort (Länge kann sich bei ß/ẞ nicht ändern)
-            if (pos != null && tail.isNotEmpty()) ic.setSelection(pos, pos)
-            ic.endBatchEdit()
-            lastCorrection = null
-            current = null
+        ic.beginBatchEdit()
+        ic.deleteSurroundingText(head.length, tail.length)
+        ic.commitText(changed, 1) // Cursor landet am Wortende, dort geht's weiter
+        ic.endBatchEdit()
+        lastCorrection = null
+        current = null
+        return true
+    }
+
+    /**
+     * Markierter Text: bei jedem Shift weiter Erster Groß → ALLES GROSS → alles klein.
+     * Die Markierung bleibt, so lässt sich durchtippen. Ein markierter Buchstabe wird einfach groß/klein.
+     */
+    private fun cycleSelectionCase(text: String): Boolean {
+        val ic = currentInputConnection ?: return false
+        val title = text.lowercase().split(" ").joinToString(" ") { w -> w.replaceFirstChar { it.uppercaseChar() } }
+        val upper = text.replace("ß", "ẞ").uppercase()
+        val lower = text.lowercase()
+        val next = when (text) {
+            title -> if (upper != title) upper else lower
+            upper -> lower
+            else -> if (title != text) title else upper
         }
+        val et = ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
+        val start = et?.let { it.startOffset + minOf(it.selectionStart, it.selectionEnd) }
+        ic.beginBatchEdit()
+        ic.commitText(next, 1)
+        if (start != null) ic.setSelection(start, start + next.length) // Markierung behalten
+        ic.endBatchEdit()
+        current = null
         return true
     }
 

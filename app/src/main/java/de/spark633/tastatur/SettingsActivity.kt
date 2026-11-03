@@ -388,19 +388,27 @@ class SettingsActivity : Activity() {
                 textSize = 16f
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             })
+            // Emoticons (▲ ▼ ✎ ✕): schmale Knöpfe, ▲▼ eng, ✎ und ✕ mit gleichem Abstand
+            val compact = actions.any { it.first == "▲" }
             for ((label, action) in actions) {
-                addView(Button(this@SettingsActivity, null, android.R.attr.borderlessButtonStyle).apply {
+                val btn = Button(this@SettingsActivity, null, android.R.attr.borderlessButtonStyle).apply {
                     this.text = label
                     isAllCaps = false
-                    // ▲ ▼ schmal und dicht beieinander, die übrigen Knöpfe in normaler Breite
-                    if (label == "▲" || label == "▼") {
+                    if (compact) {
                         minWidth = 0
                         minimumWidth = 0
                         val pad = (8 * dp).toInt()
                         setPadding(pad, paddingTop, pad, paddingBottom)
                     }
                     setOnClickListener { action() }
-                })
+                }
+                val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                if (compact) lp.marginStart = when (label) {
+                    "▼" -> (8 * dp).toInt()   // ▲ ▼ etwas auseinander (1–2 mm)
+                    "✎", "✕" -> (22 * dp).toInt() // gleicher Abstand vor ✎ und vor ✕
+                    else -> 0
+                }
+                addView(btn, lp)
             }
         }
 

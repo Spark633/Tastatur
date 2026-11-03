@@ -34,8 +34,8 @@ class KeyboardPreview(context: Context, private val prefs: Prefs) : View(context
     private val hint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
 
     private val rows = listOf("qwertzuiop", "asdfghjkl", "yxcvbnm")
-    private val ups = listOf("1234567890", "@#&*-+=()", "")
-    private val downs = listOf("", "", "_€'\":;/")
+    private val ups = listOf("1234567890", "@#&*'+=()", "")
+    private val downs = listOf("", "", "_€-\":;/")
 
     /** Echte Tastaturhöhe, verkleinert auf die Breite der Vorschau. */
     private fun keyboardHeight(w: Float): Float {

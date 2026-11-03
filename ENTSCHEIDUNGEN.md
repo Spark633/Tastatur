@@ -5,12 +5,13 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 
 **Tasten**
 - QWERTZ für alle Sprachen (pro Sprache auf QWERTY umschaltbar)
-- Wischen: obere zwei Reihen nach oben, untere Buchstabenreihe nach unten; c → ', v → "
+- Wischen: obere zwei Reihen nach oben (g → '), untere Buchstabenreihe nach unten (c → -, v → "); x lange drücken: € $ £ ¥ ¢
 - Lange drücken: nur Umlaute plus Wisch-Zeichen; beim e nur é (NL: é ë); keine weiteren Akzente
 - ß bleibt bei Shift ß (nicht SS), mit Feststelltaste ẞ
 - Shift wirkt nur am Wortende aufs Wort (1× Wort, Feststelltaste WORT, aus wort); mitten im Wort und am Wortanfang wie gewohnt (nächster Buchstabe groß)
 - Shift bei markiertem Text: Erster Groß → ALLES GROSS → alles klein, Markierung bleibt
 - Punkt-Taste: hoch !, runter ?, lange drücken ! , . ?; Komma: kein !, lange drücken ;
+- Symbolseite 1: ( ) mit [ { < bzw. ] } >, ' mit ‹ ›, + mit ±, * mit • × † ‡ ⸸ (Fußnotenzeichen beim *, nicht beim ✓)
 - Symbolseite 2: `© ✓ [ ] { } < > ^ °` in der Mitte, `= \` unten; ° nicht auf Seite 1; < > mit ≤ ≥
 - Seitlich ziehen öffnet die Auswahl sofort, aber nur bei Symbolen/Satzzeichen, nicht bei Buchstaben
 - Zweiter Tipp ins selbe Wort (nicht Doppeltipp) setzt den Cursor ans Wortende; abschaltbar
@@ -37,8 +38,10 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 
 **Unterseiten**
 - Zwischenablage mit Bildern (letzte 10, abschaltbar; Ausschalten löscht nicht angeheftete Bilder): Einfügen über die normale Einfügen-Funktion der App (kein Sticker-Weg)
+- Zwischenablage: ⋮-Menü offen → übrige Kacheln abgedunkelt
 - Zwischenablage: dunkle Kacheln mit weißer Schrift (immer lesbar); kein seitliches Wischen zum Löschen; nach dem Einfügen zurück zur Tastatur
 - Android-Zurück/˅ schließt die Tastatur sofort, auch aus Menüs (beim nächsten Öffnen Buchstaben)
+- ⌫ kurz tippen + sofort halten: alles bis zum letzten Leerzeichen am Stück löschen (normales Halten: Wort für Wort)
 - ⌫ in Emoticons, Zwischenablage und Formatieren = zurück zur Tastatur; dort und im Zahnrad-Menü keine ABC-Taste (Zahnrad bzw. ⌫ führt zurück)
 - Websuche öffnet direkt den Browser (kein Suchfeld in der Leiste): ohne Markierung leere Seite, markierter Link direkt als Adresse, sonst Suche
 

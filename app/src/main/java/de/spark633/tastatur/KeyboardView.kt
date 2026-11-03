@@ -29,6 +29,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         fun onDelete()
         /** ⌫ gedrückt gehalten: ganzes Wort löschen. */
         fun onDeleteWord()
+        /** ⌫ doppelt getippt und gehalten: alles Zusammenhängende bis zum Leerzeichen löschen. */
+        fun onDeleteChunk()
         fun onEnter()
         fun onSpace()
         fun onLanguageSwipe(direction: Int)
@@ -74,6 +76,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var mode = Mode.LETTERS
     private var shift = Shift.OFF
     private var lastShiftTap = 0L
+    private var lastDeleteUp = 0L
     private var emoticonPage = 0
     private var formatPage = 0
     private var numpadKind = Layouts.NumpadKind.NUMBER
@@ -450,6 +453,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     /** Dunkle, fast deckende Kacheln, damit die Einträge auf jedem Hintergrund lesbar sind. */
     private val clipTilePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(0xE0, 0x1C, 0x21, 0x25) }
 
+    private val clipDimPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.argb(0xA0, 0, 0, 0) }
+
     private val clipTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textSize = sp(15f) }
     private val clipTileHeight: Float get() = 16 * dp + clipLines * clipTextPaint.fontSpacing
     private val clipMenuZone = 34 * dp
@@ -517,6 +522,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             val r = RectF(base)
             if (r.bottom < area.top || r.top > area.bottom) continue
 
+            // Menü bei einer Kachel offen: die anderen abdunkeln
+            val dimOthers = clipMenuFor != null && e !== clipMenuFor
             if (e === clipMenuFor) {
                 // Aktionen: links anheften/lösen, rechts löschen
                 val half = r.width() / 2f
@@ -556,6 +563,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             val my = r.top + 14 * dp
             for (k in -1..1) canvas.drawCircle(mx, my + k * 5 * dp, 1.8f * dp, clipTextPaint)
             if (e.pinned) canvas.drawText("★", mx, r.bottom - 8 * dp, accentTextPaint.apply { textSize = sp(14f) })
+            if (dimOthers) canvas.drawRoundRect(r, radius, radius, clipDimPaint)
         }
         canvas.restore()
     }
@@ -928,6 +936,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         var popup: List<String>? = null
         var popupIndex = 0
         var languageSwitched = false
+        val downTime = SystemClock.uptimeMillis()
         var cursorMode = false
         var cursorLastX = 0f
         var inClipList = false
@@ -935,9 +944,10 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         var dragging = false
         var scrollStart = 0f
         val longPress = Runnable { startPopup(this) }
+        var chunkDelete = false
         val repeat: Runnable = object : Runnable {
             override fun run() {
-                listener.onDeleteWord()
+                if (chunkDelete) listener.onDeleteChunk() else listener.onDeleteWord()
                 postDelayed(this, 280)
             }
         }
@@ -996,8 +1006,10 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         val k = kr.key
         when (k.action) {
             Action.DELETE -> if (!inSubPage()) {
-                listener.onDelete()
-                postDelayed(t.repeat, 400)
+                // Kurz getippt und gleich wieder gedrückt: am Stück löschen (bis zum Leerzeichen)
+                t.chunkDelete = SystemClock.uptimeMillis() - lastDeleteUp < 350
+                if (!t.chunkDelete) listener.onDelete()
+                postDelayed(t.repeat, if (t.chunkDelete) 250 else 400)
             }
             Action.CHAR -> if (k.longPress.isNotEmpty()) postDelayed(t.longPress, 320)
             Action.SPACE -> if (spaceCursor && mode != Mode.EMOTICONS && mode != Mode.FORMAT) postDelayed(t.longPress, 350)
@@ -1231,7 +1243,11 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 listener.onFormat(k.text)
             }
             // In Emoticons, Zwischenablage und Formatieren: ⌫ führt zurück zur Tastatur
-            Action.DELETE -> if (inSubPage()) setMode(Mode.LETTERS)
+            Action.DELETE -> if (inSubPage()) setMode(Mode.LETTERS) else {
+                // Doppeltipp ohne Halten: zweites Zeichen löschen wie gewohnt
+                if (t.chunkDelete && SystemClock.uptimeMillis() - t.downTime < 250) listener.onDelete()
+                lastDeleteUp = SystemClock.uptimeMillis()
+            }
             Action.TO_CLIPBOARD -> {}
         }
         invalidate()

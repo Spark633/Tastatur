@@ -938,6 +938,29 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         }
     }
 
+    /** Alles Zusammenhängende bis zum letzten Leerzeichen löschen (z. B. "!?.!€-*" oder ein Passwort). */
+    override fun onDeleteChunk() {
+        own()
+        suggestionSpace = false
+        lastCorrection = null
+        val ic = currentInputConnection ?: return
+        val selected = ic.getSelectedText(0)
+        if (!selected.isNullOrEmpty()) {
+            rememberDeleted(selected)
+            ic.commitText("", 1)
+            return
+        }
+        val before = ic.getTextBeforeCursor(200, 0)?.toString() ?: return
+        var i = before.length
+        while (i > 0 && before[i - 1].isWhitespace()) i--
+        while (i > 0 && !before[i - 1].isWhitespace()) i--
+        val count = before.length - i
+        if (count > 0) {
+            if (!replaceMode) rememberDeleted(before.substring(i))
+            ic.deleteSurroundingText(count, 0)
+        }
+    }
+
     override fun onDeleteWord() {
         own()
         suggestionSpace = false

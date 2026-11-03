@@ -59,8 +59,9 @@ object Layouts {
         text = c.toString(),
         up = up,
         down = down,
-        // Umlaute/Akzente und zusätzlich das Wisch-Zeichen (u → ü 7)
-        longPress = ((accents(lang)[c] ?: emptyList()) + listOfNotNull(up ?: down)).distinct(),
+        // Umlaute/Akzente und zusätzlich das Wisch-Zeichen (u → ü 7); x: alle Währungen
+        longPress = if (c == 'x') listOf("€", "$", "£", "¥", "¢")
+        else ((accents(lang)[c] ?: emptyList()) + listOfNotNull(up ?: down)).distinct(),
         cased = true,
     )
 
@@ -80,11 +81,11 @@ object Layouts {
         val r1 = (if (qwertz) "qwertzuiop" else "qwertyuiop")
             .mapIndexed { i, c -> letter(c, lang, up = "1234567890"[i].toString()) }
         val r2 = "asdfghjkl".toList()
-            .zip(listOf("@", "#", "&", "*", "-", "+", "=", "(", ")")) { c, s -> letter(c, lang, up = s) }
+            .zip(listOf("@", "#", "&", "*", "'", "+", "=", "(", ")")) { c, s -> letter(c, lang, up = s) }
         // Untere Buchstabenreihe: Sonderzeichen per Wischen nach UNTEN
         val r3 = listOf(shiftKey) +
             (if (qwertz) "yxcvbnm" else "zxcvbnm").toList()
-                .zip(listOf("_", "€", "'", "\"", ":", ";", "/")) { c, s -> letter(c, lang, down = s) } +
+                .zip(listOf("_", "€", "-", "\"", ":", ";", "/")) { c, s -> letter(c, lang, down = s) } +
             deleteKey
         return listOf(r1, r2, r3, bottomRow(Key("123", Action.TO_SYMBOLS, width = 1.5f)))
     }
@@ -98,9 +99,13 @@ object Layouts {
         "€" to listOf("£", "$", "¥", "¢"),
         "-" to listOf("–", "—"),
         "\"" to listOf("„", "“", "”", "«", "»"),
-        "'" to listOf("‚", "‘", "’"),
+        "'" to listOf("‚", "‘", "’", "‹", "›"),
         "!" to listOf("¡"),
-        "*" to listOf("•", "×"),
+        "*" to listOf("•", "×", "†", "‡", "⸸"),
+        "+" to listOf("±"),
+        "(" to listOf("[", "{", "<"),
+        ")" to listOf("]", "}", ">"),
+        "✓" to listOf("✔", "✗", "✘"),
         "/" to listOf("÷", "\\"),
         "%" to listOf("‰"),
         "=" to listOf("≠", "≈"),

@@ -149,6 +149,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("key_preview", true)
         set(v) = sp.edit().putBoolean("key_preview", v).apply()
 
+    /** Zweites Antippen im selben Wort setzt den Cursor ans Wortende. */
+    var tapWordEnd: Boolean
+        get() = sp.getBoolean("tap_word_end", true)
+        set(v) = sp.edit().putBoolean("tap_word_end", v).apply()
+
     /** Leertaste gedrückt halten und ziehen bewegt den Cursor. */
     var spaceCursor: Boolean
         get() = sp.getBoolean("space_cursor", true)

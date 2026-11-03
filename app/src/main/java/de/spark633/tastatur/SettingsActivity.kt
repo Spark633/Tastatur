@@ -192,6 +192,7 @@ class SettingsActivity : Activity() {
         root.addView(switch("Automatisch großschreiben am Satzanfang", prefs.autoCaps) { prefs.autoCaps = it })
         root.addView(switch("Leerzeichen nach . , ! ? automatisch", prefs.autoSpacePunct) { prefs.autoSpacePunct = it })
         root.addView(switch("Buchstabe beim Drücken groß anzeigen", prefs.keyPreview) { prefs.keyPreview = it })
+        root.addView(switch("Zweimal ins selbe Wort tippen springt ans Wortende", prefs.tapWordEnd) { prefs.tapWordEnd = it })
         root.addView(switch("Leertaste gedrückt halten und ziehen bewegt den Cursor", prefs.spaceCursor) {
             prefs.spaceCursor = it
         })
@@ -369,6 +370,11 @@ class SettingsActivity : Activity() {
                 addView(Button(this@SettingsActivity, null, android.R.attr.borderlessButtonStyle).apply {
                     this.text = label
                     isAllCaps = false
+                    // Schmal und dicht beieinander (▲ ▼ ✎ ✕), statt der breiten Standardknöpfe
+                    minWidth = 0
+                    minimumWidth = 0
+                    val pad = (10 * dp).toInt()
+                    setPadding(pad, paddingTop, pad, paddingBottom)
                     setOnClickListener { action() }
                 })
             }

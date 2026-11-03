@@ -260,8 +260,54 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         candidatesStart: Int, candidatesEnd: Int,
     ) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
+        handleWordTap(newSelStart, newSelEnd)
         updateAutoCaps()
         updateSuggestions()
+    }
+
+    // --- Zweimal ins selbe Wort tippen → Cursor ans Wortende ---
+
+    /** Zeitpunkt der letzten Eingabe über die Tastatur (Cursor-Bewegungen danach sind keine Taps). */
+    private var lastOwnInput = 0L
+    private var lastWordTap: Triple<Int, Int, Long>? = null
+
+    private fun own() {
+        lastOwnInput = SystemClock.uptimeMillis()
+        lastWordTap = null
+    }
+
+    /**
+     * Cursor bewegt, ohne dass auf der Tastatur getippt wurde = Tipp in den Text.
+     * Zweiter Tipp ins selbe Wort → Cursor ans Wortende. Markieren (Doppeltipp) bleibt unberührt.
+     */
+    private fun handleWordTap(start: Int, end: Int) {
+        val now = SystemClock.uptimeMillis()
+        if (!prefs.tapWordEnd || now - lastOwnInput < 600 || start != end) {
+            if (start != end) lastWordTap = null
+            return
+        }
+        val ic = currentInputConnection ?: return
+        val before = ic.getTextBeforeCursor(48, 0)?.toString().orEmpty()
+        val after = ic.getTextAfterCursor(48, 0)?.toString().orEmpty()
+        val inWord = before.isNotEmpty() && isWordChar(before.last()) && after.isNotEmpty() && isWordChar(after[0])
+        if (!inWord) {
+            lastWordTap = null
+            return
+        }
+        var i = before.length
+        while (i > 0 && isWordChar(before[i - 1])) i--
+        var j = 0
+        while (j < after.length && isWordChar(after[j])) j++
+        val wordStart = start - (before.length - i)
+        val wordEnd = start + j
+        val prev = lastWordTap
+        if (prev != null && prev.first == wordStart && prev.second == wordEnd && now - prev.third < 4000) {
+            lastWordTap = null
+            lastOwnInput = now // die eigene Bewegung nicht als Tipp zählen
+            ic.setSelection(wordEnd, wordEnd)
+        } else {
+            lastWordTap = Triple(wordStart, wordEnd, now)
+        }
     }
 
     private fun enterLabel(info: EditorInfo): String {
@@ -412,6 +458,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     private fun restoreDeleted() {
+        own()
         val ic = currentInputConnection ?: return
         val text = deletedText.toString()
         ic.beginBatchEdit()
@@ -582,6 +629,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     // ------------------------------------------------------------------
 
     override fun onText(text: String) {
+        own()
         val ic = currentInputConnection ?: return
         if (text == recentClip) recentClip = null // aus der Zwischenablage eingefügt
         captureReplacedSelection()
@@ -687,6 +735,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onSuggestion(index: Int) {
+        own()
         val style = activeStyle
         if (style != null) {
             val s = current ?: return
@@ -742,6 +791,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onRestore() {
+        own()
         if (!restoreAvailable()) return updateSuggestions()
         keyboard?.askConfirm("Gelöschten Text wiederherstellen?", yes = {
             if (restoreAvailable()) restoreDeleted()
@@ -780,6 +830,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDelete() {
+        own()
         suggestionSpace = false
         if (activeStyle != null && styledPieces.isNotEmpty() && styledWordIntact()) {
             // Letzten formatierten Buchstaben samt Strichen/Akzenten löschen
@@ -809,6 +860,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDeleteWord() {
+        own()
         suggestionSpace = false
         lastCorrection = null
         val ic = currentInputConnection ?: return
@@ -835,6 +887,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onEnter() {
+        own()
         val ic = currentInputConnection ?: return
         suggestionSpace = false
         captureReplacedSelection()
@@ -855,6 +908,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onSpace() {
+        own()
         val ic = currentInputConnection ?: return
         suggestionSpace = false
         captureReplacedSelection()
@@ -913,6 +967,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     // ------------------------------------------------------------------
 
     override fun onFormat(code: String) {
+        own()
         val ic = currentInputConnection ?: return
         val selected = ic.getSelectedText(0)?.toString().orEmpty()
         when (code) {
@@ -1119,6 +1174,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onMoveCursor(direction: Int) {
+        own()
         lastCorrection = null
         autoSpacePending = false
         sendDownUpKeyEvents(if (direction < 0) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT)
@@ -1129,6 +1185,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
      * Nur am Wortende; mitten im Wort und am Wortanfang wie gewohnt (nächster Buchstabe groß).
      */
     override fun onShiftChanged(state: Int): Boolean {
+        own()
         if (activeStyle != null) return false
         val ic = currentInputConnection ?: return false
         val selected = ic.getSelectedText(0)?.toString()
@@ -1182,6 +1239,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onKeyFeedback() {
+        own()
         if (!prefs.vibrate) return
         try {
             vibrator?.vibrate(VibrationEffect.createOneShot(12, VibrationEffect.DEFAULT_AMPLITUDE))

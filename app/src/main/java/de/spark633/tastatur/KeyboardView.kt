@@ -45,6 +45,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         /** Vorschlag angetippt: 0 = links, 1 = Mitte, 2 = rechts. */
         fun onSuggestion(index: Int)
         fun onKeyFeedback()
+        /** Bild aus der Zwischenablage einfügen (wie normales Einfügen). */
+        fun onPasteImage(name: String)
         /** Shift geändert (0 aus, 1 an, 2 Feststelltaste). true = auf das Wort am Cursor angewendet. */
         fun onShiftChanged(state: Int): Boolean
         /** Cursor um ein Zeichen bewegen: -1 = links, 1 = rechts. */
@@ -476,6 +478,21 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     private val clipLayouts = HashMap<String, android.text.StaticLayout>()
 
+    // Vorschaubilder für Bild-Einträge (verkleinert geladen und zwischengespeichert)
+    private val clipThumbs = HashMap<String, android.graphics.Bitmap?>()
+    private val thumbPaint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+
+    private fun clipThumb(name: String): android.graphics.Bitmap? = clipThumbs.getOrPut(name) {
+        try {
+            val f = java.io.File(ClipboardHistory.imageDir(context), name)
+            val bounds = android.graphics.BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            android.graphics.BitmapFactory.decodeFile(f.path, bounds)
+            var sample = 1
+            while (max(bounds.outWidth, bounds.outHeight) / (sample * 2) >= 360) sample *= 2
+            android.graphics.BitmapFactory.decodeFile(f.path, android.graphics.BitmapFactory.Options().apply { inSampleSize = sample })
+        } catch (_: Throwable) { null }
+    }
+
     private fun clipLayout(text: String, width: Int): android.text.StaticLayout {
         val key = "$width|$text"
         return clipLayouts.getOrPut(key) {
@@ -517,12 +534,25 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
             canvas.drawRoundRect(r, radius, radius, clipTilePaint)
             if (e.pinned) canvas.drawRoundRect(RectF(r.left, r.top, r.left + 4 * dp, r.bottom), 2 * dp, 2 * dp, accentPaint)
-            val textW = (r.width() - 14 * dp - clipMenuZone).toInt()
-            val layout = clipLayout(e.text.trim(), textW)
-            canvas.save()
-            canvas.translate(r.left + 10 * dp, r.top + 8 * dp)
-            layout.draw(canvas)
-            canvas.restore()
+            val img = e.image
+            if (img != null) {
+                // Bild: Vorschau füllt die Kachel (abgerundet)
+                clipThumb(img)?.let { bmp ->
+                    canvas.save()
+                    val path = android.graphics.Path().apply { addRoundRect(r, radius, radius, android.graphics.Path.Direction.CW) }
+                    canvas.clipPath(path)
+                    val src = Background.sourceRect(bmp.width, bmp.height, r.width(), r.height(), 1f, 0.5f, 0.5f)
+                    canvas.drawBitmap(bmp, src, r, thumbPaint)
+                    canvas.restore()
+                } ?: canvas.drawText("🖼", r.centerX(), centerY(labelPaint, r.centerY()), labelPaint)
+            } else {
+                val textW = (r.width() - 14 * dp - clipMenuZone).toInt()
+                val layout = clipLayout(e.text.trim(), textW)
+                canvas.save()
+                canvas.translate(r.left + 10 * dp, r.top + 8 * dp)
+                layout.draw(canvas)
+                canvas.restore()
+            }
             // ⋮ oben rechts
             val mx = r.right - clipMenuZone / 2f
             val my = r.top + 14 * dp
@@ -555,7 +585,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         if (x > r.right - clipMenuZone && y < r.top + clipMenuZone) {
             clipMenuFor = entry
         } else {
-            listener.onText(entry.text)
+            val img = entry.image
+            if (img != null) listener.onPasteImage(img) else listener.onText(entry.text)
             setMode(lettersMode) // nach dem Einfügen zurück zur Tastatur
         }
         invalidate()

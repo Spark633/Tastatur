@@ -3,17 +3,20 @@ package de.spark633.tastatur
 import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 
 /**
- * Verlauf der kopierten Texte. Bleibt nur auf dem Handy gespeichert.
+ * Verlauf der kopierten Texte und Bilder. Bleibt nur auf dem Handy gespeichert.
  * Angeheftete Einträge bleiben dauerhaft, die übrigen werden auf
- * [MAX_UNPINNED] begrenzt.
+ * [MAX_UNPINNED] Texte und [MAX_IMAGES] Bilder begrenzt.
  */
 class ClipboardHistory private constructor(context: Context) {
 
-    class Entry(val text: String, var pinned: Boolean, var time: Long)
+    /** Ein Eintrag: Text, oder ein Bild ([image] = Dateiname im Bilder-Ordner). */
+    class Entry(val text: String, var pinned: Boolean, var time: Long, val image: String? = null)
 
     private val sp = context.getSharedPreferences("zwischenablage", Context.MODE_PRIVATE)
+    private val imageDir = imageDir(context)
     private val items = ArrayList<Entry>()
 
     init {
@@ -27,12 +30,19 @@ class ClipboardHistory private constructor(context: Context) {
     fun add(raw: String) {
         val text = raw.take(MAX_LENGTH)
         if (text.isBlank()) return
-        val existing = items.firstOrNull { it.text == text }
+        val existing = items.firstOrNull { it.image == null && it.text == text }
         if (existing != null) {
             existing.time = System.currentTimeMillis()
         } else {
             items.add(Entry(text, false, System.currentTimeMillis()))
         }
+        trim()
+        save()
+    }
+
+    /** Ein kopiertes Bild (bereits im Bilder-Ordner gespeichert) aufnehmen. */
+    fun addImage(name: String) {
+        items.add(Entry("", false, System.currentTimeMillis(), name))
         trim()
         save()
     }
@@ -45,18 +55,24 @@ class ClipboardHistory private constructor(context: Context) {
 
     fun remove(e: Entry) {
         items.remove(e)
+        e.image?.let { File(imageDir, it).delete() }
         save()
     }
 
     /** Löscht alles außer den angehefteten Einträgen. */
     fun clearUnpinned() {
-        items.removeAll { !it.pinned }
+        val gone = items.filter { !it.pinned }
+        items.removeAll(gone.toSet())
+        gone.forEach { e -> e.image?.let { File(imageDir, it).delete() } }
         save()
     }
 
     private fun trim() {
-        val unpinned = items.filter { !it.pinned }.sortedByDescending { it.time }
-        if (unpinned.size > MAX_UNPINNED) items.removeAll(unpinned.drop(MAX_UNPINNED).toSet())
+        val texts = items.filter { !it.pinned && it.image == null }.sortedByDescending { it.time }
+        val images = items.filter { !it.pinned && it.image != null }.sortedByDescending { it.time }
+        val gone = texts.drop(MAX_UNPINNED) + images.drop(MAX_IMAGES)
+        items.removeAll(gone.toSet())
+        gone.forEach { e -> e.image?.let { File(imageDir, it).delete() } }
     }
 
     private fun load() {
@@ -65,7 +81,9 @@ class ClipboardHistory private constructor(context: Context) {
             val arr = JSONArray(sp.getString("eintraege", "[]"))
             for (i in 0 until arr.length()) {
                 val o = arr.getJSONObject(i)
-                items.add(Entry(o.getString("t"), o.optBoolean("p"), o.optLong("z")))
+                val image = o.optString("i").ifEmpty { null }
+                if (image != null && !File(imageDir, image).exists()) continue
+                items.add(Entry(o.getString("t"), o.optBoolean("p"), o.optLong("z"), image))
             }
         } catch (_: Exception) {
         }
@@ -73,7 +91,11 @@ class ClipboardHistory private constructor(context: Context) {
 
     private fun save() {
         val arr = JSONArray()
-        for (e in items) arr.put(JSONObject().put("t", e.text).put("p", e.pinned).put("z", e.time))
+        for (e in items) {
+            val o = JSONObject().put("t", e.text).put("p", e.pinned).put("z", e.time)
+            e.image?.let { o.put("i", it) }
+            arr.put(o)
+        }
         sp.edit().putString("eintraege", arr.toString()).apply()
     }
 
@@ -86,7 +108,11 @@ class ClipboardHistory private constructor(context: Context) {
                 instance ?: ClipboardHistory(context.applicationContext).also { instance = it }
             }
 
+        /** Ordner für kopierte Bilder. */
+        fun imageDir(context: Context) = File(context.filesDir, "ablage_bilder").apply { mkdirs() }
+
         const val MAX_UNPINNED = 30
+        const val MAX_IMAGES = 10
         const val MAX_LENGTH = 5000
     }
 }

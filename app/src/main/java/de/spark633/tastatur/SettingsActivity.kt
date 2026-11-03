@@ -391,7 +391,8 @@ class SettingsActivity : Activity() {
         title = "Zwischenablage"
         addTestField()
         root.addView(info(
-            "Die Tastatur merkt sich die letzten ${ClipboardHistory.MAX_UNPINNED} kopierten Texte. " +
+            "Die Tastatur merkt sich die letzten ${ClipboardHistory.MAX_UNPINNED} kopierten Texte und " +
+                "${ClipboardHistory.MAX_IMAGES} Bilder. Bilder werden wie beim normalen Einfügen eingesetzt. " +
                 "Antippen fügt ein. ⋮ oben rechts: anheften oder löschen. " +
                 "Angeheftete Einträge bleiben dauerhaft. Alles bleibt nur auf dem Handy."
         ))

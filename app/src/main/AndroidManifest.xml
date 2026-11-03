@@ -20,6 +20,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Bilder aus der Zwischenablage zum Einfügen bereitstellen (nur über die Zwischenablage erreichbar) -->
+        <provider
+            android:name=".ClipImageProvider"
+            android:authorities="de.spark633.tastatur.bilder"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
         <service
             android:name=".TastaturService"
             android:exported="true"

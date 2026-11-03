@@ -22,6 +22,7 @@ Jeder Push auf `main` baut automatisch eine neue APK. Sie lässt sich als Update
 - Tasten-Vorschau: Buchstabe erscheint beim Drücken groß über dem Finger (abschaltbar)
 - Emoticon-Taste (^.^, :D, ¯\_(ツ)_/¯ …), Liste in der App bearbeitbar
 - Gerade Kopiertes erscheint 3 Minuten lang in der Vorschlagsleiste (📋 antippen = einfügen)
+- Kopierte Bilder im Zwischenablage-Verlauf (letzte 10), Einfügen wie beim normalen Einfügen
 - Zwischenablage-Verlauf als Kacheln (1–2 Spalten, 1–4 Zeilen), ⋮ zum Anheften/Löschen
 - Zahnrad in der Leiste öffnet ein Menü: Allgemein, Wörterbuch, Profile, Größe, Sprachen, Aussehen, Suche, Formatieren (aus Zwischenablage oder Emoticons direkt deren Einstellungen)
 - Aussehen: 7 Farbschemata, Hintergrundbild aus der Galerie (abdunkeln, zoomen, Ausschnitt), Tasten- und Schriftfarbe, Tasten-Deckkraft, Eckenrundung, Schriftgröße – mit Live-Vorschau

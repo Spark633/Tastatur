@@ -59,6 +59,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     /** Zuletzt kopierter Text, wird kurz in der Leiste zum Einfügen angeboten. */
     private var recentClip: String? = null
+    private var recentClipImage: String? = null
     private var recentClipTime = 0L
     private var clipShown = false
     private var isPasswordField = false
@@ -153,17 +154,73 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         return if (id != 0) resources.getDimensionPixelSize(id) else (48 * resources.displayMetrics.density).toInt()
     }
 
+    /** Kopiertes Bild in den eigenen Ordner kopieren (im Hintergrund) und anbieten. */
+    private fun captureImage(uri: android.net.Uri, mime: String) {
+        worker.execute {
+            val name = try {
+                val n = "bild_${System.currentTimeMillis()}.${ClipImageProvider.extFor(mime)}"
+                val f = java.io.File(ClipboardHistory.imageDir(this), n)
+                contentResolver.openInputStream(uri)?.use { input ->
+                    f.outputStream().use { out -> input.copyTo(out) }
+                }
+                if (f.length() in 1..MAX_IMAGE_BYTES) n else { f.delete(); null }
+            } catch (_: Exception) { null }
+            if (name != null) mainHandler.post {
+                clipHistory.addImage(name)
+                recentClip = null
+                recentClipImage = name
+                recentClipTime = SystemClock.uptimeMillis()
+                updateSuggestions()
+                keyboard?.invalidate()
+            }
+        }
+    }
+
+    /**
+     * Bild einfügen wie beim normalen "Einfügen": zurück in die Android-Zwischenablage
+     * legen und die App selbst einfügen lassen.
+     */
+    private fun pasteImage(name: String) {
+        val ic = currentInputConnection ?: return
+        try {
+            val clip = android.content.ClipData.newUri(contentResolver, "Bild", ClipImageProvider.uriFor(name))
+            clipboard?.setPrimaryClip(clip)
+            if (!ic.performContextMenuAction(android.R.id.paste)) keyboard?.showMessage("Diese App nimmt hier keine Bilder an")
+        } catch (_: Exception) {
+            keyboard?.showMessage("Bild konnte nicht eingefügt werden")
+        }
+    }
+
+    override fun onPasteImage(name: String) {
+        own()
+        if (name == recentClipImage) recentClipImage = null
+        pasteImage(name)
+    }
+
     private fun captureClip() {
         try {
             val clip = clipboard?.primaryClip ?: return
             if (clip.itemCount == 0) return
             // Passwörter aus Passwort-Managern nicht speichern
             if (clip.description?.extras?.getBoolean("android.content.extra.IS_SENSITIVE") == true) return
-            val text = clip.getItemAt(0).coerceToText(this)?.toString() ?: return
+            val item = clip.getItemAt(0)
+            // Bild kopiert: Kopie im Verlauf ablegen
+            val uri = item.uri
+            if (uri != null) {
+                if (uri.authority == ClipImageProvider.AUTHORITY) return // eigenes Bild (gerade eingefügt)
+                val mime = clip.description?.getMimeType(0)?.takeIf { it.startsWith("image/") }
+                    ?: contentResolver.getType(uri)?.takeIf { it.startsWith("image/") }
+                if (mime != null) {
+                    captureImage(uri, mime)
+                    return
+                }
+            }
+            val text = item.coerceToText(this)?.toString() ?: return
             clipHistory.add(text)
             // Neu kopiert: für ein paar Minuten direkt in der Leiste anbieten
             if (text.isNotBlank() && text != recentClip) {
                 recentClip = text
+                recentClipImage = null
                 recentClipTime = SystemClock.uptimeMillis()
                 updateSuggestions()
             }
@@ -479,8 +536,9 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     /** Beschriftung für den Einfüge-Vorschlag, oder null wenn nichts Frisches kopiert wurde. */
     private fun clipOffer(): String? {
-        val text = recentClip ?: return null
         if (isPasswordField || SystemClock.uptimeMillis() - recentClipTime > CLIP_OFFER_MS) return null
+        if (recentClipImage != null) return "📋 Bild einfügen"
+        val text = recentClip ?: return null
         val line = text.trim().lineSequence().firstOrNull()?.trim().orEmpty()
         val short = if (line.length > 28) line.take(27) + "…" else line
         return "📋 $short"
@@ -750,8 +808,10 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         }
         if (clipShown) {
             if (index == 1) {
-                recentClip?.let { currentInputConnection?.commitText(it, 1) }
+                val img = recentClipImage
+                if (img != null) pasteImage(img) else recentClip?.let { currentInputConnection?.commitText(it, 1) }
                 recentClip = null // eingefügt: nicht mehr anbieten
+                recentClipImage = null
                 clipShown = false
             }
             return
@@ -806,6 +866,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     override fun onSuggestionLongPress(index: Int) {
         if (clipShown) {
             recentClip = null
+            recentClipImage = null
             keyboard?.showMessage("Ausgeblendet")
             updateSuggestions()
             return
@@ -1252,6 +1313,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         private const val CLOSING_QUOTES = "\"“”»"
         private const val RESTORE_MIN_CHARS = 15
         private const val CLIP_OFFER_MS = 3 * 60 * 1000L
+        private const val MAX_IMAGE_BYTES = 15L * 1024 * 1024
 
         /** Name → Such-URL (der Begriff wird angehängt). */
         val SEARCH_ENGINES = linkedMapOf(

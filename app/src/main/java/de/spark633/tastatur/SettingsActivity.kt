@@ -347,8 +347,10 @@ class SettingsActivity : Activity() {
         if (words.isEmpty()) wordList.addView(info("Noch keine eigenen Wörter."))
         for (w in words) {
             wordList.addView(listRow(w, "✎" to { editWord(w) }, "✕" to {
-                userDict.remove(w)
-                renderWords()
+                confirmDelete("„$w“ löschen?") {
+                    userDict.remove(w)
+                    renderWords()
+                }
             }))
         }
         blockedList.removeAllViews()
@@ -376,6 +378,15 @@ class SettingsActivity : Activity() {
                 if (new.isNotEmpty() && new != old) userDict.rename(old, new)
                 renderWords()
             }
+            .setNegativeButton("Abbrechen", null)
+            .show()
+    }
+
+    /** Rückfrage vor jedem Löschen. */
+    private fun confirmDelete(message: String, onYes: () -> Unit) {
+        AlertDialog.Builder(this)
+            .setMessage(message)
+            .setPositiveButton("Löschen") { _, _ -> onYes() }
             .setNegativeButton("Abbrechen", null)
             .show()
     }
@@ -851,7 +862,7 @@ class SettingsActivity : Activity() {
         title = "Emoticons"
         addTestField()
         root.addView(info(
-            "Erscheinen hinter der ^.^-Taste, je 12 pro Seite. ▲ ▼ verschieben einen Eintrag."
+            "Erscheinen hinter der ^.^-Taste, je 12 pro Seite. Neue kommen oben dazu, ▲ ▼ verschieben einen Eintrag."
         ))
         val addRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val input = EditText(this).apply {
@@ -866,7 +877,7 @@ class SettingsActivity : Activity() {
             setOnClickListener {
                 val e = input.text.toString().trim()
                 if (e.isNotEmpty()) {
-                    prefs.emoticons = prefs.emoticons + e
+                    prefs.emoticons = listOf(e) + prefs.emoticons // neue Emoticons oben
                     input.setText("")
                     renderEmoticons()
                 }
@@ -912,8 +923,10 @@ class SettingsActivity : Activity() {
                 },
                 "✎" to { editEmoticon(i, e) },
                 "✕" to {
-                    prefs.emoticons = prefs.emoticons.toMutableList().also { it.removeAt(i) }
-                    renderEmoticons()
+                    confirmDelete("„$e“ löschen?") {
+                        prefs.emoticons = prefs.emoticons.toMutableList().also { it.removeAt(i) }
+                        renderEmoticons()
+                    }
                 },
             ))
         }

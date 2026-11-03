@@ -41,7 +41,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Zwischenablage: ⋮-Menü offen → übrige Kacheln abgedunkelt
 - Zwischenablage: dunkle Kacheln mit weißer Schrift (immer lesbar); kein seitliches Wischen zum Löschen; nach dem Einfügen zurück zur Tastatur
 - Android-Zurück/˅ schließt die Tastatur sofort, auch aus Menüs (beim nächsten Öffnen Buchstaben)
-- ⌫ kurz tippen + sofort halten: alles bis zum letzten Leerzeichen am Stück löschen (abschaltbar; normales Halten: Wort für Wort)
+- ⌫ kurz tippen + sofort halten: alles bis zum letzten Leerzeichen am Stück löschen (abschaltbar; normales Halten: Wort für Wort); Pause zwischen Wörtern/Blöcken 0,42 s
 - ⌫ in Emoticons, Zwischenablage und Formatieren = zurück zur Tastatur; dort und im Zahnrad-Menü keine ABC-Taste (Zahnrad bzw. ⌫ führt zurück)
 - Websuche öffnet direkt den Browser (kein Suchfeld in der Leiste): ohne Markierung leere Seite, markierter Link direkt als Adresse, sonst Suche
 
@@ -56,5 +56,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Auswahllisten als Fenster mit Farbpunkten (keine Emojis)
 - Bild-Verlauf: die letzten 5; pro Bild gespeichert: Abdunkeln, Zoom, Ausschnitt, Tastenfarbe, Schriftfarbe, Deckkraft
 - Zoom-Anzeige beginnt bei 0 %
+- Jedes Löschen per Knopf hat eine Rückfrage (Einstellungen: Dialog, Tastatur: Rückfrage in der Leiste)
+- Neue Emoticons kommen oben in die Liste
 - Sicherung ohne Zwischenablage-Verlauf
 - Startseite zeigt „Version x.y.z“ (ohne Build) und „(Neueste Version herunterladen)“ als unterstrichener Text-Link zur Release-Seite; APK heißt Tastatur-<Version>.apk; Link steht in AppLinks.kt; keine Update-Prüfung (App ohne Internetzugriff)

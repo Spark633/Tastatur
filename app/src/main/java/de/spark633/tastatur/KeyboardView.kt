@@ -584,7 +584,11 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             clipMenuFor = null
             if (hit != null && hit.first === menuEntry) {
                 val r = hit.second
-                if (x < r.centerX()) hist.togglePin(menuEntry) else deleteClip(menuEntry)
+                if (x < r.centerX()) hist.togglePin(menuEntry)
+                else askConfirm(if (menuEntry.image != null) "Bild löschen?" else "Eintrag löschen?", yes = {
+                    deleteClip(menuEntry)
+                    invalidate()
+                }, yesLabel = "Löschen")
             }
             invalidate()
             return
@@ -607,16 +611,11 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     }
 
     private fun clipClear() {
-        val now = SystemClock.uptimeMillis()
-        if (now < clearArmedUntil) {
+        askConfirm("Alles außer Angeheftetem löschen?", yes = {
             clipHistory?.clearUnpinned()
-            clearArmedUntil = 0L
             clipScroll = 0f
             showMessage("Geleert – angeheftete bleiben")
-        } else {
-            clearArmedUntil = now + 3000
-            showMessage("Nochmal tippen zum Leeren")
-        }
+        }, yesLabel = "Leeren")
     }
 
     // --- Größen-Modus ---
@@ -950,7 +949,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         val repeat: Runnable = object : Runnable {
             override fun run() {
                 if (chunkDelete) listener.onDeleteChunk() else listener.onDeleteWord()
-                postDelayed(this, 280)
+                postDelayed(this, 420)
             }
         }
     }

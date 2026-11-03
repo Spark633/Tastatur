@@ -4,7 +4,10 @@ Ideen für später. Erledigte Punkte wandern nach unten.
 
 ## Offen
 
-_(gerade nichts offen)_
+- [ ] **Weitere Sprachen für die App selbst** (Einstellungen, Hinweise, Leiste), unabhängig von den Tastatursprachen
+  - Alle Texte an einer Stelle sammeln (Tabelle Text → DE / EN / NL …)
+  - Einstellung „Sprache der App“: Automatisch (wie Handy) / Deutsch / English / …
+  - Übersetzungen ergänzen; neue Sprachen kommen als weitere Spalte dazu
 
 ## Erledigt
 

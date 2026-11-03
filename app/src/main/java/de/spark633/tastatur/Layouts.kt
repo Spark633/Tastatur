@@ -156,7 +156,7 @@ object Layouts {
     /** Formatieren: Listen, Unicode-Stile (überall sichtbar) und Telegram-/Discord-Zeichen. */
     const val FORMAT_PAGES = 2
 
-    /** Formatieren, Seite 1: Listen, Unicode-Stile, Telegram/Discord. Seite 2: Spaß-Stile (sArKaSmUs …). */
+    /** Formatieren, Seite 1: Listen, Unicode-Stile, Telegram/Discord. Seite 2: Spaß-Stile (sPoNgEbOb …). */
     fun format(page: Int): List<List<Key>> {
         val bottom = listOf(
             Key("ABC", Action.TO_LETTERS, width = 2.5f),
@@ -178,7 +178,7 @@ object Layouts {
                 Key("Aa  Normal", Action.FORMAT, text = "plain", width = 3.5f)),
             bottom,
         ) else listOf(
-            listOf(Key("sArKaSmUs", Action.FORMAT, text = "sarcasm", width = 5f),
+            listOf(Key("sPoNgEbOb", Action.FORMAT, text = "sarcasm", width = 5f),
                 Key("ᵏˡᵉⁱⁿ", Action.FORMAT, text = "small", width = 5f)),
             listOf(Key("G̷l̶i̷t̵c̶h̷", Action.FORMAT, text = "glitch", width = 3.4f),
                 Key("↕  Kopfüber", Action.FORMAT, text = "upside", width = 3.3f),

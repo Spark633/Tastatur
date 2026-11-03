@@ -13,13 +13,13 @@ object Formatter {
         "italic" to "Kursiv",
         "strike" to "Durchgestrichen",
         "underline" to "Unterstrichen",
-        "sarcasm" to "sArKaSmUs",
+        "sarcasm" to "SpongeBob",
         "small" to "Klein",
         "glitch" to "Glitch",
     )
 
     /**
-     * Abwechselnd klein und groß: "sArKaSmUs". [start] zählt die bisher
+     * Abwechselnd klein und groß ("SpongeBob-Schrift"): "sPoNgEbOb". [start] zählt die bisher
      * geschriebenen Buchstaben, damit es über mehrere Tasten weiterläuft.
      */
     fun sarcasm(text: String, start: Int = 0): String {
@@ -187,7 +187,7 @@ object Formatter {
             }
             if (keep != null) sb.append(keep)
         }
-        // sArKaSmUs-Wörter komplett klein: hAlLo → hallo
+        // SpongeBob-Wörter komplett klein: hAlLo → hallo
         return Normalizer.normalize(sb.toString(), Normalizer.Form.NFC)
             .replace(Regex("[\\p{L}']+")) { m -> if (isSarcasm(m.value)) m.value.lowercase() else m.value }
     }

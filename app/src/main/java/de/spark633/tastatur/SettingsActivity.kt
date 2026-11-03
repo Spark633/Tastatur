@@ -903,7 +903,7 @@ class SettingsActivity : Activity() {
                 "• zb → z.B., oä → o.Ä., idr → i.d.R.\n" +
                 "• 📋 Zwischenablage, ⚙ Menü mit Einstellungen, Größe und Aussehen\n" +
                 "• ⚙ → 🔍 Suche: Browser öffnen, markierter Text wird gesucht\n" +
-                "• ⚙ → ✎ Formatieren: Listen, fett, kursiv, durch- und unterstrichen, Telegram/Discord (**fett** ||Spoiler||), sArKaSmUs, Kopfüber, Spiegel"
+                "• ⚙ → ✎ Formatieren: Listen, fett, kursiv, durch- und unterstrichen, Telegram/Discord (**fett** ||Spoiler||), sPoNgEbOb, Kopfüber, Spiegel"
         ))
     }
 

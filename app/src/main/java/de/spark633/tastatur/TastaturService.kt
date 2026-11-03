@@ -938,7 +938,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         ic.endBatchEdit()
     }
 
-    /** Text im aktiven Stil (sArKaSmUs zählt über Tasten hinweg weiter). */
+    /** Text im aktiven Stil (SpongeBob-Schrift zählt über Tasten hinweg weiter). */
     private fun styleOf(style: String, text: String): String = if (style == "sarcasm") {
         Formatter.sarcasm(text, sarcasmCount).also { sarcasmCount += text.count(Char::isLetter) }
     } else {

@@ -24,11 +24,12 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Umlaut-Regel nur, wenn die Umlaut-Form deutlich häufiger ist (schon/schön, gedruckt/gedrückt bleiben)
 - Chat-Abkürzungen nicht korrigieren; Punkt-Abkürzungen zb → z.B., oä → o.Ä. (aber mfg nicht ausschreiben)
 - Zusammengeklebte Wörter trennen (machdas → mach das)
+- Nur Groß-/Kleinschreibung falsch hat Vorrang vor ähnlichen Wörtern (zeile → Zeile, nicht Teile)
 
 **Unterseiten**
 - Zwischenablage: dunkle Kacheln mit weißer Schrift (immer lesbar); kein seitliches Wischen zum Löschen; nach dem Einfügen zurück zur Tastatur
 - ⌫ in Emoticons, Zwischenablage und Formatieren = zurück zur Tastatur
-- Websuche öffnet direkt den Browser (kein Suchfeld in der Leiste)
+- Websuche öffnet direkt den Browser (kein Suchfeld in der Leiste): ohne Markierung leere Seite, markierter Link direkt als Adresse, sonst Suche
 
 **Formatieren**
 - Seite 1: Listen oben in voller Breite, darunter Unicode-Stile, darunter zentriert ||Spoiler|| und „Aa Normal“

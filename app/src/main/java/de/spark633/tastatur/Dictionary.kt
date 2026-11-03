@@ -72,6 +72,14 @@ class Dictionary private constructor(
                 .filter { ok(it) && !it.equals(typed, ignoreCase = true) }.distinct()
             return Suggestions(typed, null, listOf(others.getOrElse(0) { "" }, typed, others.getOrElse(1) { "" }))
         }
+        // Nur Groß-/Kleinschreibung falsch ("zeile" → "Zeile"): das hat Vorrang vor ähnlichen Wörtern
+        dictForm(typed)?.let { form ->
+            val fixed = applyCase(form, typed)
+            if (fixed != typed && ok(fixed)) {
+                val others = completions.filter { !it.equals(typed, ignoreCase = true) }
+                return Suggestions(typed, fixed, listOf("\"$typed\"", fixed, others.getOrElse(0) { "" }))
+            }
+        }
         val corrections = fuzzy(typed, neighbors, 4, extra).filter { ok(it.first) }
         // Leerzeichen vergessen? "machdas" → "mach das"
         val split = splitWords(typed)?.takeIf(ok)

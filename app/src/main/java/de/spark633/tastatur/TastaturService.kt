@@ -1034,19 +1034,37 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     // Websuche
     // ------------------------------------------------------------------
 
-    /** Öffnet den Standard-Browser mit der Suche. */
+    /** Sieht der Text wie eine Webadresse aus (github.com/…, www.…, https://…)? */
+    private fun looksLikeUrl(t: String): Boolean =
+        !t.contains(' ') && (t.startsWith("http://") || t.startsWith("https://") || t.startsWith("www.") ||
+            Regex("^[\\w-]+(\\.[\\w-]+)*\\.[a-zA-Z]{2,}(:\\d+)?(/\\S*)?$").matches(t))
+
+    /**
+     * Browser öffnen: markierter Link direkt, anderer Text als Suche,
+     * ohne Markierung eine leere Seite (sonst einfach der Browser).
+     */
     private fun runSearch(query: String) {
         val base = SEARCH_ENGINES[prefs.searchEngine] ?: SEARCH_ENGINES.getValue("google")
-        val url = if (query.isEmpty()) "https://" + android.net.Uri.parse(base).host
-        else base + java.net.URLEncoder.encode(query, "UTF-8")
+        val url = when {
+            query.isEmpty() -> "about:blank"
+            looksLikeUrl(query) -> if (query.startsWith("http")) query else "https://$query"
+            else -> base + java.net.URLEncoder.encode(query, "UTF-8")
+        }
+        val flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+        requestHideSelf(0)
         try {
-            requestHideSelf(0)
-            startActivity(
-                android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
+            startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).addFlags(flags))
         } catch (_: Exception) {
-            keyboard?.showMessage("Kein Browser gefunden")
+            // Leere Seite nimmt nicht jeder Browser an: dann einfach den Browser öffnen
+            try {
+                startActivity(
+                    android.content.Intent.makeMainSelectorActivity(
+                        android.content.Intent.ACTION_MAIN, android.content.Intent.CATEGORY_APP_BROWSER
+                    ).addFlags(flags)
+                )
+            } catch (_: Exception) {
+                keyboard?.showMessage("Kein Browser gefunden")
+            }
         }
     }
 

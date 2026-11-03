@@ -1316,7 +1316,26 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         ic.endBatchEdit()
         lastCorrection = null
         current = null
+        lastWordShift = word to changed
         return true
+    }
+
+    /** Wort vor und nach der letzten Shift-Umwandlung (für baronDer). */
+    private var lastWordShift: Pair<String, String>? = null
+
+    override fun onUndoWordShift() {
+        own()
+        val (original, changed) = lastWordShift ?: return
+        lastWordShift = null
+        if (original == changed) return
+        val ic = currentInputConnection ?: return
+        val before = ic.getTextBeforeCursor(changed.length, 0)?.toString() ?: return
+        if (before != changed) return
+        ic.beginBatchEdit()
+        ic.deleteSurroundingText(changed.length, 0)
+        ic.commitText(original, 1)
+        ic.endBatchEdit()
+        current = null
     }
 
     /**

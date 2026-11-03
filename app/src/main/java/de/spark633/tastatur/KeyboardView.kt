@@ -51,6 +51,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         fun onPasteImage(name: String)
         /** Shift geändert (0 aus, 1 an, 2 Feststelltaste). true = auf das Wort am Cursor angewendet. */
         fun onShiftChanged(state: Int): Boolean
+        /** Letzte Shift-Umwandlung des Wortes rückgängig machen (baron → Baron → baron). */
+        fun onUndoWordShift()
         /** Cursor um ein Zeichen bewegen: -1 = links, 1 = rechts. */
         fun onMoveCursor(direction: Int)
     }
@@ -1201,14 +1203,16 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         if (k.action != Action.SHIFT && k.action != Action.CHAR) shiftAppliedToWord = false
         when (k.action) {
             Action.CHAR -> {
-                // Nach Shift aufs Wort: im selben Wort klein weiterschreiben
+                // Nach Shift aufs Wort gleich weitertippen: doch der nächste Buchstabe groß (baronDer)
                 val afterWordShift = shiftAppliedToWord && shift == Shift.ON
                 shiftAppliedToWord = false
                 when {
                     t.swipe == 1 && k.up != null -> typeText(k.up, false)
                     t.swipe == -1 && k.down != null -> typeText(k.down, false)
-                    afterWordShift && k.cased -> typeText(k.text, true)
-                    else -> typeText(displayText(k), k.cased)
+                    else -> {
+                        if (afterWordShift && k.cased) listener.onUndoWordShift()
+                        typeText(displayText(k), k.cased)
+                    }
                 }
                 if (mode == Mode.EMOTICONS) setMode(Mode.LETTERS) // nach dem Emoticon zurück zur Tastatur
             }

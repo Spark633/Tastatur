@@ -646,6 +646,13 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         if (mode == Mode.CLIPBOARD) canvas.drawCircle(cx, cy, barHeight * 0.42f, funcPaint)
         if (mode == Mode.MENU) canvas.drawCircle(settingsRect.centerX(), settingsRect.centerY(), barHeight * 0.42f, funcPaint)
         drawGear(canvas, settingsRect.centerX(), settingsRect.centerY())
+        if (showStyleStop) {
+            val r = styleStopRect
+            val pill = RectF(r.left + 3 * dp, r.top + 9 * dp, r.right - 3 * dp, r.bottom - 9 * dp)
+            canvas.drawRoundRect(pill, pill.height() / 2, pill.height() / 2, accentPaint)
+            styleStopPaint.textSize = sp(14f)
+            canvas.drawText("✎✕", pill.centerX(), centerY(styleStopPaint, pill.centerY()), styleStopPaint)
+        }
         if (showLang && mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT) {
             val r = langRect
             langPaint.color = hintPaint.color
@@ -663,7 +670,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             Mode.MENU -> "Einstellungen"
             Mode.FORMAT -> "Text markieren oder Stil wählen"
             // Stil aktiv: beim Tippen eines Wortes Vorschläge, sonst der Hinweis zum Beenden
-            else -> if (slots.any { it.isNotEmpty() }) null else styleLabel?.let { "✎ $it  –  hier tippen zum Beenden" }
+            else -> if (slots.any { it.isNotEmpty() }) null else styleLabel?.let { "✎ $it aktiv" }
         }
         if (text != null) {
             canvas.drawText(text, width / 2f, centerY(barTextPaint, barHeight / 2f), barTextPaint)
@@ -691,10 +698,23 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     /** Sprachkürzel nur zeigen, wenn nicht Deutsch aktiv ist. */
     private val showLang: Boolean get() = language != Language.DE
 
-    /** Drei gleich breite Felder zwischen den Knöpfen; rechts ggf. Sprachkürzel und ↶. */
+    /** Formatierung aktiv: eigener Knopf zum Beenden neben den Vorschlägen. */
+    private val showStyleStop: Boolean
+        get() = styleLabel != null && mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT
+    private val styleStopWidth = 44 * dp
+
+    private val styleStopRect: RectF get() {
+        val right = langRect.left.let { if (showLang) it else width - barHeight - if (restoreVisible) barHeight else 0f }
+        return RectF(right - styleStopWidth, 0f, right, barHeight)
+    }
+
+    private val styleStopPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textAlign = Paint.Align.CENTER }
+
+    /** Drei gleich breite Felder zwischen den Knöpfen; rechts ggf. ✎✕, Sprachkürzel und ↶. */
     private fun slotRects(): List<RectF> {
         val cs = barHeight
-        val right = width - cs - (if (restoreVisible) cs else 0f) - (if (showLang) langWidth else 0f)
+        val right = width - cs - (if (restoreVisible) cs else 0f) - (if (showLang) langWidth else 0f) -
+            (if (showStyleStop) styleStopWidth else 0f)
         val w = (right - cs) / 3f
         return (0 until 3).map { RectF(cs + it * w, 0f, cs + (it + 1) * w, barHeight) }
     }
@@ -1090,6 +1110,9 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                     listener.onClipboardOpen()
                     setMode(Mode.CLIPBOARD)
                 }
+            } else if (showStyleStop && styleStopRect.contains(t.lastX, t.lastY) && styleStopRect.contains(t.x0, t.y0)) {
+                listener.onKeyFeedback()
+                listener.onFormat("off") // Formatierung beenden
             } else if (restoreVisible && mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT &&
                 restoreRect.contains(t.lastX, t.lastY) && restoreRect.contains(t.x0, t.y0)) {
                 listener.onKeyFeedback()

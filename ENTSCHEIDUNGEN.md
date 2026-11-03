@@ -34,6 +34,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Seite 1: Listen oben in voller Breite, darunter Unicode-Stile, darunter zentriert ||Spoiler|| und „Aa Normal“
 - Keine WhatsApp-Zeichen (Telegram, Discord, Signal im Einsatz); kursiv nicht als Markdown (unterschiedlich je App)
 - Seite 2: sPoNgEbOb, ᵏˡᵉⁱⁿ, Glitch, Kopfüber (normal um 180° gedreht), Spiegelschrift
+- Aktive Formatierung: Knopf ✎✕ neben den Vorschlägen beendet sie
 
 **Einstellungen und Aussehen**
 - Testfeld oben, Einrichtung eingeklappt, ← ist echtes Zurück

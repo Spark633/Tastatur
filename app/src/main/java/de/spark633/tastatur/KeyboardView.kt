@@ -633,6 +633,13 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         if (mode == Mode.CLIPBOARD) canvas.drawCircle(cx, cy, barHeight * 0.42f, funcPaint)
         if (mode == Mode.MENU) canvas.drawCircle(settingsRect.centerX(), settingsRect.centerY(), barHeight * 0.42f, funcPaint)
         drawGear(canvas, settingsRect.centerX(), settingsRect.centerY())
+        if (mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT) {
+            val r = langRect
+            langPaint.color = hintPaint.color
+            langPaint.textSize = sp(12f)
+            langPaint.isFakeBoldText = true
+            canvas.drawText(language.code.uppercase(), r.centerX(), centerY(langPaint, r.centerY()), langPaint)
+        }
         if (restoreVisible && mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT) {
             val r = restoreRect
             canvas.drawCircle(r.centerX(), r.centerY(), barHeight * 0.38f, accentPaint)
@@ -666,13 +673,23 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     }
 
     /** Drei gleich breite Felder zwischen Zwischenablage-Knopf und gegenüberliegendem Rand. */
-    /** Drei gleich breite Felder zwischen den Knöpfen; rechts ggf. Platz für ↶. */
+    private val langWidth = 30 * dp
+
+    /** Drei gleich breite Felder zwischen den Knöpfen; rechts Sprachkürzel und ggf. ↶. */
     private fun slotRects(): List<RectF> {
         val cs = barHeight
-        val right = width - cs - if (restoreVisible) cs else 0f
+        val right = width - cs - (if (restoreVisible) cs else 0f) - langWidth
         val w = (right - cs) / 3f
         return (0 until 3).map { RectF(cs + it * w, 0f, cs + (it + 1) * w, barHeight) }
     }
+
+    /** Kleines Sprachkürzel (DE/EN/NL) rechts neben den Vorschlägen; Antippen wechselt die Sprache. */
+    private val langRect: RectF get() {
+        val right = width - barHeight - if (restoreVisible) barHeight else 0f
+        return RectF(right - langWidth, 0f, right, barHeight)
+    }
+
+    private val langPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
 
     /** ↶ sitzt rechts neben den Vorschlägen, vor dem rechten Knopf. */
     private val restoreRect: RectF get() = RectF(width - 2 * barHeight, 0f, width - barHeight, barHeight)
@@ -1057,6 +1074,10 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                     listener.onClipboardOpen()
                     setMode(Mode.CLIPBOARD)
                 }
+            } else if (mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT && message == null &&
+                langRect.contains(t.lastX, t.lastY) && langRect.contains(t.x0, t.y0)) {
+                listener.onKeyFeedback()
+                listener.onLanguageSwipe(1)
             } else if (restoreVisible && mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT &&
                 restoreRect.contains(t.lastX, t.lastY) && restoreRect.contains(t.x0, t.y0)) {
                 listener.onKeyFeedback()

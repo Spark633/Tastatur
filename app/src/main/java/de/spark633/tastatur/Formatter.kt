@@ -14,6 +14,8 @@ object Formatter {
         "strike" to "Durchgestrichen",
         "underline" to "Unterstrichen",
         "sarcasm" to "sArKaSmUs",
+        "small" to "Klein",
+        "glitch" to "Glitch",
     )
 
     /**
@@ -36,6 +38,10 @@ object Formatter {
 
     fun apply(style: String, text: String): String = when (style) {
         "sarcasm" -> sarcasm(text)
+        "small" -> mapLetters(text) { SMALL[it]?.code }
+        "glitch" -> glitch(text)
+        "upside" -> upsideDown(text)
+        "reverse" -> clusters(text).reversed().joinToString("")
         "bold" -> mapLetters(text, ::bold)
         "italic" -> mapLetters(text, ::italic)
         "strike" -> combine(text, '̶')
@@ -79,5 +85,70 @@ object Formatter {
         in 'A'..'Z' -> 0x1D608 + (c - 'A')
         in 'a'..'z' -> 0x1D622 + (c - 'a')
         else -> null
+    }
+
+    // --- Spaß-Stile ---
+
+    /** Kleiner (hochgestellter) Text: ʰᵃˡˡᵒ. Fehlende Zeichen bleiben normal. */
+    private val SMALL: Map<Char, Char> = buildMap {
+        "abcdefghijklmnoprstuvwxyz".zip("ᵃᵇᶜᵈᵉᶠᵍʰⁱʲᵏˡᵐⁿᵒᵖʳˢᵗᵘᵛʷˣʸᶻ").forEach { (a, b) -> put(a, b) }
+        "ABDEGHIJKLMNOPRTUVW".zip("ᴬᴮᴰᴱᴳᴴᴵᴶᴷᴸᴹᴺᴼᴾᴿᵀᵁⱽᵂ").forEach { (a, b) -> put(a, b) }
+        "CFQSXYZ".forEach { c -> SMALL_LOWER[c.lowercaseChar()]?.let { put(c, it) } }
+        "0123456789+-=()".zip("⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾").forEach { (a, b) -> put(a, b) }
+    }
+    private val SMALL_LOWER: Map<Char, Char>
+        get() = "abcdefghijklmnoprstuvwxyz".zip("ᵃᵇᶜᵈᵉᶠᵍʰⁱʲᵏˡᵐⁿᵒᵖʳˢᵗᵘᵛʷˣʸᶻ").toMap()
+
+    /** Glitch: jedes Zeichen bekommt zufällige Striche darüber und darunter. */
+    private const val GLITCH_ABOVE = "\u0300\u0301\u0302\u0303\u0304\u0306\u0307\u0308\u030A\u030B\u030C\u0310\u0311\u0312\u033D\u0346\u034A\u034B\u034C\u0350\u0351\u0357\u035B"
+    private const val GLITCH_BELOW = "\u0316\u0317\u0318\u0319\u031C\u031D\u031E\u031F\u0320\u0324\u0325\u0326\u0329\u032A\u032B\u032C\u032D\u032E\u0330\u0331\u0332\u0333\u0339\u033A\u033B\u0347\u0348\u0349\u034D\u034E\u0353"
+    private const val GLITCH_THROUGH = "\u0334\u0335\u0336\u0337\u0338"
+
+    private fun glitch(text: String): String {
+        val r = java.util.Random()
+        val sb = StringBuilder()
+        for (c in text) {
+            sb.append(c)
+            if (c.isWhitespace()) continue
+            sb.append(GLITCH_THROUGH[r.nextInt(GLITCH_THROUGH.length)])
+            repeat(1 + r.nextInt(2)) { sb.append(GLITCH_ABOVE[r.nextInt(GLITCH_ABOVE.length)]) }
+            repeat(1 + r.nextInt(2)) { sb.append(GLITCH_BELOW[r.nextInt(GLITCH_BELOW.length)]) }
+        }
+        return sb.toString()
+    }
+
+    /** Zeichen samt ihren Akzenten (ä = a + ¨) zusammenhalten, damit Umdrehen nichts zerreißt. */
+    private fun clusters(text: String): List<String> {
+        val out = ArrayList<String>()
+        var i = 0
+        while (i < text.length) {
+            val cp = text.codePointAt(i)
+            var end = i + Character.charCount(cp)
+            while (end < text.length && Character.getType(text.codePointAt(end)) == Character.NON_SPACING_MARK.toInt()) {
+                end += Character.charCount(text.codePointAt(end))
+            }
+            out.add(text.substring(i, end))
+            i = end
+        }
+        return out
+    }
+
+    private val UPSIDE: Map<Char, String> = buildMap {
+        val lower = "abcdefghijklmnopqrstuvwxyz".toList().zip(listOf("ɐ", "q", "ɔ", "p", "ǝ", "ɟ", "ƃ", "ɥ", "ᴉ", "ɾ", "ʞ", "l", "ɯ",
+            "u", "o", "d", "b", "ɹ", "s", "ʇ", "n", "ʌ", "ʍ", "x", "ʎ", "z"))
+        val upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".toList().zip(listOf("∀", "ꓭ", "Ɔ", "ꓷ", "Ǝ", "Ⅎ", "⅁", "H", "I", "ſ", "ꓘ", "˥", "W",
+            "N", "O", "Ԁ", "Ό", "ꓤ", "S", "⊥", "∩", "Λ", "M", "X", "⅄", "Z"))
+        val other = "0123456789.,'!?()[]{}<>&_\";".toList().zip(listOf("0", "Ɩ", "ᄅ", "Ɛ", "ㄣ", "ϛ", "9", "ㄥ", "8", "6", "˙", "'", ",",
+            "¡", "¿", ")", "(", "]", "[", "}", "{", ">", "<", "⅋", "‾", "„", "؛"))
+        (lower + upper + other).forEach { (a, b) -> put(a, b) }
+    }
+
+    /** Kopfüber: Zeichen spiegeln und die Reihenfolge umdrehen (Hallo → ollɐH). */
+    private fun upsideDown(text: String): String {
+        val decomposed = Normalizer.normalize(text, Normalizer.Form.NFD)
+        return clusters(decomposed).reversed().joinToString("") { cl ->
+            val base = cl[0]
+            (UPSIDE[base] ?: base.toString()) + cl.substring(1)
+        }.let { Normalizer.normalize(it, Normalizer.Form.NFC) }
     }
 }

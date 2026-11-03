@@ -178,8 +178,11 @@ object Layouts {
                 Key("```mono```", Action.FORMAT, text = "wa_mono", width = 2.5f)),
             bottom,
         ) else listOf(
-            listOf(Key("sArKaSmUs", Action.FORMAT, text = "sarcasm", width = 5f)),
-            emptyList(),
+            listOf(Key("sArKaSmUs", Action.FORMAT, text = "sarcasm", width = 5f),
+                Key("ᵏˡᵉⁱⁿ", Action.FORMAT, text = "small", width = 5f)),
+            listOf(Key("G̷l̶i̷t̵c̶h̷", Action.FORMAT, text = "glitch", width = 3.4f),
+                Key("↕  Kopfüber", Action.FORMAT, text = "upside", width = 3.3f),
+                Key("⇄  Rückwärts", Action.FORMAT, text = "reverse", width = 3.3f)),
             emptyList(),
             bottom,
         )

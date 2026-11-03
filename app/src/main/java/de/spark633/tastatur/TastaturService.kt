@@ -842,7 +842,9 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val selected = ic.getSelectedText(0)?.toString().orEmpty()
         when (code) {
             "off" -> setStyle(null)
-            "bold", "italic", "strike", "underline", "sarcasm" -> {
+            // Umdrehen geht nur am ganzen Text: Markierung, sonst alles im Feld
+            "upside", "reverse" -> transformWhole(code, selected)
+            "bold", "italic", "strike", "underline", "sarcasm", "small", "glitch" -> {
                 if (selected.isNotEmpty()) {
                     ic.commitText(Formatter.apply(code, selected), 1)
                 } else {
@@ -869,6 +871,25 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             "bullet" -> startList("• ")
             "number" -> startList("1. ")
         }
+    }
+
+    private fun transformWhole(code: String, selected: String) {
+        val ic = currentInputConnection ?: return
+        if (selected.isNotEmpty()) {
+            ic.commitText(Formatter.apply(code, selected), 1)
+            return
+        }
+        val et = ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)
+        val all = et?.text?.toString().orEmpty()
+        if (all.isEmpty() || all.length > 2000) {
+            keyboard?.showMessage("Erst Text schreiben oder markieren")
+            return
+        }
+        val cursor = et!!.selectionStart.coerceIn(0, all.length)
+        ic.beginBatchEdit()
+        ic.deleteSurroundingText(cursor, all.length - cursor)
+        ic.commitText(Formatter.apply(code, all), 1)
+        ic.endBatchEdit()
     }
 
     private fun setStyle(style: String?) {

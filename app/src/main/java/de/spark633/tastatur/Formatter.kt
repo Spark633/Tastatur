@@ -42,6 +42,7 @@ object Formatter {
         "glitch" -> glitch(text)
         "upside" -> upsideDown(text)
         "mirror" -> mirror(text)
+        "plain" -> plain(text)
         "bold" -> mapLetters(text, ::bold)
         "italic" -> mapLetters(text, ::italic)
         "strike" -> combine(text, '̶')
@@ -99,8 +100,11 @@ object Formatter {
     private val SMALL_LOWER: Map<Char, Char>
         get() = "abcdefghijklmnoprstuvwxyz".zip("ᵃᵇᶜᵈᵉᶠᵍʰⁱʲᵏˡᵐⁿᵒᵖʳˢᵗᵘᵛʷˣʸᶻ").toMap()
 
+    /** Akzente normaler Buchstaben (à á â ã ä å ç …), die "Normal" behält. */
+    private const val KEEP_ACCENTS = "\u0300\u0301\u0302\u0303\u0308\u030A\u0327"
+
     /** Glitch: jedes Zeichen bekommt zufällige Striche darüber und darunter. */
-    private const val GLITCH_ABOVE = "\u0300\u0301\u0302\u0303\u0304\u0306\u0307\u0308\u030A\u030B\u030C\u0310\u0311\u0312\u033D\u0346\u034A\u034B\u034C\u0350\u0351\u0357\u035B"
+    private const val GLITCH_ABOVE = "\u0304\u0306\u0307\u030B\u030C\u0310\u0311\u0312\u033D\u0346\u034A\u034B\u034C\u0350\u0351\u0357\u035B"
     private const val GLITCH_BELOW = "\u0316\u0317\u0318\u0319\u031C\u031D\u031E\u031F\u0320\u0324\u0325\u0326\u0329\u032A\u032B\u032C\u032D\u032E\u0330\u0331\u0332\u0333\u0339\u033A\u033B\u0347\u0348\u0349\u034D\u034E\u0353"
     private const val GLITCH_THROUGH = "\u0334\u0335\u0336\u0337\u0338"
 
@@ -163,5 +167,26 @@ object Formatter {
         val parts = clusters(decomposed).let { if (reverse) it.reversed() else it }
         return parts.joinToString("") { cl -> (map(cl[0]) ?: cl[0].toString()) + cl.substring(1) }
             .let { Normalizer.normalize(it, Normalizer.Form.NFC) }
+    }
+
+    /**
+     * Wieder normaler Text: 𝗳𝗲𝘁𝘁, 𝘬𝘶𝘳𝘴𝘪𝘷, ᵏˡᵉⁱⁿ werden zu normalen Buchstaben, Striche
+     * (durch, unter, Glitch) fallen weg, echte Umlaute und Akzente bleiben.
+     */
+    fun plain(text: String): String {
+        val compat = Normalizer.normalize(text, Normalizer.Form.NFKC)
+        val decomposed = Normalizer.normalize(compat, Normalizer.Form.NFD)
+        val sb = StringBuilder()
+        for (cl in clusters(decomposed)) {
+            val baseLen = Character.charCount(cl.codePointAt(0))
+            val base = cl.substring(0, baseLen)
+            sb.append(base)
+            // Striche (durch, unter, Glitch) weglassen; einen echten Akzent behalten (ä, é)
+            val keep = cl.substring(baseLen).firstOrNull { m ->
+                m in KEEP_ACCENTS && Normalizer.normalize(base + m, Normalizer.Form.NFC).length == 1
+            }
+            if (keep != null) sb.append(keep)
+        }
+        return Normalizer.normalize(sb.toString(), Normalizer.Form.NFC)
     }
 }

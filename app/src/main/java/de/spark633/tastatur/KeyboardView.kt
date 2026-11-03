@@ -642,7 +642,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             Mode.CLIPBOARD -> "Zwischenablage"
             Mode.MENU -> "Einstellungen"
             Mode.FORMAT -> "Text markieren oder Stil wählen"
-            else -> styleLabel?.let { "✎ $it  –  hier tippen zum Beenden" }
+            // Stil aktiv: beim Tippen eines Wortes Vorschläge, sonst der Hinweis zum Beenden
+            else -> if (slots.any { it.isNotEmpty() }) null else styleLabel?.let { "✎ $it  –  hier tippen zum Beenden" }
         }
         if (text != null) {
             canvas.drawText(text, width / 2f, centerY(barTextPaint, barHeight / 2f), barTextPaint)
@@ -1068,7 +1069,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                     Mode.MENU -> setMode(Mode.LETTERS)
                     else -> setMode(Mode.MENU)
                 }
-            } else if (styleLabel != null && message == null && mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT) {
+            } else if (styleLabel != null && message == null && slots.none { it.isNotEmpty() } &&
+                mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT) {
                 listener.onFormat("off")
             } else if (mode != Mode.CLIPBOARD && mode != Mode.MENU && mode != Mode.FORMAT && message == null) {
                 val rects = slotRects()

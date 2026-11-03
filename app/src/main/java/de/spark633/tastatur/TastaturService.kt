@@ -67,6 +67,11 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     private var activeStyle: String? = null
     private var sarcasmCount = 0
 
+    /** Beim formatierten Schreiben: das normale Wort und seine formatierten Teile (für Korrektur). */
+    private val styledPlain = StringBuilder()
+    private val styledPieces = ArrayList<String>()
+    private var styledWordStart = 0
+
     private val vibrator: Vibrator? by lazy {
         if (Build.VERSION.SDK_INT >= 31) {
             getSystemService(VibratorManager::class.java)?.defaultVibrator
@@ -473,7 +478,12 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
                 return
             }
         }
-        val word = if (suggestOn) currentWord() else null
+        val styled = activeStyle != null
+        val word = when {
+            !suggestOn -> null
+            styled -> styledPlain.toString().ifEmpty { null }
+            else -> currentWord()
+        }
         if (word == null || d == null) {
             suggestSeq++
             val preds = if (suggestOn && prefs.predictNext && word == null) predictions() else emptyList()
@@ -556,13 +566,20 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val ic = currentInputConnection ?: return
         if (text == recentClip) recentClip = null // aus der Zwischenablage eingefügt
         captureReplacedSelection()
-        activeStyle?.let {
-            val styled = if (it == "sarcasm") {
-                Formatter.sarcasm(text, sarcasmCount).also { sarcasmCount += text.count(Char::isLetter) }
-            } else {
-                Formatter.apply(it, text)
+        activeStyle?.let { style ->
+            val isWordChar = text.length == 1 && (text[0].isLetter() || text[0] == '\'')
+            if (isWordChar) {
+                // Normales Wort im Hintergrund mitschreiben, damit es korrigiert werden kann
+                if (styledPlain.isEmpty()) styledWordStart = sarcasmCount
+                val piece = styleOf(style, text)
+                styledPlain.append(text)
+                styledPieces.add(piece)
+                ic.commitText(piece, 1)
+                updateSuggestions()
+                return
             }
-            ic.commitText(styled, 1)
+            if (text.length == 1 && text[0] in PUNCTUATION) finishStyledWord(style) else resetStyledWord()
+            ic.commitText(styleOf(style, text), 1)
             return
         }
         if (text.length == 1 && text[0] in PUNCTUATION) {
@@ -640,6 +657,18 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onSuggestion(index: Int) {
+        val style = activeStyle
+        if (style != null) {
+            val s = current ?: return
+            if (styledPlain.isEmpty() || s.typed != styledPlain.toString() || !styledWordIntact()) return
+            val chosen = if (index == 0 && s.correction != null) s.typed
+            else s.slots.getOrNull(index)?.takeIf { it.isNotEmpty() } ?: return
+            replaceStyledWord(style, chosen)
+            currentInputConnection?.commitText(styledSpace(style), 1)
+            resetStyledWord()
+            current = null
+            return
+        }
         if (clipShown) {
             if (index == 1) {
                 recentClip?.let { currentInputConnection?.commitText(it, 1) }
@@ -719,6 +748,16 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onDelete() {
+        if (activeStyle != null && styledPieces.isNotEmpty() && styledWordIntact()) {
+            // Letzten formatierten Buchstaben samt Strichen/Akzenten löschen
+            val piece = styledPieces.removeAt(styledPieces.lastIndex)
+            styledPlain.setLength(styledPlain.length - 1)
+            if (activeStyle == "sarcasm") sarcasmCount = maxOf(styledWordStart, sarcasmCount - 1)
+            currentInputConnection?.deleteSurroundingText(piece.length, 0)
+            updateSuggestions()
+            return
+        }
+        if (activeStyle != null) resetStyledWord()
         if (undoCorrection()) return
         autoSpacePending = false
         val ic = currentInputConnection ?: return
@@ -794,8 +833,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             }
         }
         activeStyle?.let {
-            // Durch- und Unterstreichen läuft über Leerzeichen hinweg
-            ic.commitText(if (it == "strike" || it == "underline") Formatter.apply(it, " ") else " ", 1)
+            finishStyledWord(it)
+            ic.commitText(styledSpace(it), 1)
             lastSpaceTime = now
             return
         }
@@ -845,6 +884,11 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             // Umdrehen geht nur am ganzen Text: Markierung, sonst alles im Feld
             // Umdrehen geht nur am ganzen Text: Markierung, sonst alles im Feld
             "upside", "mirror" -> transformWhole(code, selected)
+            // Formatierten Text wieder normal machen (und Stil beenden)
+            "plain" -> {
+                setStyle(null)
+                transformWhole(code, selected)
+            }
             "bold", "italic", "strike", "underline", "sarcasm", "small", "glitch" -> {
                 if (selected.isNotEmpty()) {
                     ic.commitText(Formatter.apply(code, selected), 1)
@@ -894,9 +938,57 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         ic.endBatchEdit()
     }
 
+    /** Text im aktiven Stil (sArKaSmUs zählt über Tasten hinweg weiter). */
+    private fun styleOf(style: String, text: String): String = if (style == "sarcasm") {
+        Formatter.sarcasm(text, sarcasmCount).also { sarcasmCount += text.count(Char::isLetter) }
+    } else {
+        Formatter.apply(style, text)
+    }
+
+    /** Durch- und Unterstreichen läuft über Leerzeichen hinweg. */
+    private fun styledSpace(style: String) =
+        if (style == "strike" || style == "underline") Formatter.apply(style, " ") else " "
+
+    private fun resetStyledWord() {
+        styledPlain.setLength(0)
+        styledPieces.clear()
+    }
+
+    /** Steht das formatierte Wort noch direkt vor dem Cursor (Cursor nicht woanders hin bewegt)? */
+    private fun styledWordIntact(): Boolean {
+        val joined = styledPieces.joinToString("")
+        if (joined.isEmpty()) return false
+        return currentInputConnection?.getTextBeforeCursor(joined.length, 0)?.toString() == joined
+    }
+
+    /** Formatiertes Wort durch ein anderes (im selben Stil) ersetzen. */
+    private fun replaceStyledWord(style: String, word: String) {
+        val ic = currentInputConnection ?: return
+        val len = styledPieces.sumOf { it.length }
+        if (style == "sarcasm") sarcasmCount = styledWordStart
+        ic.beginBatchEdit()
+        ic.deleteSurroundingText(len, 0)
+        ic.commitText(styleOf(style, word), 1)
+        ic.endBatchEdit()
+    }
+
+    /** Wortende im Stil: das normale Wort prüfen und bei Tippfehler formatiert ersetzen. */
+    private fun finishStyledWord(style: String) {
+        val plain = styledPlain.toString()
+        val d = dict
+        if (plain.isNotEmpty() && autocorrectOn && d != null && styledWordIntact()) {
+            val s = current?.takeIf { it.typed == plain } ?: suggestNow(d, plain)
+            val corr = s.correction
+            if (corr != null && corr != plain) replaceStyledWord(style, corr)
+        }
+        resetStyledWord()
+        current = null
+    }
+
     private fun setStyle(style: String?) {
         activeStyle = style
         sarcasmCount = 0
+        resetStyledWord()
         keyboard?.setStyleIndicator(style?.let { Formatter.LABELS[it] })
     }
 

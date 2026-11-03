@@ -216,7 +216,7 @@ class SettingsActivity : Activity() {
         root.addView(switch("Zweimal ins selbe Wort tippen springt ans Wortende", prefs.tapWordEnd) { prefs.tapWordEnd = it })
         root.addView(switch("⌫ kurz tippen und sofort halten löscht bis zum Leerzeichen", prefs.chunkDelete) { prefs.chunkDelete = it })
         root.addView(info("Tempo beim Löschen (⌫ halten)"))
-        val speeds = listOf(280, 420, 630) // schnell, normal, langsam
+        val speeds = listOf(280, 420, 560) // schnell, normal, langsam
         val current = speeds.indexOfFirst { it >= prefs.deleteRepeatMs }.let { if (it < 0) 2 else it }
         root.addView(radio(listOf("Schnell", "Normal", "Langsam"), current) { prefs.deleteRepeatMs = speeds[it] })
         root.addView(switch("Leertaste gedrückt halten und ziehen bewegt den Cursor", prefs.spaceCursor) {

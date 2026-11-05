@@ -493,14 +493,16 @@ class SettingsActivity : Activity() {
             })
             // Emoticons (▲ ▼ ✎ ✕): schmale Knöpfe, ▲▼ eng, ✎ und ✕ mit gleichem Abstand
             val compact = actions.any { it.first == "▲" }
+            // Eigene Wörter, E-Mail-Adressen (✎ ✕): schmalere Knöpfe, ✎ und ✕ näher beieinander
+            val pair = !compact && actions.any { it.first == "✎" }
             for ((label, action) in actions) {
                 val btn = Button(this@SettingsActivity, null, android.R.attr.borderlessButtonStyle).apply {
                     this.text = label
                     isAllCaps = false
-                    if (compact) {
+                    if (compact || pair) {
                         minWidth = 0
                         minimumWidth = 0
-                        val pad = (8 * dp).toInt()
+                        val pad = ((if (pair) 14 else 8) * dp).toInt()
                         setPadding(pad, paddingTop, pad, paddingBottom)
                     }
                     setOnClickListener { action() }

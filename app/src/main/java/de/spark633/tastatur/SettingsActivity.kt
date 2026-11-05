@@ -516,6 +516,7 @@ class SettingsActivity : Activity() {
                     setOnClickListener { action() }
                 }
                 val lp = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                if (pair && label == "✕") lp.marginStart = (16 * dp).toInt() // ✎ und ✕ nicht zu dicht
                 if (compact) lp.marginStart = when (label) {
                     "▼" -> (8 * dp).toInt()   // ▲ ▼ etwas auseinander (1–2 mm)
                     "✎", "✕" -> (22 * dp).toInt() // gleicher Abstand vor ✎ und vor ✕

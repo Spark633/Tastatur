@@ -117,6 +117,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     // Größen-Modus
     private var resizing = false
+    private var resizeAskedAt = 0L
     private var resizeStartRaw = 0f
     private var resizeStartHeight = 0f
 
@@ -341,10 +342,15 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     /** Android-Zurück: aus Menüs und Unterseiten zurück zu den Buchstaben. true = erledigt. */
     fun handleBack(): Boolean {
         if (resizing) {
+            val now = SystemClock.uptimeMillis()
             if (confirmText != null) {
-                clearConfirm()
-                cancelResize() // zweimal Zurück = verwerfen
+                // Doppelt gemeldetes Zurück direkt nach der Frage nicht als „verwerfen“ werten
+                if (now - resizeAskedAt > 600) {
+                    clearConfirm()
+                    cancelResize() // zweimal Zurück = verwerfen
+                }
             } else {
+                resizeAskedAt = now
                 askConfirm("Größe speichern?", yes = { finishResize() }, yesLabel = "Speichern", no = { cancelResize() })
             }
             return true

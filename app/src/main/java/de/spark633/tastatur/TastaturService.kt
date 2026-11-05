@@ -244,6 +244,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     private var backConsumed = false
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        // Gehaltene Zurück-Taste/-Geste meldet sich mehrfach: nur das erste Drücken zählt
+        if (keyCode == KeyEvent.KEYCODE_BACK && event.repeatCount > 0 && backConsumed) return true
         if (keyCode == KeyEvent.KEYCODE_BACK && isInputViewShown && keyboard?.handleBack() == true) {
             backConsumed = true
             return true

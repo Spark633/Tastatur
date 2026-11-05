@@ -63,3 +63,5 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Emoticons: Option „am häufigsten benutzte zuerst“ (bis zu 12, Standard aus; gezählt wird immer)
 - Keine eigene Zahlenreihe (als Option ausprobiert, nicht gewollt); Zahlen per Wischen nach oben auf der obersten Reihe
 - Adress-/Suchleiste im Browser: Vorschläge ja, Autokorrektur nein
+- Symbolseite 2: × vorne, ~ an der alten Stelle von ×
+- Markierter Text, der ersetzt wird (Tippen, Einfügen aus der Tastatur oder über das Menü der App, Ausschneiden), lässt sich mit ↶ wiederherstellen; dabei wird das Eingefügte wieder entfernt

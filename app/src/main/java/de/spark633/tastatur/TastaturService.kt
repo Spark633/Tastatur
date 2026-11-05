@@ -194,6 +194,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     override fun onPasteImage(name: String) {
         own()
+        captureReplacedSelection()
         if (name == recentClipImage) recentClipImage = null
         pasteImage(name)
     }
@@ -325,10 +326,46 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         candidatesStart: Int, candidatesEnd: Int,
     ) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
+        trackExternalReplace(newSelStart, newSelEnd)
         handleWordTap(newSelStart, newSelEnd)
         updateAutoCaps()
         updateSuggestions()
     }
+
+    // --- Markierten Text, den die App ersetzt (Einfügen/Ausschneiden im Menü), wiederherstellbar machen ---
+
+    /** Letzte Markierung: Anfang, Text, Text davor (Anker). */
+    private var lastSelection: Triple<Int, String, String>? = null
+
+    private fun trackExternalReplace(start: Int, end: Int) {
+        val ic = currentInputConnection ?: return
+        if (start != end) {
+            val sel = ic.getSelectedText(0)?.toString()
+            lastSelection = if (sel.isNullOrEmpty() || sel.length > 5000) null
+            else Triple(minOf(start, end), sel, ic.getTextBeforeCursor(40, 0)?.toString().orEmpty())
+            return
+        }
+        val prev = lastSelection ?: return
+        lastSelection = null
+        // Über die Tastatur ersetzt/gelöscht: schon erfasst
+        if (SystemClock.uptimeMillis() - lastOwnInput < 600) return
+        val et = ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0) ?: return
+        val text = et.text ?: return
+        val (selStart, selText, anchor) = prev
+        val i = selStart - et.startOffset
+        val unchanged = i >= 0 && i + selText.length <= text.length &&
+            text.subSequence(i, i + selText.length).toString() == selText
+        if (unchanged) return // nur Markierung aufgehoben
+        clearDeleted()
+        rememberDeleted(selText)
+        replaceMode = true
+        replaceAnchor = anchor
+        val j = start - et.startOffset
+        replaceInserted = if (i in 0..j && j <= text.length) text.subSequence(i, j).toString() else ""
+    }
+
+    /** Von der App eingefügter Text (beim Wiederherstellen nur genau den entfernen). */
+    private var replaceInserted = ""
 
     // --- Zweimal ins selbe Wort tippen → Cursor ans Wortende ---
 
@@ -496,6 +533,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         deletedText.setLength(0)
         replaceMode = false
         replaceAnchor = ""
+        replaceInserted = ""
         wordsSinceDelete = 0
     }
 
@@ -533,6 +571,13 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             val start = if (replaceAnchor.isEmpty()) 0
             else before.lastIndexOf(replaceAnchor).let { if (it >= 0) it + replaceAnchor.length else -1 }
             if (start >= 0 && before.length - start in 1..300) ic.deleteSurroundingText(before.length - start, 0)
+            else if (replaceInserted.length > 300) {
+                // Langer eingefügter Text: nur entfernen, wenn er noch genau vor dem Cursor steht
+                val far = ic.getTextBeforeCursor(replaceInserted.length + replaceAnchor.length, 0)?.toString().orEmpty()
+                if (far == replaceAnchor + replaceInserted || (replaceAnchor.isEmpty() && far == replaceInserted)) {
+                    ic.deleteSurroundingText(replaceInserted.length, 0)
+                }
+            }
         }
         ic.commitText(text, 1)
         ic.endBatchEdit()
@@ -880,7 +925,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     override fun onRestore() {
         own()
         if (!restoreAvailable()) return updateSuggestions()
-        keyboard?.askConfirm("Gelöschten Text wiederherstellen?", yes = {
+        keyboard?.askConfirm(if (replaceMode) "Ersetzten Text wiederherstellen?" else "Gelöschten Text wiederherstellen?", yes = {
             if (restoreAvailable()) restoreDeleted()
             updateSuggestions()
         }, yesLabel = "Wiederherstellen", no = {

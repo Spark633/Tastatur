@@ -623,7 +623,7 @@ class SettingsActivity : Activity() {
         root.addView(header("Größe"))
         root.addView(info(
             "Öffnet die Tastatur im Größen-Modus: nach oben/unten ziehen ändert die Tastenhöhe, " +
-                "„Abstand“ verschiebt die Tasten über die Systemknöpfe. Mit „Fertig“ speichern; bei Zurück wird gefragt (speichern oder verwerfen). " +
+                "„Abstand“ verschiebt die Tasten über die Systemknöpfe. " +
                 "Geht auch direkt über das Zahnrad in der Tastatur."
         ))
         root.addView(button("Größe anpassen") {

@@ -320,6 +320,10 @@ class Prefs(context: Context) {
 
     fun forgetImageSettings(name: String) = imageSp.edit().remove(name).apply()
 
+    /** Gespeicherte Werte eines Bildes (für Sicherungen). */
+    fun imageSettingsRaw(name: String): String? = imageSp.getString(name, null)
+    fun setImageSettingsRaw(name: String, raw: String) = imageSp.edit().putString(name, raw).apply()
+
     /** Dateiname des aktiven Hintergrundbilds im Verlauf ("" = keins). */
     var bgFile: String
         get() = sp.getString("bg_file", "") ?: ""

@@ -69,4 +69,5 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Zahnrad-Menü: „Allgemein“ gedrückt halten öffnet die Hauptseite der Einstellungen
 - Aussehen: immer erst mit Speichern übernehmen (kein Schalter) für Farbschema, Abdunkeln, Zoom, Ausschnitt, Tastenfarbe, Schriftfarbe, Deckkraft, Eckenrundung, Schriftgröße (nicht: kleine Zeichen); Leiste unter der Vorschau (Speichern/Verwerfen); Rückfrage bei Zurück und Bildwechsel; App verlassen ohne Speichern = verwerfen
 - Größen-Modus: „Fertig“ speichert; Zurück fragt in der Leiste (Speichern / ✕ verwerfen / daneben tippen = weiter bearbeiten, zweimal Zurück = verwerfen); Schließen der Tastatur verwirft
-- Sicherung: zusätzlich „Nur das Design“ als eigene Datei (Farbschema, Tastenfarben, Deckkraft, Eckenrundung, Schriftgröße, kleine Zeichen, Größe, aktuelles Bild mit Abdunkeln/Zoom/Ausschnitt); Laden ändert nur das Design
+- Sicherung: zusätzlich „Nur das Design“ als eigene Datei (Farbschema, Tastenfarben, Deckkraft, Eckenrundung, Schriftgröße, kleine Zeichen, Größe, Bilder); Laden ändert nur das Design
+- Sicherungen (alles und Design): vor dem Speichern Bilder auswählen (Vorschaubilder antippen, anfangs alle); jedes Bild mit seinen eigenen Werten; alte Namen bleiben, damit Profile weiter passen

@@ -1014,17 +1014,19 @@ class SettingsActivity : Activity() {
         root.addView(header("Sicherung als Datei"))
         root.addView(info(
             "Für ein neues Handy oder eine Neuinstallation: Einstellungen, Profile, eigene und gelernte Wörter, " +
-                "gelernte Vorhersagen, Emoticons und das aktuelle Hintergrundbild in einer Datei, z. B. in Google Drive. " +
+                "gelernte Vorhersagen, Emoticons und die gewählten Hintergrundbilder in einer Datei, z. B. in Google Drive. " +
                 "Der Zwischenablage-Verlauf wird aus Datenschutzgründen nicht gesichert."
         ))
         backupStatus = info("")
         root.addView(backupStatus)
         root.addView(button("Sicherung speichern …") {
-            startActivityForResult(
-                Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-                    .setType("application/json").putExtra(Intent.EXTRA_TITLE, "tastatur-sicherung.json"),
-                REQ_EXPORT
-            )
+            chooseImages {
+                startActivityForResult(
+                    Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                        .setType("application/json").putExtra(Intent.EXTRA_TITLE, "tastatur-sicherung.json"),
+                    REQ_EXPORT
+                )
+            }
         })
         root.addView(button("Sicherung laden …") {
             startActivityForResult(
@@ -1036,15 +1038,17 @@ class SettingsActivity : Activity() {
         root.addView(header("Nur das Design"))
         root.addView(info(
             "Speichert nur das Aussehen: Farbschema, Tastenfarben, Deckkraft, Eckenrundung, Schriftgröße, " +
-                "Größe sowie das aktuelle Hintergrundbild mit Abdunkeln, Zoom und Ausschnitt. " +
+                "Größe sowie die gewählten Hintergrundbilder mit Abdunkeln, Zoom und Ausschnitt. " +
                 "Beim Laden bleiben alle anderen Einstellungen, wie sie sind."
         ))
         root.addView(button("Design speichern …") {
-            startActivityForResult(
-                Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-                    .setType("application/json").putExtra(Intent.EXTRA_TITLE, "tastatur-design.json"),
-                REQ_EXPORT_DESIGN
-            )
+            chooseImages {
+                startActivityForResult(
+                    Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                        .setType("application/json").putExtra(Intent.EXTRA_TITLE, "tastatur-design.json"),
+                    REQ_EXPORT_DESIGN
+                )
+            }
         })
         root.addView(button("Design laden …") {
             startActivityForResult(
@@ -1054,11 +1058,67 @@ class SettingsActivity : Activity() {
         })
     }
 
+    /** Für die nächste Sicherung gewählte Bilder. */
+    private var exportImages: List<String> = emptyList()
+
+    /** Vor dem Speichern: welche Hintergrundbilder sollen mit (antippen = an/aus, anfangs alle). */
+    private fun chooseImages(then: () -> Unit) {
+        val names = Background.history(this)
+        if (names.isEmpty()) {
+            exportImages = emptyList()
+            return then()
+        }
+        val chosen = LinkedHashSet(names)
+        val w = (96 * dp).toInt()
+        val h = (64 * dp).toInt()
+        val pad = (4 * dp).toInt()
+        val teal = android.graphics.Color.rgb(0x4D, 0xB6, 0xAC)
+        val count = TextView(this).apply { textSize = 14f }
+        fun showCount() { count.text = "${chosen.size} von ${names.size} Bildern ausgewählt" }
+        showCount()
+        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        for (name in names) {
+            row.addView(android.widget.ImageView(this).apply {
+                scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                setImageBitmap(Background.thumbnail(this@SettingsActivity, name, w))
+                setPadding(pad, pad, pad, pad)
+                fun mark() {
+                    setBackgroundColor(if (name in chosen) teal else android.graphics.Color.TRANSPARENT)
+                    alpha = if (name in chosen) 1f else 0.4f
+                }
+                mark()
+                layoutParams = LinearLayout.LayoutParams(w, h).apply { setMargins(0, 0, (8 * dp).toInt(), 0) }
+                setOnClickListener {
+                    if (!chosen.remove(name)) chosen.add(name)
+                    mark()
+                    showCount()
+                }
+            })
+        }
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val p = (20 * dp).toInt()
+            setPadding(p, p / 2, p, 0)
+            addView(info("Antippen wählt ein Bild ab oder wieder an."))
+            addView(android.widget.HorizontalScrollView(this@SettingsActivity).apply { addView(row) })
+            addView(count)
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Welche Hintergrundbilder sichern?")
+            .setView(content)
+            .setPositiveButton("Weiter") { _, _ ->
+                exportImages = names.filter { it in chosen }
+                then()
+            }
+            .setNegativeButton("Abbrechen", null)
+            .show()
+    }
+
     private fun exportDesign(uri: android.net.Uri) {
         backupStatus?.text = "Design wird gespeichert …"
         Thread {
             val ok = try {
-                val json = Backup.createDesign(this)
+                val json = Backup.createDesign(this, exportImages)
                 contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray()) } != null
             } catch (_: Exception) { false }
             runOnUiThread { backupStatus?.text = if (ok) "✅ Design gespeichert." else "❌ Speichern fehlgeschlagen." }
@@ -1105,7 +1165,7 @@ class SettingsActivity : Activity() {
         backupStatus?.text = "Wird gespeichert …"
         Thread {
             val ok = try {
-                val json = Backup.create(this)
+                val json = Backup.create(this, exportImages)
                 contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray()) } != null
             } catch (_: Exception) { false }
             runOnUiThread { backupStatus?.text = if (ok) "✅ Sicherung gespeichert." else "❌ Speichern fehlgeschlagen." }

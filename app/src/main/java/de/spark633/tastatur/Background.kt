@@ -80,6 +80,27 @@ object Background {
         false
     }
 
+    /**
+     * Bild aus einer Sicherung unter seinem alten Namen übernehmen (Profile zeigen weiter darauf).
+     * Gibt es den Namen schon mit anderem Inhalt, bekommt das Bild einen neuen Namen.
+     */
+    fun importNamed(context: Context, name: String, data: ByteArray): String {
+        var n = name
+        val f = file(context, n)
+        if (!Regex("bg_\\d+\\.jpg").matches(n) || (f.exists() && !f.readBytes().contentEquals(data))) {
+            var t = System.currentTimeMillis()
+            while (file(context, "bg_$t.jpg").exists()) t++
+            n = "bg_$t.jpg"
+        }
+        val out = file(context, n)
+        if (!out.exists()) out.writeBytes(data)
+        out.setLastModified(System.currentTimeMillis())
+        return n
+    }
+
+    /** Nach dem Laden einer Sicherung: Verlauf wieder auf [MAX_HISTORY] kürzen. */
+    fun trimHistory(context: Context) = trim(context)
+
     /** Bild aus einer Sicherung übernehmen (JPEG-Daten). */
     fun importBytes(context: Context, data: ByteArray): String {
         val name = "bg_${System.currentTimeMillis()}.jpg"

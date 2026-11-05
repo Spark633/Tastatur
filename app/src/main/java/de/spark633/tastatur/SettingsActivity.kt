@@ -366,8 +366,7 @@ class SettingsActivity : Activity() {
             prefs.rememberEmails = it
         })
         root.addView(info(
-            "Gemerkt wird eine Adresse, wenn du sie in ein E-Mail-Feld tippst (beim Verlassen des Feldes oder ↵). " +
-                "Lange auf eine vorgeschlagene Adresse drücken, um sie zu vergessen."
+            "Gemerkt wird eine Adresse, wenn du sie in ein E-Mail-Feld tippst (beim Verlassen des Feldes oder ↵)."
         ))
         val mailRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val mailInput = EditText(this).apply {

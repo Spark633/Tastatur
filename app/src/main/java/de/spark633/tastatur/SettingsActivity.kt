@@ -604,7 +604,7 @@ class SettingsActivity : Activity() {
     private fun buildDesign() {
         title = "Aussehen"
         preview = KeyboardPreview(this, prefs).also { it.locked = prefs.lockImage }
-        root.addView(info("Die Vorschau oben zeigt jede Änderung sofort. Bild darin ziehen = verschieben, mit zwei Fingern = zoomen."))
+        root.addView(info("Die Vorschau oben zeigt jede Änderung sofort."))
 
         root.addView(header("Farbschema"))
         val themes = Theme.ALL

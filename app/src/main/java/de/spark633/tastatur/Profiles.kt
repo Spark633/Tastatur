@@ -62,6 +62,47 @@ object Backup {
         return o.toString()
     }
 
+    /** Einstellungen, die zum Aussehen der Tastatur gehören (Design-Sicherung). */
+    private val DESIGN_KEYS = listOf(
+        "theme", "key_color", "key_text_color", "key_opacity", "corner_radius", "text_scale", "show_hints",
+        "bg_dim", "bg_zoom", "bg_position", "bg_position_x", "row_height", "bottom_padding",
+    )
+
+    /** Nur das Design: Farben, Tasten, Größe und das aktuelle Hintergrundbild. */
+    fun createDesign(context: Context): String {
+        val all = Prefs(context).snapshot()
+        val design = JSONObject()
+        for (k in DESIGN_KEYS) all.optJSONObject(k)?.let { design.put(k, it) }
+        val o = JSONObject()
+        o.put("format", "tastatur-design")
+        o.put("version", 1)
+        o.put("design", design)
+        Background.current(context)?.let {
+            o.put("bild", Base64.encodeToString(it.readBytes(), Base64.NO_WRAP))
+        }
+        return o.toString()
+    }
+
+    /** Design übernehmen; alle anderen Einstellungen bleiben, wie sie sind. true = übernommen. */
+    fun restoreDesign(context: Context, json: String): Boolean = try {
+        val o = JSONObject(json)
+        require(o.optString("format") == "tastatur-design")
+        val design = o.getJSONObject("design")
+        val prefs = Prefs(context)
+        if (o.has("bild")) {
+            val name = Background.importBytes(context, Base64.decode(o.getString("bild"), Base64.NO_WRAP))
+            Background.select(context, name)
+        } else {
+            Background.remove(context)
+        }
+        prefs.applyValues(design) // nach dem Bild, damit seine Werte gelten
+        prefs.rememberImageSettings()
+        prefs.bgVersion = System.currentTimeMillis().takeIf { o.has("bild") } ?: 0L
+        true
+    } catch (_: Exception) {
+        false
+    }
+
     /** true = Sicherung übernommen. */
     fun restore(context: Context, json: String): Boolean = try {
         val o = JSONObject(json)

@@ -867,6 +867,8 @@ class SettingsActivity : Activity() {
         if (resultCode != RESULT_OK || uri == null) return
         if (requestCode == REQ_EXPORT) return exportBackup(uri)
         if (requestCode == REQ_IMPORT) return importBackup(uri)
+        if (requestCode == REQ_EXPORT_DESIGN) return exportDesign(uri)
+        if (requestCode == REQ_IMPORT_DESIGN) return importDesign(uri)
         if (requestCode != REQ_IMAGE) return
         bgStatus?.text = "Bild wird übernommen …"
         Thread {
@@ -1030,6 +1032,50 @@ class SettingsActivity : Activity() {
                 REQ_IMPORT
             )
         })
+
+        root.addView(header("Nur das Design"))
+        root.addView(info(
+            "Speichert nur das Aussehen: Farbschema, Tastenfarben, Deckkraft, Eckenrundung, Schriftgröße, " +
+                "Größe sowie das aktuelle Hintergrundbild mit Abdunkeln, Zoom und Ausschnitt. " +
+                "Beim Laden bleiben alle anderen Einstellungen, wie sie sind."
+        ))
+        root.addView(button("Design speichern …") {
+            startActivityForResult(
+                Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
+                    .setType("application/json").putExtra(Intent.EXTRA_TITLE, "tastatur-design.json"),
+                REQ_EXPORT_DESIGN
+            )
+        })
+        root.addView(button("Design laden …") {
+            startActivityForResult(
+                Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"),
+                REQ_IMPORT_DESIGN
+            )
+        })
+    }
+
+    private fun exportDesign(uri: android.net.Uri) {
+        backupStatus?.text = "Design wird gespeichert …"
+        Thread {
+            val ok = try {
+                val json = Backup.createDesign(this)
+                contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray()) } != null
+            } catch (_: Exception) { false }
+            runOnUiThread { backupStatus?.text = if (ok) "✅ Design gespeichert." else "❌ Speichern fehlgeschlagen." }
+        }.start()
+    }
+
+    private fun importDesign(uri: android.net.Uri) {
+        backupStatus?.text = "Design wird geladen …"
+        Thread {
+            val ok = try {
+                val json = contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
+                json != null && Backup.restoreDesign(this, json)
+            } catch (_: Exception) { false }
+            runOnUiThread {
+                backupStatus?.text = if (ok) "✅ Design geladen." else "❌ Das ist keine gültige Design-Datei."
+            }
+        }.start()
     }
 
     private fun renderProfiles() {
@@ -1277,5 +1323,7 @@ class SettingsActivity : Activity() {
         private const val GROUP_KEYS = "tasten"
         private const val REQ_EXPORT = 42
         private const val REQ_IMPORT = 43
+        private const val REQ_EXPORT_DESIGN = 44
+        private const val REQ_IMPORT_DESIGN = 45
     }
 }

@@ -1448,6 +1448,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         // Mehrfach Shift (Wort → WORT → wort): rückgängig führt immer zum Ausgangswort
         val start = lastWordShift?.takeIf { it.second == word }?.first ?: word
         lastWordShift = start to changed
+        updateSuggestions() // Leiste zeigt das umgewandelte Wort, Antippen passt wieder
         return true
     }
 
@@ -1467,6 +1468,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         ic.commitText(original, 1)
         ic.endBatchEdit()
         current = null
+        updateSuggestions()
         return true
     }
 

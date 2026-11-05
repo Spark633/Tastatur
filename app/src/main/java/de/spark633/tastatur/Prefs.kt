@@ -344,6 +344,23 @@ class Prefs(context: Context) {
         return o
     }
 
+    /** Einzelne Werte im [snapshot]-Format übernehmen, ohne den Rest zu ändern. */
+    fun applyValues(o: org.json.JSONObject) {
+        val ed = sp.edit()
+        for (k in o.keys()) {
+            if (k in TRANSIENT) continue
+            val e = o.optJSONObject(k) ?: continue
+            when (e.optString("t")) {
+                "b" -> ed.putBoolean(k, e.getBoolean("v"))
+                "i" -> ed.putInt(k, e.getInt("v"))
+                "l" -> ed.putLong(k, e.getLong("v"))
+                "f" -> ed.putFloat(k, e.getDouble("v").toFloat())
+                "s" -> ed.putString(k, e.getString("v"))
+            }
+        }
+        ed.apply()
+    }
+
     /** Einstellungen aus [snapshot] übernehmen; alles andere wird zurückgesetzt. */
     fun restore(o: org.json.JSONObject) {
         val ed = sp.edit()

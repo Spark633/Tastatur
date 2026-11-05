@@ -1254,6 +1254,11 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 val i = rects.indexOfFirst { it.contains(t.lastX, t.lastY) }
                 if (i >= 0 && rects[i].contains(t.x0, t.y0) && slots.getOrNull(i)?.isNotEmpty() == true) {
                     listener.onKeyFeedback()
+                    // Nach Shift aufs Wort: Shift gilt nicht für das nächste Wort
+                    if (shiftAppliedToWord) {
+                        shiftAppliedToWord = false
+                        if (shift == Shift.ON) shift = Shift.OFF
+                    }
                     listener.onSuggestion(i)
                 }
             }

@@ -10,7 +10,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - ß bleibt bei Shift ß (nicht SS), mit Feststelltaste ẞ
 - Shift wirkt nur am Wortende aufs Wort (1× Wort, Feststelltaste WORT, aus wort); mitten im Wort und am Wortanfang wie gewohnt (nächster Buchstabe groß); ist das Wort schon groß angefangen (Baron, BaronDer), macht 1× Shift den nächsten Buchstaben groß → BaronDerNacht; nach Shift aufs Wort direkt weitertippen nimmt die Umwandlung zurück und schreibt den Buchstaben groß (baron ⇧ D → baronD); ⌫ direkt nach Shift aufs Wort nimmt nur die Umwandlung zurück
 - Shift bei markiertem Text: Erster Groß → ALLES GROSS → alles klein, Markierung bleibt
-- Punkt-Taste: hoch !, runter ?, lange drücken ! , . ?; Komma: kein !, runter wischen und lange drücken ;; untere Reihe: 123 so breit wie ⇧ (nicht schmaler machen)
+- Punkt-Taste: hoch ?, runter !, lange drücken ? , . !; Komma: kein !, runter wischen und lange drücken ;; untere Reihe: 123 so breit wie ⇧ (nicht schmaler machen)
 - Symbolseite 1: ( ) mit [ { < bzw. ] } >, ' mit ‹ ›, + mit ±, * mit • × † ‡ ⸸ (Fußnotenzeichen beim *, nicht beim ✓)
 - Symbolseite 2: `© ✓ [ ] { } < > ^ °` in der Mitte, `= \` unten; ° nicht auf Seite 1; < > mit ≤ ≥
 - Seitlich ziehen öffnet die Auswahl sofort, aber nur bei Symbolen/Satzzeichen, nicht bei Buchstaben

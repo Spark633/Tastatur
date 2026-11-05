@@ -70,7 +70,7 @@ object Layouts {
         Key("^.^", Action.TO_EMOTICONS),
         Key(",", down = ";", longPress = listOf(";")),
         Key(" ", Action.SPACE, width = 4f),
-        Key(".", up = "!", down = "?", longPress = listOf("!", ",", ".", "?")),
+        Key(".", up = "?", down = "!", longPress = listOf("?", ",", ".", "!")),
         Key("↵", Action.ENTER, width = 1.5f),
     )
 

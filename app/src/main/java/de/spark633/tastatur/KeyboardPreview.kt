@@ -137,7 +137,7 @@ class KeyboardPreview(context: Context, private val prefs: Prefs) : View(context
         key(1.5f * unit, y, 1f, "^.^", true, null, null)
         key(2.5f * unit, y, 1f, ",", false, null, ";")
         key(3.5f * unit, y, 4f, "Deutsch", false, null, null)
-        key(7.5f * unit, y, 1f, ".", false, "!", "?")
+        key(7.5f * unit, y, 1f, ".", false, "?", "!")
         key(8.5f * unit, y, 1.5f, "↵", true, null, null)
 
         if (bitmap != null) {

@@ -105,7 +105,7 @@ object Layouts {
         "+" to listOf("±"),
         "(" to listOf("[", "{", "<"),
         ")" to listOf("]", "}", ">"),
-        "✓" to listOf("✔", "✗", "✘"),
+        "✓" to listOf("✗", "✔", "✘"),
         "/" to listOf("÷", "\\"),
         "%" to listOf("‰"),
         "=" to listOf("≠", "≈"),

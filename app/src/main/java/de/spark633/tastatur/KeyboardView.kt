@@ -336,7 +336,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     /** Android-Zurück: aus Menüs und Unterseiten zurück zu den Buchstaben. true = erledigt. */
     fun handleBack(): Boolean {
         if (resizing) {
-            finishResize()
+            cancelResize() // nur „Fertig“ speichert
             return true
         }
         // Sonst schließt Zurück die Tastatur sofort, auch aus Menüs (beim nächsten Öffnen: Buchstaben)
@@ -345,6 +345,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     /** Beim Schließen: Unterseiten verlassen, damit beim nächsten Öffnen die Buchstaben kommen. */
     fun leaveSubPage() {
+        if (resizing) cancelResize()
         clearConfirm()
         if (mode != Mode.LETTERS && mode != Mode.NUMPAD) setMode(Mode.LETTERS)
     }
@@ -383,6 +384,18 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             it.bottomPaddingDp = (bottomPad / dp).toInt()
         }
         showMessage("Größe gespeichert")
+    }
+
+    /** Größen-Modus ohne „Fertig“ verlassen: alte Größe zurück. */
+    private fun cancelResize() {
+        resizing = false
+        prefs?.let {
+            rowHeight = it.rowHeightDp * dp
+            bottomPad = it.bottomPaddingDp * dp
+        }
+        requestLayout()
+        layoutKeys()
+        showMessage("Größe nicht gespeichert")
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {

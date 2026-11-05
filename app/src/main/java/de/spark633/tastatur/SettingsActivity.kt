@@ -626,7 +626,7 @@ class SettingsActivity : Activity() {
         root.addView(header("Größe"))
         root.addView(info(
             "Öffnet die Tastatur im Größen-Modus: nach oben/unten ziehen ändert die Tastenhöhe, " +
-                "„Abstand“ verschiebt die Tasten über die Systemknöpfe. Mit „Fertig“ speichern. " +
+                "„Abstand“ verschiebt die Tasten über die Systemknöpfe. Nur „Fertig“ speichert, Zurück verwirft. " +
                 "Geht auch direkt über das Zahnrad in der Tastatur."
         ))
         root.addView(button("Größe anpassen") {
@@ -741,7 +741,7 @@ class SettingsActivity : Activity() {
     private fun imageValues(): List<Any> = listOf(
         prefs.bgDim, prefs.bgZoom, prefs.bgPositionX, prefs.bgPosition,
         prefs.keyColor, prefs.keyTextColor, prefs.keyOpacity,
-        prefs.theme, prefs.cornerRadiusDp, prefs.textScale, prefs.showHints,
+        prefs.theme, prefs.cornerRadiusDp, prefs.textScale,
     )
 
     private val draftDirty: Boolean get() = draftSaved?.let { it != imageValues() } ?: false
@@ -764,7 +764,6 @@ class SettingsActivity : Activity() {
         prefs.theme = s[7] as String
         prefs.cornerRadiusDp = s[8] as Int
         prefs.textScale = s[9] as Int
-        prefs.showHints = s[10] as Boolean
         updateDraftBar()
     }
 

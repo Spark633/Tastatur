@@ -66,3 +66,4 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Symbolseite 2: × vorne, ~ an der alten Stelle von ×
 - Markierter Text, der ersetzt wird (Tippen, Einfügen aus der Tastatur oder über das Menü der App, Ausschneiden), lässt sich mit ↶ wiederherstellen; dabei wird das Eingefügte wieder entfernt
 - E-Mail-Felder: getippte Adressen werden gemerkt (beim Verlassen des Feldes oder ↵, bis zu 30) und passend zum Getippten vorgeschlagen; lange drücken = vergessen; abschaltbar, Liste unter Wörterbuch. Frisch Kopiertes (📋) hat dort nur Vorrang, wenn es ein @ enthält
+- Zahnrad-Menü: „Allgemein“ gedrückt halten öffnet die Hauptseite der Einstellungen

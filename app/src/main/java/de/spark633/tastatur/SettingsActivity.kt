@@ -44,7 +44,7 @@ class SettingsActivity : Activity() {
             setPadding(p, p, p, p * 3)
         }
         val section = intent.getStringExtra(EXTRA_SECTION)
-        actionBar?.setDisplayHomeAsUpEnabled(section != null) // ← zurück zu den Haupteinstellungen
+        actionBar?.setDisplayHomeAsUpEnabled(section != null && section != "main") // ← zurück zu den Haupteinstellungen
         when (section) {
             "general" -> buildGeneral()
             "languages" -> buildLanguages()

@@ -956,6 +956,14 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         var dragging = false
         var scrollStart = 0f
         val longPress = Runnable { startPopup(this) }
+        /** „Allgemein“ im Zahnrad-Menü gedrückt halten: Hauptseite der Einstellungen. */
+        var menuHeld = false
+        val menuHold = Runnable {
+            menuHeld = true
+            listener.onKeyFeedback()
+            setMode(Mode.LETTERS)
+            listener.onMenu("main")
+        }
         var chunkDelete = false
         /** ⌫ hat nur die Shift-Umwandlung des Wortes zurückgenommen. */
         var shiftUndone = false
@@ -1031,6 +1039,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 postDelayed(t.repeat, if (t.chunkDelete) 250 else 400)
             }
             Action.CHAR -> if (k.longPress.isNotEmpty()) postDelayed(t.longPress, 320)
+            Action.MENU -> if (k.text == "general") postDelayed(t.menuHold, 450)
             Action.SPACE -> if (spaceCursor && mode != Mode.EMOTICONS && mode != Mode.FORMAT) postDelayed(t.longPress, 350)
             else -> {}
         }
@@ -1147,6 +1156,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private fun cancelTimers(t: Touch) {
         removeCallbacks(t.longPress)
         removeCallbacks(t.repeat)
+        removeCallbacks(t.menuHold)
     }
 
     /** Schließt eine Berührung ab und löst die passende Aktion aus. */
@@ -1258,7 +1268,9 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 }
             }
             Action.CLIP_CLEAR -> clipClear()
-            Action.MENU -> if (k.text == "format") {
+            Action.MENU -> if (t.menuHeld) {
+                // schon beim Halten geöffnet
+            } else if (k.text == "format") {
                 formatPage = 0
                 setMode(Mode.FORMAT)
             } else {

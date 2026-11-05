@@ -349,6 +349,17 @@ class Dictionary private constructor(
             "zt" to "z.T.",
             "va" to "v.a.",
             "uvm" to "u.v.m.",
+            "mmn" to "m.M.n.",
+            "bzw" to "bzw.",
+            "ggf" to "ggf.",
+            "usw" to "usw.",
+            "evtl" to "evtl.",
+            "bzgl" to "bzgl.",
+            "ca" to "ca.",
+            "inkl" to "inkl.",
+            "zzgl" to "zzgl.",
+            "nr" to "Nr.",
+            "etc" to "etc.",
         )
 
         /** Buchstabe ohne Akzent: ä → a, é → e, ß → s. */

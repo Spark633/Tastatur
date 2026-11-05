@@ -26,7 +26,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 **Korrektur**
 - Richtige Wörter werden nie geändert (konnte bleibt konnte)
 - Umlaut-Regel nur, wenn die Umlaut-Form deutlich häufiger ist (schon/schön, gedruckt/gedrückt bleiben)
-- Chat-Abkürzungen nicht korrigieren; Punkt-Abkürzungen zb → z.B., oä → o.Ä. (aber mfg nicht ausschreiben)
+- Chat-Abkürzungen nicht korrigieren; Punkt-Abkürzungen zb → z.B., oä → o.Ä., mmn → m.M.n., bzw/ggf/usw/evtl/bzgl/ca/inkl/zzgl/etc → mit Punkt, nr → Nr. (nach diesen kein Großschreiben; aber mfg nicht ausschreiben)
 - Eigene Wörter erst ab 5× Benutzen gelernt; abgelehnte Korrektur zählt nur einmal (nicht sofort lernen)
 - Schreibweise gelernter Wörter automatisch: Satzanfang zählt nicht, Nomen-Endungen (-ung, -heit …) groß, bewusst groß mitten im Satz bleibt groß, sonst klein
 - Zusammengeklebte Wörter trennen (machdas → mach das)

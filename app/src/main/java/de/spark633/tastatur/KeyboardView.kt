@@ -104,6 +104,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private var confirmNo: (() -> Unit)? = null
     private var confirmYesLabel = "Entfernen"
     private val confirmYesRect = RectF()
+    private val confirmXRect = RectF()
     private var lettersMode = Mode.LETTERS
 
     // Zwischenablage-Ansicht
@@ -313,7 +314,11 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         canvas.drawText(confirmYesLabel, confirmYesRect.centerX(), centerY(barTextPaint, confirmYesRect.centerY()), barTextPaint)
         val avail = confirmYesRect.left - 16 * dp
         val p = fitPaint(barTextPaint, "$text   ✕", avail)
-        canvas.drawText("$text   ✕", avail / 2f + 8 * dp, centerY(p, barHeight / 2f), p)
+        val cx = avail / 2f + 8 * dp
+        canvas.drawText("$text   ✕", cx, centerY(p, barHeight / 2f), p)
+        // Bereich des ✕ (für die Größen-Rückfrage: ✕ = verwerfen, daneben = weiter bearbeiten)
+        val end = cx + p.measureText("$text   ✕") / 2f
+        confirmXRect.set(end - p.measureText("✕") - 14 * dp, 0f, end + 14 * dp, barHeight)
     }
 
     /** Aktiver Schreibstil, wird in der Leiste angezeigt (antippen beendet ihn). */
@@ -1003,14 +1008,18 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(e: MotionEvent): Boolean {
         if (resizing) {
-            // Rückfrage beim Verlassen: nur die Leiste reagiert (Speichern oder ✕ = verwerfen)
+            // Rückfrage beim Verlassen: Speichern, ✕ = verwerfen, sonst irgendwo = weiter bearbeiten
             if (confirmText != null) {
-                if (e.actionMasked == MotionEvent.ACTION_UP && e.y < barHeight) {
-                    val yes = confirmYesRect.contains(e.x, e.y)
+                if (e.actionMasked == MotionEvent.ACTION_UP) {
                     val action = confirmAction
                     val no = confirmNo
+                    val inBar = e.y < barHeight
                     clearConfirm()
-                    if (yes) action?.invoke() else no?.invoke()
+                    when {
+                        inBar && confirmYesRect.contains(e.x, e.y) -> action?.invoke()
+                        inBar && confirmXRect.contains(e.x, e.y) -> no?.invoke()
+                        else -> invalidate()
+                    }
                 }
                 return true
             }

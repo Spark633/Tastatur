@@ -360,6 +360,31 @@ class SettingsActivity : Activity() {
         blockedList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(blockedList)
         renderWords()
+
+        root.addView(header("E-Mail-Adressen"))
+        root.addView(switch("In E-Mail-Feldern getippte Adressen merken und vorschlagen", prefs.rememberEmails) {
+            prefs.rememberEmails = it
+        })
+        root.addView(info("Lange auf eine vorgeschlagene Adresse drücken, um sie zu vergessen."))
+        emailList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(emailList)
+        renderEmails()
+    }
+
+    private lateinit var emailList: LinearLayout
+
+    private fun renderEmails() {
+        emailList.removeAllViews()
+        val mails = prefs.savedEmails
+        if (mails.isEmpty()) emailList.addView(info("Noch keine Adressen gemerkt."))
+        for (e in mails) {
+            emailList.addView(listRow(e, "✕" to {
+                confirmDelete("„$e“ vergessen?") {
+                    prefs.forgetEmail(e)
+                    renderEmails()
+                }
+            }))
+        }
     }
 
     private fun renderWords() {

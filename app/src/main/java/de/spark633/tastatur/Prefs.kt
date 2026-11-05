@@ -120,6 +120,29 @@ class Prefs(context: Context) {
 
     fun resetEmoticons() = sp.edit().remove("emoticons").apply()
 
+    /** In E-Mail-Feldern getippte Adressen merken und vorschlagen. */
+    var rememberEmails: Boolean
+        get() = sp.getBoolean("remember_emails", true)
+        set(v) = sp.edit().putBoolean("remember_emails", v).apply()
+
+    /** Gemerkte E-Mail-Adressen, zuletzt benutzte zuerst. */
+    var savedEmails: List<String>
+        get() = try {
+            val arr = org.json.JSONArray(sp.getString("saved_emails", "[]"))
+            (0 until arr.length()).map { arr.getString(it) }
+        } catch (_: Exception) {
+            emptyList()
+        }
+        set(v) = sp.edit().putString("saved_emails", org.json.JSONArray(v.take(30)).toString()).apply()
+
+    fun noteEmail(e: String) {
+        savedEmails = listOf(e) + savedEmails.filter { !it.equals(e, ignoreCase = true) }
+    }
+
+    fun forgetEmail(e: String) {
+        savedEmails = savedEmails.filter { !it.equals(e, ignoreCase = true) }
+    }
+
     /** Am häufigsten benutzte Emoticons zuerst zeigen. */
     var emoticonsFrequentFirst: Boolean
         get() = sp.getBoolean("emoticons_frequent_first", false)

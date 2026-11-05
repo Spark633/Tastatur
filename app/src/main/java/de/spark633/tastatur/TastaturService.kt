@@ -64,6 +64,9 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     private var recentClipTime = 0L
     private var clipShown = false
     private var isPasswordField = false
+    private var isEmailField = false
+    /** In der Leiste stehen gemerkte E-Mail-Adressen. */
+    private var emailShown: List<String> = emptyList()
 
     /** Leerzeichen kam automatisch nach einem angetippten Vorschlag (Satzzeichen rückt dann ans Wort). */
     private var suggestionSpace = false
@@ -276,6 +279,10 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             }
         }
 
+        isEmailField = cls == InputType.TYPE_CLASS_TEXT && variation in setOf(
+            InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
+            InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS,
+        )
         isPasswordField = (cls == InputType.TYPE_CLASS_TEXT && variation in setOf(
             InputType.TYPE_TEXT_VARIATION_PASSWORD,
             InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD,
@@ -312,6 +319,44 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             prefs.resizeRequest = false
             v.startResize()
         }
+    }
+
+    override fun onFinishInput() {
+        saveEmail()
+        super.onFinishInput()
+    }
+
+    // --- E-Mail-Adressen ---
+
+    private val EMAIL = Regex("[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}")
+
+    /** Adresse im E-Mail-Feld merken (beim Verlassen des Feldes oder ↵). */
+    private fun saveEmail() {
+        if (!isEmailField || !prefs.rememberEmails) return
+        val ic = currentInputConnection ?: return
+        val text = ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(), 0)?.text?.toString()?.trim()
+            ?: return
+        if (text.length <= 100 && EMAIL.matches(text)) prefs.noteEmail(text)
+    }
+
+    /** Passende gemerkte Adressen zum Getippten (Text seit dem letzten Leerzeichen/Komma). */
+    private fun emailMatches(): List<String> {
+        if (!isEmailField || !prefs.rememberEmails) return emptyList()
+        val before = currentInputConnection?.getTextBeforeCursor(100, 0)?.toString() ?: return emptyList()
+        val typed = before.takeLastWhile { !it.isWhitespace() && it != ',' && it != ';' }
+        return prefs.savedEmails.filter { it.startsWith(typed, ignoreCase = true) && !it.equals(typed, ignoreCase = true) }
+            .take(3)
+    }
+
+    private fun insertEmail(e: String) {
+        val ic = currentInputConnection ?: return
+        val before = ic.getTextBeforeCursor(100, 0)?.toString().orEmpty()
+        val typed = before.takeLastWhile { !it.isWhitespace() && it != ',' && it != ';' }
+        ic.beginBatchEdit()
+        ic.deleteSurroundingText(typed.length, 0)
+        ic.commitText(e, 1)
+        ic.endBatchEdit()
+        prefs.noteEmail(e)
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
@@ -662,6 +707,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val v = keyboard ?: return
         val d = dict
         clipShown = false
+        emailShown = emptyList()
         v.setRestoreVisible(restoreAvailable()) // ↶ neben den Vorschlägen, Vorschläge laufen weiter
         // Gerade etwas kopiert: nur in leerem Feld oder am Anfang einer neuen Zeile anbieten
         clipOffer()?.let { label ->
@@ -672,6 +718,15 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
                 v.setSuggestions(listOf("", label, ""))
                 return
             }
+        }
+        // E-Mail-Feld: gemerkte Adressen vorschlagen (wichtigste in der Mitte)
+        val mails = emailMatches()
+        if (mails.isNotEmpty()) {
+            current = null
+            suggestSeq++
+            emailShown = mails
+            v.setSuggestions(listOf(mails.getOrElse(1) { "" }, mails[0], mails.getOrElse(2) { "" }))
+            return
         }
         val styled = activeStyle != null
         val word = when {
@@ -878,6 +933,11 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             current = null
             return
         }
+        if (emailShown.isNotEmpty()) {
+            val e = when (index) { 1 -> emailShown.getOrNull(0); 0 -> emailShown.getOrNull(1); else -> emailShown.getOrNull(2) }
+            if (e != null) insertEmail(e)
+            return
+        }
         if (clipShown) {
             if (index == 1) {
                 val img = recentClipImage
@@ -936,6 +996,16 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     override fun onSuggestionLongPress(index: Int) {
+        if (emailShown.isNotEmpty()) {
+            val e = when (index) { 1 -> emailShown.getOrNull(0); 0 -> emailShown.getOrNull(1); else -> emailShown.getOrNull(2) }
+                ?: return
+            keyboard?.askConfirm("„$e“ vergessen?", yes = {
+                prefs.forgetEmail(e)
+                keyboard?.showMessage("Vergessen")
+                updateSuggestions()
+            }, yesLabel = "Vergessen", no = { updateSuggestions() })
+            return
+        }
         if (clipShown) {
             recentClip = null
             recentClipImage = null
@@ -1044,6 +1114,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     override fun onEnter() {
         own()
+        saveEmail()
         val ic = currentInputConnection ?: return
         suggestionSpace = false
         captureReplacedSelection()

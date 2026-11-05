@@ -654,6 +654,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     /** Beschriftung für den Einfüge-Vorschlag, oder null wenn nichts Frisches kopiert wurde. */
     private fun clipOffer(): String? {
         if (isPasswordField || SystemClock.uptimeMillis() - recentClipTime > CLIP_OFFER_MS) return null
+        // E-Mail-Feld: nur Kopiertes mit @ anbieten (sonst lieber die gemerkten Adressen)
+        if (isEmailField && recentClip?.contains('@') != true) return null
         if (recentClipImage != null) return "📋 Bild einfügen"
         val text = recentClip ?: return null
         val line = text.trim().lineSequence().firstOrNull()?.trim().orEmpty()

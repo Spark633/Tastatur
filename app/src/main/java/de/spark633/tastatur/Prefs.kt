@@ -256,11 +256,6 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("show_hints", true)
         set(v) = sp.edit().putBoolean("show_hints", v).apply()
 
-    /** Änderungen unter Aussehen erst mit „Speichern“ übernehmen. */
-    var bgSaveRequired: Boolean
-        get() = sp.getBoolean("bg_save_required", false)
-        set(v) = sp.edit().putBoolean("bg_save_required", v).apply()
-
     /** Hintergrundbild abdunkeln in Prozent. */
     var bgDim: Int
         get() = sp.getInt("bg_dim", 30)

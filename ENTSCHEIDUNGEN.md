@@ -67,5 +67,5 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Markierter Text, der ersetzt wird (Tippen, Einfügen aus der Tastatur oder über das Menü der App, Ausschneiden), lässt sich mit ↶ wiederherstellen; dabei wird das Eingefügte wieder entfernt
 - E-Mail-Felder: getippte Adressen werden gemerkt (beim Verlassen des Feldes oder ↵, bis zu 30) und passend zum Getippten vorgeschlagen; lange drücken = vergessen; abschaltbar, Liste unter Wörterbuch wie bei Eigenen Wörtern (hinzufügen, ✎ bearbeiten, ✕ löschen). Frisch Kopiertes (📋) hat dort nur Vorrang, wenn es ein @ enthält
 - Zahnrad-Menü: „Allgemein“ gedrückt halten öffnet die Hauptseite der Einstellungen
-- Aussehen: Option „erst mit Speichern übernehmen“ (Standard aus, oben auf der Seite) für Farbschema, Abdunkeln, Zoom, Ausschnitt, Tastenfarbe, Schriftfarbe, Deckkraft, Eckenrundung, Schriftgröße (nicht: kleine Zeichen); Leiste unter der Vorschau (Speichern/Verwerfen); Rückfrage bei Zurück und Bildwechsel; App verlassen ohne Speichern = verwerfen
-- Größen-Modus: nur „Fertig“ speichert; Zurück oder Schließen der Tastatur verwirft
+- Aussehen: immer erst mit Speichern übernehmen (kein Schalter) für Farbschema, Abdunkeln, Zoom, Ausschnitt, Tastenfarbe, Schriftfarbe, Deckkraft, Eckenrundung, Schriftgröße (nicht: kleine Zeichen); Leiste unter der Vorschau (Speichern/Verwerfen); Rückfrage bei Zurück und Bildwechsel; App verlassen ohne Speichern = verwerfen
+- Größen-Modus: „Fertig“ speichert; Zurück fragt in der Leiste (Speichern / ✕ verwerfen, zweimal Zurück = verwerfen); Schließen der Tastatur verwirft

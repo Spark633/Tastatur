@@ -612,10 +612,6 @@ class SettingsActivity : Activity() {
         title = "Aussehen"
         preview = KeyboardPreview(this, prefs).also { it.locked = prefs.lockImage }
         root.addView(info("Die Vorschau oben zeigt jede Änderung sofort."))
-        root.addView(switch("Änderungen erst mit „Speichern“ übernehmen", prefs.bgSaveRequired) {
-            prefs.bgSaveRequired = it
-            takeDraft()
-        })
 
         root.addView(header("Farbschema"))
         val themes = Theme.ALL
@@ -626,7 +622,7 @@ class SettingsActivity : Activity() {
         root.addView(header("Größe"))
         root.addView(info(
             "Öffnet die Tastatur im Größen-Modus: nach oben/unten ziehen ändert die Tastenhöhe, " +
-                "„Abstand“ verschiebt die Tasten über die Systemknöpfe. Nur „Fertig“ speichert, Zurück verwirft. " +
+                "„Abstand“ verschiebt die Tasten über die Systemknöpfe. Mit „Fertig“ speichern; bei Zurück wird gefragt (speichern oder verwerfen). " +
                 "Geht auch direkt über das Zahnrad in der Tastatur."
         ))
         root.addView(button("Größe anpassen") {
@@ -694,7 +690,7 @@ class SettingsActivity : Activity() {
             .also { hintsSwitch = it })
         addTestField()
 
-        // Leiste unter der Vorschau: Speichern / Verwerfen (nur mit der Option)
+        // Leiste unter der Vorschau: Speichern / Verwerfen
         draftStatus = TextView(this).apply {
             textSize = 14f
             layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -728,7 +724,7 @@ class SettingsActivity : Activity() {
     private var draftStatus: TextView? = null
     private var draftSave: Button? = null
     private var draftDiscard: Button? = null
-    /** Gespeicherter Stand (null = Option aus). */
+    /** Zuletzt gespeicherter Stand. */
     private var draftSaved: List<Any>? = null
     /** Bildauswahl läuft (Galerie offen): nicht verwerfen. */
     private var pickingImage = false
@@ -747,7 +743,7 @@ class SettingsActivity : Activity() {
     private val draftDirty: Boolean get() = draftSaved?.let { it != imageValues() } ?: false
 
     private fun takeDraft() {
-        draftSaved = if (prefs.bgSaveRequired) imageValues() else null
+        draftSaved = imageValues()
         updateDraftBar()
     }
 
@@ -769,7 +765,6 @@ class SettingsActivity : Activity() {
 
     private fun updateDraftBar() {
         val bar = draftBar ?: return
-        bar.visibility = if (prefs.bgSaveRequired) View.VISIBLE else View.GONE
         val dirty = draftDirty
         draftStatus?.text = if (dirty) "● Nicht gespeichert" else "✓ Gespeichert"
         draftSave?.isEnabled = dirty

@@ -336,7 +336,12 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     /** Android-Zurück: aus Menüs und Unterseiten zurück zu den Buchstaben. true = erledigt. */
     fun handleBack(): Boolean {
         if (resizing) {
-            cancelResize() // nur „Fertig“ speichert
+            if (confirmText != null) {
+                clearConfirm()
+                cancelResize() // zweimal Zurück = verwerfen
+            } else {
+                askConfirm("Größe speichern?", yes = { finishResize() }, yesLabel = "Speichern", no = { cancelResize() })
+            }
             return true
         }
         // Sonst schließt Zurück die Tastatur sofort, auch aus Menüs (beim nächsten Öffnen: Buchstaben)
@@ -650,6 +655,11 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     private val overlayPaint = Paint().apply { color = Color.argb(0xB0, 0, 0, 0) }
 
     private fun drawResizeOverlay(canvas: Canvas) {
+        if (confirmText != null) {
+            // Rückfrage steht in der Leiste, nur die Tasten abdunkeln
+            canvas.drawRect(0f, barHeight, width.toFloat(), height.toFloat(), overlayPaint)
+            return
+        }
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), overlayPaint)
         val (minus, done, plus) = resizeButtons
         canvas.drawText("− Abstand", minus.centerX(), centerY(barTextPaint, minus.centerY()), barTextPaint)
@@ -993,6 +1003,17 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(e: MotionEvent): Boolean {
         if (resizing) {
+            // Rückfrage beim Verlassen: nur die Leiste reagiert (Speichern oder ✕ = verwerfen)
+            if (confirmText != null) {
+                if (e.actionMasked == MotionEvent.ACTION_UP && e.y < barHeight) {
+                    val yes = confirmYesRect.contains(e.x, e.y)
+                    val action = confirmAction
+                    val no = confirmNo
+                    clearConfirm()
+                    if (yes) action?.invoke() else no?.invoke()
+                }
+                return true
+            }
             resizeTouch(e)
             return true
         }

@@ -365,7 +365,32 @@ class SettingsActivity : Activity() {
         root.addView(switch("In E-Mail-Feldern getippte Adressen merken und vorschlagen", prefs.rememberEmails) {
             prefs.rememberEmails = it
         })
-        root.addView(info("Lange auf eine vorgeschlagene Adresse drücken, um sie zu vergessen."))
+        root.addView(info(
+            "Gemerkt wird eine Adresse, wenn du sie in ein E-Mail-Feld tippst (beim Verlassen des Feldes oder ↵). " +
+                "Lange auf eine vorgeschlagene Adresse drücken, um sie zu vergessen."
+        ))
+        val mailRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        val mailInput = EditText(this).apply {
+            hint = "Neue Adresse"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        mailRow.addView(mailInput)
+        mailRow.addView(Button(this).apply {
+            text = "Hinzufügen"
+            isAllCaps = false
+            setOnClickListener {
+                val e = mailInput.text.toString().trim()
+                if (!looksLikeEmail(e)) {
+                    android.widget.Toast.makeText(this@SettingsActivity, "Das sieht nicht nach einer E-Mail-Adresse aus", android.widget.Toast.LENGTH_SHORT).show()
+                } else {
+                    prefs.noteEmail(e)
+                    mailInput.setText("")
+                    renderEmails()
+                }
+            }
+        })
+        root.addView(mailRow)
         emailList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(emailList)
         renderEmails()
@@ -373,12 +398,33 @@ class SettingsActivity : Activity() {
 
     private lateinit var emailList: LinearLayout
 
+    private fun looksLikeEmail(e: String) = e.length <= 100 && Regex("[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}").matches(e)
+
+    private fun editEmail(old: String) {
+        val field = EditText(this).apply {
+            setText(old)
+            setSelection(old.length)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Adresse bearbeiten")
+            .setView(field)
+            .setPositiveButton("Speichern") { _, _ ->
+                val new = field.text.toString().trim()
+                if (new != old && looksLikeEmail(new)) prefs.renameEmail(old, new)
+                else if (new != old) android.widget.Toast.makeText(this, "Das sieht nicht nach einer E-Mail-Adresse aus", android.widget.Toast.LENGTH_SHORT).show()
+                renderEmails()
+            }
+            .setNegativeButton("Abbrechen", null)
+            .show()
+    }
+
     private fun renderEmails() {
         emailList.removeAllViews()
         val mails = prefs.savedEmails
         if (mails.isEmpty()) emailList.addView(info("Noch keine Adressen gemerkt."))
         for (e in mails) {
-            emailList.addView(listRow(e, "✕" to {
+            emailList.addView(listRow(e, "✎" to { editEmail(e) }, "✕" to {
                 confirmDelete("„$e“ vergessen?") {
                     prefs.forgetEmail(e)
                     renderEmails()

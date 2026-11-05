@@ -139,6 +139,12 @@ class Prefs(context: Context) {
         savedEmails = listOf(e) + savedEmails.filter { !it.equals(e, ignoreCase = true) }
     }
 
+    /** Adresse bearbeiten, Platz in der Liste bleibt. */
+    fun renameEmail(old: String, new: String) {
+        val list = savedEmails.filter { !it.equals(new, ignoreCase = true) || it.equals(old, ignoreCase = true) }
+        savedEmails = list.map { if (it.equals(old, ignoreCase = true)) new else it }
+    }
+
     fun forgetEmail(e: String) {
         savedEmails = savedEmails.filter { !it.equals(e, ignoreCase = true) }
     }

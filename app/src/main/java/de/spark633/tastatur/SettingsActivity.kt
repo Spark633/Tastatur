@@ -67,6 +67,10 @@ class SettingsActivity : Activity() {
                 orientation = LinearLayout.VERTICAL
                 addView(pv, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                     .apply { setMargins(p, p, p, p / 2) })
+                draftBar?.let {
+                    addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                        .apply { setMargins(p, 0, p, 0) })
+                }
                 addView(scroll, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
             })
             prefs.registerListener(previewListener)
@@ -80,6 +84,10 @@ class SettingsActivity : Activity() {
 
     override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
+            if (draftDirty) {
+                resolveDraft { onOptionsItemSelected(item) }
+                return true
+            }
             if (isTaskRoot) {
                 // Aus der Tastatur geöffnet: Startseite darunter legen, dann zurück dorthin
                 startActivity(Intent(this, SettingsActivity::class.java)
@@ -576,6 +584,7 @@ class SettingsActivity : Activity() {
     /** Vorschau und Ausschnitt-Regler bei jeder Änderung aktualisieren. */
     private val previewListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         preview?.refresh()
+        updateDraftBar()
         if (key == "bg_position") positionBar?.progress = prefs.bgPosition
         if (key == "bg_position_x") positionXBar?.progress = prefs.bgPositionX
         if (key == "bg_zoom") zoomBar?.progress = prefs.bgZoom - 100
@@ -621,10 +630,17 @@ class SettingsActivity : Activity() {
         bgStatus = info("")
         root.addView(bgStatus)
         updateBgStatus()
-        root.addView(button("Neues Bild aus der Galerie wählen") { pickImage() })
+        root.addView(switch("Änderungen an Bild und Tasten erst mit „Speichern“ übernehmen", prefs.bgSaveRequired) {
+            prefs.bgSaveRequired = it
+            takeDraft()
+        })
+        root.addView(button("Neues Bild aus der Galerie wählen") { resolveDraft { pickImage() } })
         root.addView(button("Hintergrund ausschalten") {
-            Background.remove(this)
-            updateBgStatus()
+            resolveDraft {
+                Background.remove(this)
+                updateBgStatus()
+                takeDraft()
+            }
         })
         root.addView(info("Frühere Bilder: antippen = verwenden, lange drücken = löschen. Jedes Bild merkt sich Abdunkeln, Zoom, Ausschnitt sowie Tastenfarbe, Schriftfarbe und Deckkraft."))
         gallery = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
@@ -667,6 +683,101 @@ class SettingsActivity : Activity() {
         root.addView(slider("Schriftgröße", 70, 150, prefs.textScale, "%") { prefs.textScale = it })
         root.addView(switch("Kleine Zeichen über/unter den Buchstaben anzeigen", prefs.showHints) { prefs.showHints = it })
         addTestField()
+
+        // Leiste unter der Vorschau: Speichern / Verwerfen (nur mit der Option)
+        draftStatus = TextView(this).apply {
+            textSize = 14f
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        draftDiscard = Button(this, null, android.R.attr.borderlessButtonStyle).apply {
+            text = "Verwerfen"
+            isAllCaps = false
+            setOnClickListener { discardDraft() }
+        }
+        draftSave = Button(this).apply {
+            text = "💾 Speichern"
+            isAllCaps = false
+            setOnClickListener {
+                takeDraft()
+                android.widget.Toast.makeText(this@SettingsActivity, "Gespeichert", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+        draftBar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(draftStatus)
+            addView(draftDiscard)
+            addView(draftSave)
+        }
+        takeDraft()
+    }
+
+    // --- Bild/Tasten: Änderungen erst nach „Speichern“ ---
+
+    private var draftBar: LinearLayout? = null
+    private var draftStatus: TextView? = null
+    private var draftSave: Button? = null
+    private var draftDiscard: Button? = null
+    /** Gespeicherter Stand (null = Option aus). */
+    private var draftSaved: List<Int>? = null
+    /** Bildauswahl läuft (Galerie offen): nicht verwerfen. */
+    private var pickingImage = false
+
+    private fun imageValues() = listOf(
+        prefs.bgDim, prefs.bgZoom, prefs.bgPositionX, prefs.bgPosition,
+        prefs.keyColor, prefs.keyTextColor, prefs.keyOpacity,
+    )
+
+    private val draftDirty: Boolean get() = draftSaved?.let { it != imageValues() } ?: false
+
+    private fun takeDraft() {
+        draftSaved = if (prefs.bgSaveRequired) imageValues() else null
+        updateDraftBar()
+    }
+
+    private fun discardDraft() {
+        val s = draftSaved ?: return
+        if (!draftDirty) return
+        prefs.bgDim = s[0]
+        prefs.bgZoom = s[1]
+        prefs.bgPositionX = s[2]
+        prefs.bgPosition = s[3]
+        prefs.keyColor = s[4]
+        prefs.keyTextColor = s[5]
+        prefs.keyOpacity = s[6]
+        updateDraftBar()
+    }
+
+    private fun updateDraftBar() {
+        val bar = draftBar ?: return
+        bar.visibility = if (prefs.bgSaveRequired) View.VISIBLE else View.GONE
+        val dirty = draftDirty
+        draftStatus?.text = if (dirty) "● Nicht gespeichert" else "✓ Gespeichert"
+        draftSave?.isEnabled = dirty
+        draftDiscard?.isEnabled = dirty
+    }
+
+    /** Ungespeicherte Änderungen: erst fragen, dann weitermachen. */
+    private fun resolveDraft(then: () -> Unit) {
+        if (!draftDirty) return then()
+        AlertDialog.Builder(this)
+            .setMessage("Änderungen an Bild und Tasten speichern?")
+            .setPositiveButton("Speichern") { _, _ -> takeDraft(); then() }
+            .setNegativeButton("Verwerfen") { _, _ -> discardDraft(); then() }
+            .setNeutralButton("Abbrechen", null)
+            .show()
+    }
+
+    @Deprecated("Activity-API")
+    override fun onBackPressed() {
+        @Suppress("DEPRECATION")
+        if (draftDirty) resolveDraft { super.onBackPressed() } else super.onBackPressed()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // App verlassen ohne Speichern: Änderungen gelten nicht
+        if (!pickingImage && !isChangingConfigurations && draftDirty) discardDraft()
     }
 
     private fun updateBgStatus() {
@@ -693,15 +804,21 @@ class SettingsActivity : Activity() {
                 setBackgroundColor(if (name == active) android.graphics.Color.rgb(0x4D, 0xB6, 0xAC) else android.graphics.Color.TRANSPARENT)
                 layoutParams = LinearLayout.LayoutParams(w, h).apply { setMargins(0, 0, (8 * dp).toInt(), 0) }
                 setOnClickListener {
-                    Background.select(this@SettingsActivity, name)
-                    updateBgStatus()
+                    resolveDraft {
+                        Background.select(this@SettingsActivity, name)
+                        updateBgStatus()
+                        takeDraft()
+                    }
                 }
                 setOnLongClickListener {
                     AlertDialog.Builder(this@SettingsActivity)
                         .setMessage("Dieses Bild aus dem Verlauf löschen?")
                         .setPositiveButton("Löschen") { _, _ ->
-                            Background.delete(this@SettingsActivity, name)
-                            updateBgStatus()
+                            resolveDraft {
+                                Background.delete(this@SettingsActivity, name)
+                                updateBgStatus()
+                                takeDraft()
+                            }
                         }
                         .setNegativeButton("Abbrechen", null)
                         .show()
@@ -718,6 +835,7 @@ class SettingsActivity : Activity() {
             Intent(android.provider.MediaStore.ACTION_PICK_IMAGES)
         } else null
         val fallback = Intent(Intent.ACTION_GET_CONTENT).setType("image/*")
+        pickingImage = true
         try {
             startActivityForResult(photoPicker ?: fallback, REQ_IMAGE)
         } catch (_: Exception) {
@@ -730,6 +848,7 @@ class SettingsActivity : Activity() {
         @Suppress("DEPRECATION")
         super.onActivityResult(requestCode, resultCode, data)
         val uri = data?.data
+        if (requestCode == REQ_IMAGE) pickingImage = false
         if (resultCode != RESULT_OK || uri == null) return
         if (requestCode == REQ_EXPORT) return exportBackup(uri)
         if (requestCode == REQ_IMPORT) return importBackup(uri)
@@ -739,6 +858,7 @@ class SettingsActivity : Activity() {
             val ok = Background.import(this, uri)
             runOnUiThread {
                 updateBgStatus()
+                takeDraft()
                 if (!ok) bgStatus?.text = "❌ Das Bild konnte nicht gelesen werden."
             }
         }.start()

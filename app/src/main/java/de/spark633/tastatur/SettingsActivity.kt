@@ -590,6 +590,13 @@ class SettingsActivity : Activity() {
         if (key == "bg_zoom") zoomBar?.progress = prefs.bgZoom - 100
         if (key == "bg_dim") dimBar?.progress = prefs.bgDim
         if (key == "key_opacity") opacityBar?.progress = prefs.keyOpacity
+        if (key == "corner_radius") cornerBar?.progress = prefs.cornerRadiusDp
+        if (key == "text_scale") textScaleBar?.progress = prefs.textScale - 70
+        if (key == "show_hints") hintsSwitch?.let { if (it.isChecked != prefs.showHints) it.isChecked = prefs.showHints }
+        if (key == "theme") themeList?.let {
+            val i = Theme.ALL.indexOfFirst { t -> t.id == prefs.theme }.coerceAtLeast(0)
+            if (it.selectedItemPosition != i) it.setSelection(i)
+        }
         val colorValues = Theme.COLOR_CHOICES.map { it.second }
         if (key == "key_color") keyColorList?.let {
             val i = colorValues.indexOf(prefs.keyColor).coerceAtLeast(0)
@@ -605,12 +612,16 @@ class SettingsActivity : Activity() {
         title = "Aussehen"
         preview = KeyboardPreview(this, prefs).also { it.locked = prefs.lockImage }
         root.addView(info("Die Vorschau oben zeigt jede Änderung sofort."))
+        root.addView(switch("Änderungen erst mit „Speichern“ übernehmen", prefs.bgSaveRequired) {
+            prefs.bgSaveRequired = it
+            takeDraft()
+        })
 
         root.addView(header("Farbschema"))
         val themes = Theme.ALL
         root.addView(dropdown(themes.map { it.name }, themes.indexOfFirst { it.id == prefs.theme }.coerceAtLeast(0)) {
             prefs.theme = themes[it].id
-        })
+        }.also { themeList = it })
 
         root.addView(header("Größe"))
         root.addView(info(
@@ -630,10 +641,6 @@ class SettingsActivity : Activity() {
         bgStatus = info("")
         root.addView(bgStatus)
         updateBgStatus()
-        root.addView(switch("Änderungen an Bild und Tasten erst mit „Speichern“ übernehmen", prefs.bgSaveRequired) {
-            prefs.bgSaveRequired = it
-            takeDraft()
-        })
         root.addView(button("Neues Bild aus der Galerie wählen") { resolveDraft { pickImage() } })
         root.addView(button("Hintergrund ausschalten") {
             resolveDraft {
@@ -679,9 +686,12 @@ class SettingsActivity : Activity() {
         }.also { textColorList = it })
         root.addView(slider("Deckkraft der Tasten", 0, 100, prefs.keyOpacity, "%") { prefs.keyOpacity = it }
             .also { opacityBar = it.getChildAt(1) as android.widget.SeekBar })
-        root.addView(slider("Eckenrundung", 0, 24, prefs.cornerRadiusDp, " dp") { prefs.cornerRadiusDp = it })
-        root.addView(slider("Schriftgröße", 70, 150, prefs.textScale, "%") { prefs.textScale = it })
-        root.addView(switch("Kleine Zeichen über/unter den Buchstaben anzeigen", prefs.showHints) { prefs.showHints = it })
+        root.addView(slider("Eckenrundung", 0, 24, prefs.cornerRadiusDp, " dp") { prefs.cornerRadiusDp = it }
+            .also { cornerBar = it.getChildAt(1) as android.widget.SeekBar })
+        root.addView(slider("Schriftgröße", 70, 150, prefs.textScale, "%") { prefs.textScale = it }
+            .also { textScaleBar = it.getChildAt(1) as android.widget.SeekBar })
+        root.addView(switch("Kleine Zeichen über/unter den Buchstaben anzeigen", prefs.showHints) { prefs.showHints = it }
+            .also { hintsSwitch = it })
         addTestField()
 
         // Leiste unter der Vorschau: Speichern / Verwerfen (nur mit der Option)
@@ -719,13 +729,19 @@ class SettingsActivity : Activity() {
     private var draftSave: Button? = null
     private var draftDiscard: Button? = null
     /** Gespeicherter Stand (null = Option aus). */
-    private var draftSaved: List<Int>? = null
+    private var draftSaved: List<Any>? = null
     /** Bildauswahl läuft (Galerie offen): nicht verwerfen. */
     private var pickingImage = false
 
-    private fun imageValues() = listOf(
+    private var themeList: android.widget.Spinner? = null
+    private var cornerBar: android.widget.SeekBar? = null
+    private var textScaleBar: android.widget.SeekBar? = null
+    private var hintsSwitch: Switch? = null
+
+    private fun imageValues(): List<Any> = listOf(
         prefs.bgDim, prefs.bgZoom, prefs.bgPositionX, prefs.bgPosition,
         prefs.keyColor, prefs.keyTextColor, prefs.keyOpacity,
+        prefs.theme, prefs.cornerRadiusDp, prefs.textScale, prefs.showHints,
     )
 
     private val draftDirty: Boolean get() = draftSaved?.let { it != imageValues() } ?: false
@@ -738,13 +754,17 @@ class SettingsActivity : Activity() {
     private fun discardDraft() {
         val s = draftSaved ?: return
         if (!draftDirty) return
-        prefs.bgDim = s[0]
-        prefs.bgZoom = s[1]
-        prefs.bgPositionX = s[2]
-        prefs.bgPosition = s[3]
-        prefs.keyColor = s[4]
-        prefs.keyTextColor = s[5]
-        prefs.keyOpacity = s[6]
+        prefs.bgDim = s[0] as Int
+        prefs.bgZoom = s[1] as Int
+        prefs.bgPositionX = s[2] as Int
+        prefs.bgPosition = s[3] as Int
+        prefs.keyColor = s[4] as Int
+        prefs.keyTextColor = s[5] as Int
+        prefs.keyOpacity = s[6] as Int
+        prefs.theme = s[7] as String
+        prefs.cornerRadiusDp = s[8] as Int
+        prefs.textScale = s[9] as Int
+        prefs.showHints = s[10] as Boolean
         updateDraftBar()
     }
 
@@ -761,7 +781,7 @@ class SettingsActivity : Activity() {
     private fun resolveDraft(then: () -> Unit) {
         if (!draftDirty) return then()
         AlertDialog.Builder(this)
-            .setMessage("Änderungen an Bild und Tasten speichern?")
+            .setMessage("Änderungen am Aussehen speichern?")
             .setPositiveButton("Speichern") { _, _ -> takeDraft(); then() }
             .setNegativeButton("Verwerfen") { _, _ -> discardDraft(); then() }
             .setNeutralButton("Abbrechen", null)

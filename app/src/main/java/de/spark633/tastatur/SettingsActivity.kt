@@ -1078,15 +1078,34 @@ class SettingsActivity : Activity() {
         showCount()
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         for (name in names) {
-            row.addView(android.widget.ImageView(this).apply {
+            val img = android.widget.ImageView(this).apply {
                 scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
                 setImageBitmap(Background.thumbnail(this@SettingsActivity, name, w))
                 setPadding(pad, pad, pad, pad)
-                fun mark() {
-                    setBackgroundColor(if (name in chosen) teal else android.graphics.Color.TRANSPARENT)
-                    alpha = if (name in chosen) 1f else 0.4f
+            }
+            // Abzeichen oben rechts: ✓ = wird gesichert, ✕ = wird nicht gesichert
+            val badgeSize = (24 * dp).toInt()
+            val badge = TextView(this).apply {
+                gravity = Gravity.CENTER
+                textSize = 13f
+                setTextColor(android.graphics.Color.WHITE)
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
+            }
+            fun mark() {
+                val on = name in chosen
+                img.setBackgroundColor(if (on) teal else android.graphics.Color.TRANSPARENT)
+                img.alpha = if (on) 1f else 0.4f
+                badge.text = if (on) "✓" else "✕"
+                badge.background = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL
+                    setColor(if (on) teal else android.graphics.Color.rgb(0x9E, 0x9E, 0x9E))
                 }
-                mark()
+            }
+            mark()
+            row.addView(android.widget.FrameLayout(this).apply {
+                addView(img, android.widget.FrameLayout.LayoutParams(w, h))
+                addView(badge, android.widget.FrameLayout.LayoutParams(badgeSize, badgeSize, Gravity.TOP or Gravity.END)
+                    .apply { setMargins(0, pad, pad, 0) })
                 layoutParams = LinearLayout.LayoutParams(w, h).apply { setMargins(0, 0, (8 * dp).toInt(), 0) }
                 setOnClickListener {
                     if (!chosen.remove(name)) chosen.add(name)
@@ -1099,7 +1118,7 @@ class SettingsActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             val p = (20 * dp).toInt()
             setPadding(p, p / 2, p, 0)
-            addView(info("Antippen wählt ein Bild ab oder wieder an."))
+            addView(info("Antippen wählt ein Bild ab (✕) oder wieder an (✓)."))
             addView(android.widget.HorizontalScrollView(this@SettingsActivity).apply { addView(row) })
             addView(count)
         }

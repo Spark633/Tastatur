@@ -72,3 +72,4 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Sicherung: zusätzlich „Nur das Design“ als eigene Datei (Farbschema, Tastenfarben, Deckkraft, Eckenrundung, Schriftgröße, kleine Zeichen, Größe, Bilder); Laden ändert nur das Design
 - Sicherungen (alles und Design): vor dem Speichern Bilder auswählen (Vorschaubilder antippen, anfangs alle); jedes Bild mit seinen eigenen Werten; alte Namen bleiben, damit Profile weiter passen
 - Vor einem bestehenden Wort tippen (Cursor an den Wortanfang, dort ergänzen): Vorschläge und Korrektur für das neu Getippte; mitten im Wort weiterhin keine Vorschläge
+- Sicherungsdateien mit Datum im Namen, ohne Uhrzeit (tastatur-sicherung_JJJJ-MM-TT.json, tastatur-design_…), Datum auch in der Datei

@@ -1023,7 +1023,7 @@ class SettingsActivity : Activity() {
             chooseImages {
                 startActivityForResult(
                     Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-                        .setType("application/json").putExtra(Intent.EXTRA_TITLE, "tastatur-sicherung.json"),
+                        .setType("application/json").putExtra(Intent.EXTRA_TITLE, "tastatur-sicherung_${fileStamp()}.json"),
                     REQ_EXPORT
                 )
             }
@@ -1045,7 +1045,7 @@ class SettingsActivity : Activity() {
             chooseImages {
                 startActivityForResult(
                     Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE)
-                        .setType("application/json").putExtra(Intent.EXTRA_TITLE, "tastatur-design.json"),
+                        .setType("application/json").putExtra(Intent.EXTRA_TITLE, "tastatur-design_${fileStamp()}.json"),
                     REQ_EXPORT_DESIGN
                 )
             }
@@ -1057,6 +1057,10 @@ class SettingsActivity : Activity() {
             )
         })
     }
+
+    /** Datum für Dateinamen, z. B. 2026-11-06. */
+    private fun fileStamp(): String =
+        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.GERMANY).format(java.util.Date())
 
     /** Für die nächste Sicherung gewählte Bilder. */
     private var exportImages: List<String> = emptyList()

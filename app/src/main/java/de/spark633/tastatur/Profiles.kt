@@ -91,6 +91,7 @@ object Backup {
         val o = JSONObject()
         o.put("format", "tastatur-sicherung")
         o.put("version", 1)
+        o.put("erstellt", stamp())
         o.put("einstellungen", Prefs(context).snapshot())
         o.put("eigene_woerter", UserDictionary.get(context).export())
         o.put("wortfolgen", NextWordModel.get(context).export())
@@ -101,6 +102,10 @@ object Backup {
         putImages(context, o, images)
         return o.toString()
     }
+
+    /** Datum der Sicherung (steht zusätzlich in der Datei). */
+    private fun stamp(): String =
+        java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.GERMANY).format(java.util.Date())
 
     /** Einstellungen, die zum Aussehen der Tastatur gehören (Design-Sicherung). */
     private val DESIGN_KEYS = listOf(
@@ -116,6 +121,7 @@ object Backup {
         val o = JSONObject()
         o.put("format", "tastatur-design")
         o.put("version", 1)
+        o.put("erstellt", stamp())
         o.put("design", design)
         putImages(context, o, images)
         return o.toString()

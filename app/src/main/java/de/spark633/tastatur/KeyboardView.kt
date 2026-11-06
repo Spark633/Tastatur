@@ -118,6 +118,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     // Größen-Modus
     private var resizing = false
     private var resizeAskedAt = 0L
+    /** Rückfrage „Größe speichern?“ groß über der Tastatur. */
+    private var resizeAsking = false
     private var resizeStartRaw = 0f
     private var resizeStartHeight = 0f
 
@@ -343,15 +345,16 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     fun handleBack(): Boolean {
         if (resizing) {
             val now = SystemClock.uptimeMillis()
-            if (confirmText != null) {
+            if (resizeAsking) {
                 // Doppelt gemeldetes Zurück direkt nach der Frage nicht als „verwerfen“ werten
                 if (now - resizeAskedAt > 600) {
-                    clearConfirm()
+                    resizeAsking = false
                     cancelResize() // zweimal Zurück = verwerfen
                 }
             } else {
                 resizeAskedAt = now
-                askConfirm("Größe speichern?", yes = { finishResize() }, yesLabel = "Speichern", no = { cancelResize() })
+                resizeAsking = true
+                invalidate()
             }
             return true
         }
@@ -361,7 +364,10 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     /** Beim Schließen: Unterseiten verlassen, damit beim nächsten Öffnen die Buchstaben kommen. */
     fun leaveSubPage() {
-        if (resizing) cancelResize()
+        if (resizing) {
+            resizeAsking = false
+            cancelResize()
+        }
         clearConfirm()
         if (mode != Mode.LETTERS && mode != Mode.NUMPAD) setMode(Mode.LETTERS)
     }
@@ -665,10 +671,36 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     private val overlayPaint = Paint().apply { color = Color.argb(0xB0, 0, 0, 0) }
 
+    private val askTitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.WHITE; textAlign = Paint.Align.CENTER; typeface = android.graphics.Typeface.DEFAULT_BOLD
+    }
+    private val askTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textAlign = Paint.Align.CENTER }
+
+    /** Knöpfe der Rückfrage: Verwerfen (links), Speichern (rechts), mittig über der Tastatur. */
+    private val resizeAskButtons: Pair<RectF, RectF>
+        get() {
+            val bw = 140 * dp
+            val bh = 48 * dp
+            val cy = barHeight + 2 * rowHeight + 18 * dp
+            val gap = 12 * dp
+            val cx = width / 2f
+            return RectF(cx - gap / 2 - bw, cy - bh / 2, cx - gap / 2, cy + bh / 2) to
+                RectF(cx + gap / 2, cy - bh / 2, cx + gap / 2 + bw, cy + bh / 2)
+        }
+
     private fun drawResizeOverlay(canvas: Canvas) {
-        if (confirmText != null) {
-            // Rückfrage steht in der Leiste, nur die Tasten abdunkeln
-            canvas.drawRect(0f, barHeight, width.toFloat(), height.toFloat(), overlayPaint)
+        if (resizeAsking) {
+            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), overlayPaint)
+            val (discard, save) = resizeAskButtons
+            askTitlePaint.textSize = sp(20f)
+            askTextPaint.textSize = sp(16f)
+            canvas.drawText("Größe speichern?", width / 2f, centerY(askTitlePaint, discard.top - 34 * dp), askTitlePaint)
+            canvas.drawRoundRect(discard, discard.height() / 2, discard.height() / 2, popupPaint)
+            canvas.drawText("Verwerfen", discard.centerX(), centerY(askTextPaint, discard.centerY()), askTextPaint)
+            canvas.drawRoundRect(save, save.height() / 2, save.height() / 2, accentPaint)
+            canvas.drawText("Speichern", save.centerX(), centerY(askTextPaint, save.centerY()), askTextPaint)
+            askTextPaint.textSize = sp(13f)
+            canvas.drawText("Daneben tippen = weiter anpassen", width / 2f, discard.bottom + 26 * dp, askTextPaint)
             return
         }
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), overlayPaint)
@@ -1014,18 +1046,16 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(e: MotionEvent): Boolean {
         if (resizing) {
-            // Rückfrage beim Verlassen: Speichern, ✕ = verwerfen, sonst irgendwo = weiter bearbeiten
-            if (confirmText != null) {
+            // Rückfrage beim Verlassen: Speichern, Verwerfen, sonst irgendwo = weiter bearbeiten
+            if (resizeAsking) {
                 if (e.actionMasked == MotionEvent.ACTION_UP) {
-                    val action = confirmAction
-                    val no = confirmNo
-                    val inBar = e.y < barHeight
-                    clearConfirm()
+                    val (discard, save) = resizeAskButtons
+                    resizeAsking = false
                     when {
-                        inBar && confirmYesRect.contains(e.x, e.y) -> action?.invoke()
-                        inBar && confirmXRect.contains(e.x, e.y) -> no?.invoke()
-                        else -> invalidate()
+                        save.contains(e.x, e.y) -> finishResize()
+                        discard.contains(e.x, e.y) -> cancelResize()
                     }
+                    invalidate()
                 }
                 return true
             }

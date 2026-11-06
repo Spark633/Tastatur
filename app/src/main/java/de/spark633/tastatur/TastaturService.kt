@@ -373,6 +373,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         candidatesStart: Int, candidatesEnd: Int,
     ) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
+        // Cursor woanders hingesetzt: Ergänzen vor einem Wort ist vorbei
+        if (SystemClock.uptimeMillis() - lastOwnInput >= 600) insertAnchor = null
         trackExternalReplace(newSelStart, newSelEnd)
         handleWordTap(newSelStart, newSelEnd)
         updateAutoCaps()
@@ -528,8 +530,30 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val start = before.length - word.length
         if (start > 0 && before[start - 1].let { it.isDigit() || it in "@/._#\\" }) return null
         val after = ic.getTextAfterCursor(1, 0)
-        if (!after.isNullOrEmpty() && isWordChar(after[0])) return null
+        if (!after.isNullOrEmpty() && isWordChar(after[0])) {
+            // Vor einem bestehenden Wort weitergetippt (dort etwas ergänzt): das Getippte zählt als Wort
+            val anchor = insertAnchor ?: return null
+            val rest = ic.getTextAfterCursor(anchor.length, 0)?.toString() ?: return null
+            if (rest != anchor) return null
+        }
         return word
+    }
+
+    /**
+     * Text hinter dem Cursor, als vor einem Wort zu tippen begonnen wurde.
+     * Solange er unverändert dahinter steht, gibt es Vorschläge für das neu Getippte.
+     */
+    private var insertAnchor: String? = null
+
+    /** Vor dem Tippen eines Buchstabens: beginnt hier ein neues Wort direkt vor einem bestehenden? */
+    private fun noteInsertBeforeWord(text: String) {
+        if (text.length != 1 || !text[0].isLetter()) return
+        val ic = currentInputConnection ?: return
+        if (!ic.getSelectedText(0).isNullOrEmpty()) return
+        val before = ic.getTextBeforeCursor(1, 0)?.toString().orEmpty()
+        if (before.isNotEmpty() && isWordChar(before[0])) return // schon mitten im Getippten
+        val after = ic.getTextAfterCursor(30, 0)?.toString().orEmpty()
+        insertAnchor = if (after.isNotEmpty() && isWordChar(after[0])) after else null
     }
 
     private fun isKnown(word: String) = ignored.contains(word.lowercase()) || userDict.isKnown(word)
@@ -822,6 +846,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val ic = currentInputConnection ?: return
         if (text == recentClip) recentClip = null // aus der Zwischenablage eingefügt
         captureReplacedSelection()
+        noteInsertBeforeWord(text)
         activeStyle?.let { style ->
             val isWordChar = text.length == 1 && (text[0].isLetter() || text[0] == '\'')
             if (isWordChar) {

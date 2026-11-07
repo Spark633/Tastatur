@@ -804,7 +804,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
     }
     private val askTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textAlign = Paint.Align.CENTER }
 
-    /** Knöpfe der Rückfrage: Verwerfen (links), Speichern (rechts), mittig über der Tastatur. */
+    /** Knöpfe der Rückfrage (Verwerfen, Speichern): Speichern links, Verwerfen rechts, mittig über der Tastatur. */
     private val resizeAskButtons: Pair<RectF, RectF>
         get() {
             val bw = 140 * dp
@@ -812,8 +812,9 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             val cy = barHeight + 2 * rowHeight + 18 * dp
             val gap = 12 * dp
             val cx = width / 2f
-            return RectF(cx - gap / 2 - bw, cy - bh / 2, cx - gap / 2, cy + bh / 2) to
-                RectF(cx + gap / 2, cy - bh / 2, cx + gap / 2 + bw, cy + bh / 2)
+            // Speichern links, Verwerfen rechts
+            return RectF(cx + gap / 2, cy - bh / 2, cx + gap / 2 + bw, cy + bh / 2) to
+                RectF(cx - gap / 2 - bw, cy - bh / 2, cx - gap / 2, cy + bh / 2)
         }
 
     private fun drawResizeOverlay(canvas: Canvas) {

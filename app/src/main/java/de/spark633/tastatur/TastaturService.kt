@@ -1106,7 +1106,12 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val before = ic.getTextBeforeCursor(200, 0)?.toString() ?: return
         var i = before.length
         while (i > 0 && before[i - 1].isWhitespace()) i--
-        while (i > 0 && !before[i - 1].isWhitespace()) i--
+        // Bei Links stückweise: / und \ sind eigene Stücke (Tastatur | / | Spark633 | / | github.com …)
+        if (i > 0 && before[i - 1] in CHUNK_STOPS) {
+            while (i > 0 && before[i - 1] in CHUNK_STOPS) i--
+        } else {
+            while (i > 0 && !before[i - 1].isWhitespace() && before[i - 1] !in CHUNK_STOPS) i--
+        }
         val count = before.length - i
         if (count > 0) {
             if (!replaceMode) rememberDeleted(before.substring(i))
@@ -1563,6 +1568,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     companion object {
         private const val PUNCTUATION = ".,!?;:"
+        private const val CHUNK_STOPS = "/\\"
         private const val CLOSING_QUOTES = "\"“”»"
         private const val RESTORE_MIN_CHARS = 15
         private const val CLIP_OFFER_MS = 3 * 60 * 1000L

@@ -224,10 +224,10 @@ object Layouts {
         while (rows.size < 3) rows.add(emptyList())
         rows.add(
             listOf(
+                Key("⌫", Action.DELETE, width = 2f), // zurück zur Tastatur, ganz links
                 Key("‹", Action.PAGE_PREV, width = 2f),
                 Key(" ", Action.SPACE, width = 4f),
                 Key("›", Action.PAGE_NEXT, width = 2f),
-                Key("⌫", Action.DELETE, width = 2f),
             )
         )
         return rows

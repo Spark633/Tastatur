@@ -41,7 +41,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Zwischenablage: ⋮-Menü offen → übrige Kacheln abgedunkelt
 - Zwischenablage: dunkle Kacheln mit weißer Schrift (immer lesbar); kein seitliches Wischen zum Löschen; nach dem Einfügen zurück zur Tastatur
 - Android-Zurück/˅ schließt die Tastatur sofort, auch aus Menüs (beim nächsten Öffnen Buchstaben)
-- ⌫ doppelt tippen + halten: alles bis zum letzten Leerzeichen am Stück löschen (abschaltbar; normales Halten: Wort für Wort); Lösch-Tempo in drei Stufen: Schnell 280, Normal 420 (Standard), Langsam 560 ms
+- ⌫ doppelt tippen + halten: alles bis zum letzten Leerzeichen am Stück löschen, bei Links stückweise (/ und \ sind eigene Stücke) (abschaltbar; normales Halten: Wort für Wort); Lösch-Tempo in drei Stufen: Schnell 280, Normal 420 (Standard), Langsam 560 ms
 - ⌫ in Emoticons, Zwischenablage und Formatieren = zurück zur Tastatur; dort und im Zahnrad-Menü keine ABC-Taste (Zahnrad bzw. ⌫ führt zurück)
 - Websuche öffnet direkt den Browser (kein Suchfeld in der Leiste): ohne Markierung leere Seite, markierter Link direkt als Adresse, sonst Suche
 
@@ -75,3 +75,4 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Sicherungsdateien mit Datum im Namen, ohne Uhrzeit (tastatur-sicherung_JJJJ-MM-TT.json, tastatur-design_…), Datum auch in der Datei
 - Treffsicherheit: Tipp nah an der Kante einer Nachbartaste (35 % Breite / 30 % Höhe) → Nachbartaste nur, wenn mit der getroffenen Taste kein Wort mehr möglich ist, mit der Nachbartaste schon; Leertaste, wenn das Wort fertig ist (z. B. „Hallov“ → „Hallo “). Nicht mitten im Wort, nicht am Wortanfang
 - Nummerierte Liste bei ↵ nur weiterzählen ab „1.“ oder wenn darüber die vorige Nummer steht (einzelnes „2.“ zählt nicht weiter)
+- Emoticons: ⌫ (zurück zur Tastatur) ganz links in der unteren Reihe, dann ‹ Leertaste ›

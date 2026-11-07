@@ -80,3 +80,4 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Korrektur mit Satzzusammenhang: unter fast gleich guten Korrekturen gewinnt die, die du nach dem vorigen Wort oft schreibst (aus den gelernten Wortfolgen)
 - Mehrere Sprachen gleichzeitig (Standard an, unter Sprachen): die 20 000 häufigsten Wörter der anderen angehakten Sprachen (ab 4 Buchstaben) werden nicht korrigiert; Hauptsprache wählbar (Standard Deutsch): ihre Wörter gelten in jeder Sprache als richtig, auch kurze (im bleibt im)
 - Englisch: Apostroph-Wörter wie bei den Abkürzungen (dont → don't, im → I'm …), nur eindeutige; Deutsch ohne (gehts bleibt gehts)
+- Zusammengeklebte Wörter auch erkennen, wenn statt des Leerzeichens ein Buchstabe über der Leertaste (x c v b n m) getroffen wurde: „mitvdrin“ → „mit drin“

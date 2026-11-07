@@ -162,6 +162,19 @@ class Dictionary private constructor(
                 best = "$a $bForm"
             }
         }
+        // Leertaste knapp verfehlt: Buchstabe direkt über der Leertaste statt Leerzeichen ("mitvdrin" → "mit drin")
+        for (i in 2..typed.length - 3) {
+            if (typed[i].lowercaseChar() !in ABOVE_SPACE) continue
+            val a = typed.substring(0, i)
+            val b = typed.substring(i + 1)
+            if (!contains(a)) continue
+            val bForm = dictForm(b) ?: continue
+            val score = minOf(freqOf(a), freqOf(bForm))
+            if (score > bestScore) {
+                bestScore = score
+                best = "$a $bForm"
+            }
+        }
         return best
     }
 
@@ -358,6 +371,9 @@ class Dictionary private constructor(
             }
             return Dictionary(words.toTypedArray(), freqs.toIntArray())
         }
+
+        /** Buchstaben direkt über der Leertaste (werden statt des Leerzeichens leicht getroffen). */
+        private const val ABOVE_SPACE = "xcvbnm"
 
         /** Die häufigsten Wörter einer Sprache, kleingeschrieben (für „mehrere Sprachen gleichzeitig“). */
         fun loadWordSet(context: Context, lang: Language, limit: Int): Set<String> {

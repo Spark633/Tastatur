@@ -224,9 +224,9 @@ object Layouts {
         while (rows.size < 3) rows.add(emptyList())
         rows.add(
             listOf(
-                Key("⌫", Action.DELETE, width = 2f), // zurück zur Tastatur, ganz links
+                Key("⌫", Action.DELETE, width = 2.5f), // zurück zur Tastatur, ganz links, so breit wie ein Emoticon
                 Key("‹", Action.PAGE_PREV, width = 2f),
-                Key(" ", Action.SPACE, width = 4f),
+                Key(" ", Action.SPACE, width = 3.5f),
                 Key("›", Action.PAGE_NEXT, width = 2f),
             )
         )

@@ -1356,6 +1356,13 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val line = before.substringAfterLast('\n')
         val bullet = Regex("^(\\s*)([•\\-*–]) ").find(line)
         val number = Regex("^(\\s*)(\\d+)\\. ").find(line)
+        // Nummern nur weiterzählen, wenn eine Liste begonnen hat: bei „1.“ oder wenn darüber die vorige Nummer steht
+        if (bullet == null && number != null) {
+            val n = number.groupValues[2].toInt()
+            val prevLine = before.substringBeforeLast('\n', "").substringAfterLast('\n')
+            val prevNumber = Regex("^\\s*(\\d+)\\. ").find(prevLine)?.groupValues?.get(1)?.toIntOrNull()
+            if (n != 1 && prevNumber != n - 1) return false
+        }
         val (prefix, next) = when {
             bullet != null -> bullet.value to bullet.value
             number != null -> number.value to "${number.groupValues[1]}${number.groupValues[2].toInt() + 1}. "
@@ -1479,6 +1486,30 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     /** Wort vor und nach der letzten Shift-Umwandlung (für baronDer). */
     private var lastWordShift: Pair<String, String>? = null
+
+    /**
+     * Tipp knapp an der Grenze zweier Tasten: nur umschwenken, wenn mit der getroffenen Taste
+     * kein Wort mehr möglich ist, mit der Nachbartaste aber schon (bzw. das Wort fertig ist → Leerzeichen).
+     */
+    override fun preferNearbyKey(primary: Char, alt: Char): Boolean {
+        if (!suggestOn || activeStyle != null) return false
+        val d = dict ?: return false
+        val ic = currentInputConnection ?: return false
+        if (!ic.getSelectedText(0).isNullOrEmpty()) return false
+        val after = ic.getTextAfterCursor(1, 0)?.toString().orEmpty()
+        if (after.isNotEmpty() && isWordChar(after[0])) return false // mitten im Wort: nichts raten
+        val before = ic.getTextBeforeCursor(48, 0)?.toString().orEmpty()
+        val word = before.takeLastWhile { it.isLetter() }
+        if (word.isEmpty()) return false
+        val own = userDict.knownWords()
+        fun possible(p: String) = d.hasPrefix(p) || own.any { it.startsWith(p, ignoreCase = true) }
+        if (possible(word + primary)) return false
+        return if (alt == ' ') {
+            word.length >= 2 && (d.contains(word) || isKnown(word))
+        } else {
+            possible(word + alt)
+        }
+    }
 
     override fun onUndoWordShift(): Boolean {
         own()

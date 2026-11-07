@@ -25,6 +25,18 @@ class Dictionary private constructor(
         buckets = (0 until limit).groupBy { base(lower[it][0]) }.mapValues { it.value.toIntArray() }
     }
 
+    /** Fängt irgendein Wort so an? (Groß/klein egal) */
+    fun hasPrefix(prefix: String): Boolean {
+        val p = prefix.lowercase()
+        var lo = 0
+        var hi = sortedIdx.size
+        while (lo < hi) {
+            val mid = (lo + hi) ushr 1
+            if (lower[sortedIdx[mid]] < p) lo = mid + 1 else hi = mid
+        }
+        return lo < sortedIdx.size && lower[sortedIdx[lo]].startsWith(p)
+    }
+
     /** Steht das Wort (in passender Schreibweise) im Wörterbuch? */
     fun contains(typed: String): Boolean {
         if (exact.containsKey(typed)) return true

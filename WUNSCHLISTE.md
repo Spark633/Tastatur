@@ -9,6 +9,7 @@ Ideen für später. Erledigte Punkte wandern nach unten.
   - Einstellung „Sprache der App“: Automatisch (wie Handy) / Deutsch / English / …
   - Übersetzungen ergänzen; neue Sprachen kommen als weitere Spalte dazu
 - [ ] **Markieren und löschen mit ⌫ ziehen**: ⌫ halten und nach links ziehen markiert Wort für Wort, loslassen löscht, zurückziehen nimmt Wörter wieder raus
+- [ ] **Aus Text lernen**: Textdatei oder eingefügten Text (z. B. exportierter Chat) einlesen → eigene Wörter und Wortfolgen lernen
 
 ## Erledigt
 

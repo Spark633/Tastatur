@@ -51,6 +51,11 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         fun onPasteImage(name: String)
         /** Shift geändert (0 aus, 1 an, 2 Feststelltaste). true = auf das Wort am Cursor angewendet. */
         fun onShiftChanged(state: Int): Boolean
+        /**
+         * Tipp lag knapp an der Grenze zu einer Nachbartaste ([alt], ' ' = Leertaste):
+         * true = die Nachbartaste war wohl gemeint.
+         */
+        fun preferNearbyKey(primary: Char, alt: Char): Boolean
         /** Letzte Shift-Umwandlung des Wortes rückgängig machen (baron → Baron → baron). true = erledigt. */
         fun onUndoWordShift(): Boolean
         /** Cursor um ein Zeichen bewegen: -1 = links, 1 = rechts. */
@@ -465,6 +470,32 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
             clipRect.set(0f, 0f, cs, cs)
             settingsRect.set(w - cs, 0f, w, cs)
         }
+    }
+
+    /**
+     * Nachbartaste, wenn der Tipp nah an ihrer Kante lag (Buchstaben oder Leertaste),
+     * sonst null. Grenze: 35 % der Tastenbreite bzw. 30 % der Zeilenhöhe.
+     */
+    private fun nearbyKey(hit: KeyRect, x: Float, y: Float): Key? {
+        val r = hit.rect
+        val maxDx = r.width() * 0.35f
+        val maxDy = rowHeight * 0.30f
+        var best: Key? = null
+        var bestD = Float.MAX_VALUE
+        for (kr in keyRects) {
+            if (kr === hit) continue
+            val k = kr.key
+            if (!(k.action == Action.CHAR && k.cased) && k.action != Action.SPACE) continue
+            val o = kr.rect
+            val dx = when { x < o.left -> o.left - x; x > o.right -> x - o.right; else -> 0f }
+            val dy = when { y < o.top -> o.top - y; y > o.bottom -> y - o.bottom; else -> 0f }
+            if (dx > maxDx || dy > maxDy) continue
+            // nur direkte Nachbarn: waagerecht in derselben Reihe oder senkrecht darüber/darunter
+            if (dx > 0f && dy > 0f) continue
+            val d = dx / r.width() + dy / rowHeight
+            if (d < bestD) { bestD = d; best = k }
+        }
+        return best
     }
 
     private fun keyAt(x: Float, y: Float): KeyRect? {
@@ -1319,7 +1350,14 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                     t.swipe == -1 && k.down != null -> typeText(k.down, false)
                     else -> {
                         if (afterWordShift && k.cased) listener.onUndoWordShift()
-                        typeText(displayText(k), k.cased)
+                        // Knapp neben einer anderen Taste getroffen: das Wörterbuch entscheidet mit
+                        val alt = if (mode == Mode.LETTERS && k.cased) nearbyKey(t.target, t.x0, t.y0) else null
+                        val altChar = alt?.let { if (it.action == Action.SPACE) ' ' else it.text.firstOrNull() }
+                        when {
+                            alt != null && altChar != null && listener.preferNearbyKey(k.text[0], altChar) ->
+                                if (altChar == ' ') listener.onSpace() else typeText(displayText(alt), true)
+                            else -> typeText(displayText(k), k.cased)
+                        }
                     }
                 }
                 if (mode == Mode.EMOTICONS) {

@@ -73,3 +73,5 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Sicherungen (alles und Design): vor dem Speichern Bilder auswählen (Vorschaubilder antippen, anfangs alle); jedes Bild mit seinen eigenen Werten; alte Namen bleiben, damit Profile weiter passen
 - Vor einem bestehenden Wort tippen (Cursor an den Wortanfang, dort ergänzen): Vorschläge und Korrektur für das neu Getippte; mitten im Wort weiterhin keine Vorschläge
 - Sicherungsdateien mit Datum im Namen, ohne Uhrzeit (tastatur-sicherung_JJJJ-MM-TT.json, tastatur-design_…), Datum auch in der Datei
+- Treffsicherheit: Tipp nah an der Kante einer Nachbartaste (35 % Breite / 30 % Höhe) → Nachbartaste nur, wenn mit der getroffenen Taste kein Wort mehr möglich ist, mit der Nachbartaste schon; Leertaste, wenn das Wort fertig ist (z. B. „Hallov“ → „Hallo “). Nicht mitten im Wort, nicht am Wortanfang
+- Nummerierte Liste bei ↵ nur weiterzählen ab „1.“ oder wenn darüber die vorige Nummer steht (einzelnes „2.“ zählt nicht weiter)

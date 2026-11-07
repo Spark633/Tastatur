@@ -91,6 +91,21 @@ class Prefs(context: Context) {
         set(v) = sp.edit().putBoolean("correct_on_enter", v).apply()
 
     /** Nächstes Wort vorschlagen (lernt aus deinem Schreiben). */
+    /** Trefferflächen an dein Tippen anpassen (persönliches Tippmodell). */
+    var touchModel: Boolean
+        get() = sp.getBoolean("touch_model", true)
+        set(v) = sp.edit().putBoolean("touch_model", v).apply()
+
+    /** Zeitpunkt des letzten Zurücksetzens des Tippmodells (die Tastatur vergisst dann ihr Gelerntes). */
+    var touchModelReset: Long
+        get() = sp.getLong("touch_model_reset", 0L)
+        set(v) = sp.edit().putLong("touch_model_reset", v).apply()
+
+    /** Wörter aus den anderen aktiven Sprachen erkennen und nicht korrigieren. */
+    var mixLanguages: Boolean
+        get() = sp.getBoolean("mix_languages", true)
+        set(v) = sp.edit().putBoolean("mix_languages", v).apply()
+
     var predictNext: Boolean
         get() = sp.getBoolean("predict_next", true)
         set(v) = sp.edit().putBoolean("predict_next", v).apply()

@@ -228,6 +228,19 @@ class SettingsActivity : Activity() {
         root.addView(switch("Doppeltes Leerzeichen setzt einen Punkt", prefs.doubleSpacePeriod) {
             prefs.doubleSpacePeriod = it
         })
+        root.addView(switch("Trefferflächen an mein Tippen anpassen (lernt, wo du die Tasten triffst)", prefs.touchModel) {
+            prefs.touchModel = it
+        })
+        root.addView(button("Gelerntes Tippverhalten zurücksetzen") {
+            AlertDialog.Builder(this)
+                .setMessage("Alles vergessen, was die Tastatur über deine Trefferpunkte gelernt hat?")
+                .setPositiveButton("Zurücksetzen") { _, _ ->
+                    getSharedPreferences("tippmodell", MODE_PRIVATE).edit().clear().apply()
+                    prefs.touchModelReset = System.currentTimeMillis()
+                }
+                .setNegativeButton("Abbrechen", null)
+                .show()
+        })
         root.addView(switch("⌫ doppelt tippen und halten: löscht bis zum Leerzeichen", prefs.chunkDelete) { prefs.chunkDelete = it })
         root.addView(info("Tempo beim Löschen (⌫ halten)"))
         val speeds = listOf(280, 420, 560) // schnell, normal, langsam
@@ -277,6 +290,9 @@ class SettingsActivity : Activity() {
                 prefs.setQwertz(lang, !it)
             }.apply { setPadding((32 * dp).toInt(), 0, 0, (8 * dp).toInt()) })
         }
+        root.addView(switch("Mehrere Sprachen gleichzeitig: Wörter aus den anderen angehakten Sprachen werden erkannt und nicht korrigiert", prefs.mixLanguages) {
+            prefs.mixLanguages = it
+        })
         root.addView(header("Sprachkürzel"))
         root.addView(info("Neben den Vorschlägen anzeigen bei:"))
         root.addView(LinearLayout(this).apply {

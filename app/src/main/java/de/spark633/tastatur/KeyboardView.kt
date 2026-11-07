@@ -174,6 +174,11 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         languageCount = prefs.enabledLanguages.size
         qwertz = prefs.isQwertz(language)
         clipboardRight = prefs.clipboardRight
+        touchModelOn = prefs.touchModel
+        if (prefs.touchModelReset != touchResetSeen) {
+            if (touchResetSeen != -1L) { touchStats.clear(); touchStatsLoaded = false }
+            touchResetSeen = prefs.touchModelReset
+        }
         langLeft = prefs.langLeft
         langCodeShown = prefs.isLangCodeShown(language)
         clipColumns = prefs.clipColumns.coerceIn(1, 2)
@@ -369,6 +374,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
     /** Beim Schließen: Unterseiten verlassen, damit beim nächsten Öffnen die Buchstaben kommen. */
     fun leaveSubPage() {
+        saveTouchStats()
+        pendingTaps.clear()
         if (resizing) {
             resizeAsking = false
             cancelResize()
@@ -503,8 +510,98 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         val row = ((y - barHeight) / rowHeight).toInt().coerceIn(0, 3)
         val inRow = keyRects.filter { it.row == row }
         if (inRow.isEmpty()) return null
-        inRow.firstOrNull { x >= it.rect.left - gapH && x <= it.rect.right + gapH }?.let { return it }
-        return inRow.minByOrNull { abs(it.rect.centerX() - x) }
+        val found = inRow.firstOrNull { x >= it.rect.left - gapH && x <= it.rect.right + gapH }
+            ?: inRow.minByOrNull { abs(it.rect.centerX() - x) } ?: return null
+        return adaptToTyping(found, x, y)
+    }
+
+    // --- Persönliches Tippmodell: lernt, wo du jede Taste triffst ---
+
+    private var touchModelOn = true
+    private var touchResetSeen = -1L
+    /** Buchstabe → Summe der Abweichung waagerecht, senkrecht (Anteil der Tastengröße), Anzahl. */
+    private val touchStats = HashMap<Char, FloatArray>()
+    private var touchStatsLoaded = false
+    private var touchConfirms = 0
+    /** Buchstaben-Tipps des aktuellen Wortes: Zeichen, Abweichung waagerecht/senkrecht. */
+    private val pendingTaps = ArrayList<Triple<Char, Float, Float>>()
+
+    private fun touchSp() = context.getSharedPreferences("tippmodell", Context.MODE_PRIVATE)
+
+    private fun loadTouchStats() {
+        if (touchStatsLoaded) return
+        touchStatsLoaded = true
+        touchStats.clear()
+        try {
+            val o = org.json.JSONObject(touchSp().getString("werte", "{}") ?: "{}")
+            for (k in o.keys()) {
+                val a = o.getJSONArray(k)
+                if (k.isNotEmpty()) touchStats[k[0]] = floatArrayOf(a.getDouble(0).toFloat(), a.getDouble(1).toFloat(), a.getDouble(2).toFloat())
+            }
+        } catch (_: Exception) {}
+    }
+
+    fun saveTouchStats() {
+        if (!touchStatsLoaded) return
+        // In den Einstellungen zurückgesetzt, während die Tastatur offen war: nichts Altes zurückschreiben
+        if (prefs?.touchModelReset?.let { it != touchResetSeen } == true) {
+            touchStats.clear()
+            touchStatsLoaded = false
+            return
+        }
+        val o = org.json.JSONObject()
+        for ((c, a) in touchStats) o.put(c.toString(), org.json.JSONArray().put(a[0].toDouble()).put(a[1].toDouble()).put(a[2].toDouble()))
+        touchSp().edit().putString("werte", o.toString()).apply()
+    }
+
+    /** Gelernter Mittelpunkt einer Buchstabentaste (erst ab 15 bestätigten Tipps, höchstens 30 % verschoben). */
+    private fun learnedCenter(kr: KeyRect): Pair<Float, Float> {
+        val r = kr.rect
+        val a = touchStats[kr.key.text.firstOrNull()?.lowercaseChar() ?: return r.centerX() to r.centerY()]
+        if (a == null || a[2] < 15f) return r.centerX() to r.centerY()
+        val mx = (a[0] / a[2]).coerceIn(-0.3f, 0.3f)
+        val my = (a[1] / a[2]).coerceIn(-0.3f, 0.3f)
+        return r.centerX() + mx * r.width() to r.centerY() + my * r.height()
+    }
+
+    /** Getroffene Taste mit deinen gelernten Trefferpunkten abgleichen: die Taste, deren Mitte am nächsten ist. */
+    private fun adaptToTyping(hit: KeyRect, x: Float, y: Float): KeyRect {
+        if (!touchModelOn || mode != Mode.LETTERS || !(hit.key.action == Action.CHAR && hit.key.cased)) return hit
+        loadTouchStats()
+        if (touchStats.isEmpty()) return hit
+        var best = hit
+        var bestScore = Float.MAX_VALUE
+        for (kr in keyRects) {
+            if (!(kr.key.action == Action.CHAR && kr.key.cased)) continue
+            val r = kr.rect
+            if (abs(r.centerX() - x) > r.width() * 1.2f || abs(r.centerY() - y) > r.height() * 1.2f) continue
+            val (cx, cy) = learnedCenter(kr)
+            val dx = (x - cx) / r.width()
+            val dy = (y - cy) / r.height()
+            val score = dx * dx + dy * dy
+            if (score < bestScore) { bestScore = score; best = kr }
+        }
+        return best
+    }
+
+    private fun recordTap(kr: KeyRect, ch: Char, x: Float, y: Float) {
+        val r = kr.rect
+        pendingTaps.add(Triple(ch.lowercaseChar(), (x - r.centerX()) / r.width(), (y - r.centerY()) / r.height()))
+    }
+
+    /** Das Wort wurde ohne Korrektur fertig getippt und ist bekannt: seine Tipps lernen. */
+    fun confirmTaps(word: String) {
+        val taps = pendingTaps.toList()
+        pendingTaps.clear()
+        if (!touchModelOn || taps.size != word.length) return
+        if (taps.map { it.first } != word.lowercase().toList()) return
+        loadTouchStats()
+        for ((c, dx, dy) in taps) {
+            val a = touchStats.getOrPut(c) { FloatArray(3) }
+            if (a[2] >= 200f) { a[0] *= 0.99f; a[1] *= 0.99f; a[2] *= 0.99f } // neuere Tipps zählen mehr
+            a[0] += dx; a[1] += dy; a[2] += 1f
+        }
+        if (++touchConfirms % 20 == 0) saveTouchStats()
     }
 
     // ------------------------------------------------------------------
@@ -1066,6 +1163,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
         var shiftUndone = false
         val repeat: Runnable = object : Runnable {
             override fun run() {
+                pendingTaps.clear()
                 if (chunkDelete) listener.onDeleteChunk() else listener.onDeleteWord()
                 postDelayed(this, deleteRepeatMs)
             }
@@ -1143,6 +1241,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 shift = Shift.OFF
                 t.shiftUndone = true
             } else if (!inSubPage()) {
+                if (pendingTaps.isNotEmpty()) pendingTaps.removeAt(pendingTaps.lastIndex)
                 // Doppelt getippt und gleich wieder gedrückt: am Stück löschen (bis zum Leerzeichen)
                 t.chunkDelete = chunkDeleteOn && SystemClock.uptimeMillis() - lastDeleteUp < 350
                 if (!t.chunkDelete) listener.onDelete()
@@ -1320,6 +1419,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                         shiftAppliedToWord = false
                         if (shift == Shift.ON) shift = Shift.OFF
                     }
+                    pendingTaps.clear() // Wort kommt aus dem Vorschlag, nicht aus den Tipps
                     listener.onSuggestion(i)
                 }
             }
@@ -1334,6 +1434,7 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
 
         t.popup?.let { options ->
             val opt = options[t.popupIndex]
+            pendingTaps.add(Triple('\u0000', 0f, 0f)) // Umlaut aus dem Popup: dieses Wort nicht lernen
             typeText(if (k.cased && shift != Shift.OFF) upper(opt) else opt, k.cased)
             invalidate()
             return
@@ -1346,8 +1447,9 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                 val afterWordShift = shiftAppliedToWord && shift == Shift.ON
                 shiftAppliedToWord = false
                 when {
-                    t.swipe == 1 && k.up != null -> typeText(k.up, false)
-                    t.swipe == -1 && k.down != null -> typeText(k.down, false)
+                    // Zeichen per Wischen: Wort endet (erst danach vergessen, damit es noch gelernt werden kann)
+                    t.swipe == 1 && k.up != null -> { typeText(k.up, false); pendingTaps.clear() }
+                    t.swipe == -1 && k.down != null -> { typeText(k.down, false); pendingTaps.clear() }
                     else -> {
                         if (afterWordShift && k.cased) listener.onUndoWordShift()
                         // Knapp neben einer anderen Taste getroffen: das Wörterbuch entscheidet mit
@@ -1355,8 +1457,18 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                         val altChar = alt?.let { if (it.action == Action.SPACE) ' ' else it.text.firstOrNull() }
                         when {
                             alt != null && altChar != null && listener.preferNearbyKey(k.text[0], altChar) ->
-                                if (altChar == ' ') listener.onSpace() else typeText(displayText(alt), true)
-                            else -> typeText(displayText(k), k.cased)
+                                if (altChar == ' ') {
+                                    listener.onSpace()
+                                    pendingTaps.clear()
+                                } else {
+                                    pendingTaps.add(Triple('\u0000', 0f, 0f)) // geraten: nicht lernen
+                                    typeText(displayText(alt), true)
+                                }
+                            else -> {
+                                if (k.cased) t.target?.let { recordTap(it, k.text[0], t.x0, t.y0) }
+                                typeText(displayText(k), k.cased)
+                                if (!k.cased) pendingTaps.clear()
+                            }
                         }
                     }
                 }
@@ -1368,8 +1480,8 @@ class KeyboardView(context: Context, private val listener: Listener) : View(cont
                     setMode(Mode.LETTERS) // nach dem Emoticon zurück zur Tastatur
                 }
             }
-            Action.SPACE -> if (!t.languageSwitched && !t.cursorMode) listener.onSpace()
-            Action.ENTER -> listener.onEnter()
+            Action.SPACE -> if (!t.languageSwitched && !t.cursorMode) { listener.onSpace(); pendingTaps.clear() }
+            Action.ENTER -> { listener.onEnter(); pendingTaps.clear() }
             Action.SHIFT -> onShiftTap()
             Action.TO_LETTERS -> setMode(Mode.LETTERS)
             Action.TO_SYMBOLS -> setMode(Mode.SYMBOLS)

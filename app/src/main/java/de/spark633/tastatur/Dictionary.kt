@@ -69,6 +69,8 @@ class Dictionary private constructor(
         known: (String) -> Boolean,
         extra: List<String> = emptyList(),
         blocked: Set<String> = emptySet(),
+        /** Wörter, die du nach dem vorigen Wort oft schreibst (häufigstes zuerst). */
+        context: List<String> = emptyList(),
     ): Suggestions {
         val ok = { w: String -> !blocked.contains(w.lowercase()) }
         // Für die Seiten nur gängige Wörter, eigene Wörter immer; keine Wortreste wie "ich-ich"
@@ -121,6 +123,14 @@ class Dictionary private constructor(
         // Gibt es Wörter, die so anfangen, wird nur bei eindeutigen Fehlern (Umlaut, Groß/klein) korrigiert
         // (seltene Vervollständigungen zählen nicht: "hane" → habe)
         var best = if (completions.any(side) && bestCost >= 0.5f) null else corrections.firstOrNull()?.first
+        // Satzzusammenhang: unter fast gleich guten Korrekturen die, die du nach dem vorigen Wort oft schreibst
+        if (best != null && context.isNotEmpty()) {
+            val ctx = context.map { it.lowercase() }
+            corrections.filter { it.second <= bestCost + 0.6f }
+                .filter { ctx.contains(it.first.lowercase()) }
+                .minByOrNull { ctx.indexOf(it.first.lowercase()) }
+                ?.let { best = it.first }
+        }
         // Getrennte Wörter schlagen eine unsichere Korrektur
         if (split != null && (best == null || bestCost >= 1f)) best = split
         if (best != null) {
@@ -348,6 +358,32 @@ class Dictionary private constructor(
             }
             return Dictionary(words.toTypedArray(), freqs.toIntArray())
         }
+
+        /** Die häufigsten Wörter einer Sprache, kleingeschrieben (für „mehrere Sprachen gleichzeitig“). */
+        fun loadWordSet(context: Context, lang: Language, limit: Int): Set<String> {
+            val set = HashSet<String>(limit * 2)
+            context.assets.open("dict/${lang.code}.txt").bufferedReader().useLines { lines ->
+                for (line in lines) {
+                    val tab = line.indexOf('\t')
+                    if (tab <= 0) continue
+                    set.add(line.substring(0, tab).lowercase())
+                    if (set.size >= limit) break
+                }
+            }
+            return set
+        }
+
+        /** Englische Wörter mit Apostroph ("dont" → "don't"); nur eindeutige, keine echten Wörter wie "its", "were". */
+        val APOSTROPHES_EN = mapOf(
+            "dont" to "don't", "doesnt" to "doesn't", "didnt" to "didn't", "cant" to "can't",
+            "couldnt" to "couldn't", "shouldnt" to "shouldn't", "wouldnt" to "wouldn't", "isnt" to "isn't",
+            "arent" to "aren't", "wasnt" to "wasn't", "werent" to "weren't", "havent" to "haven't",
+            "hasnt" to "hasn't", "hadnt" to "hadn't", "im" to "I'm", "ive" to "I've", "youre" to "you're",
+            "youve" to "you've", "youll" to "you'll", "theyre" to "they're", "theyve" to "they've",
+            "thats" to "that's", "whats" to "what's", "theres" to "there's", "heres" to "here's",
+            "wheres" to "where's", "whos" to "who's", "shes" to "she's", "itll" to "it'll",
+            "wouldve" to "would've", "couldve" to "could've", "shouldve" to "should've", "yall" to "y'all",
+        )
 
         /** Deutsche Abkürzungen, die mit Punkten geschrieben werden. */
         val DOT_ABBREVIATIONS_DE = mapOf(

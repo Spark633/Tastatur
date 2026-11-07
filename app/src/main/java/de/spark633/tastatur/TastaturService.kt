@@ -498,6 +498,7 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     private fun languageChanged() {
         neighbors = Layouts.neighbors(prefs.isQwertz(language))
+        loadOtherWords()
         if (dictLang != language) {
             val lang = language
             dictLang = lang
@@ -556,15 +557,40 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         insertAnchor = if (after.isNotEmpty() && isWordChar(after[0])) after else null
     }
 
-    private fun isKnown(word: String) = ignored.contains(word.lowercase()) || userDict.isKnown(word)
+    private fun isKnown(word: String) =
+        ignored.contains(word.lowercase()) || userDict.isKnown(word) || isOtherLanguageWord(word)
+
+    /** Wörter der anderen aktiven Sprachen (häufigste), damit gemischtes Schreiben nicht korrigiert wird. */
+    @Volatile private var otherWords: Set<String> = emptySet()
+    private var otherWordsKey = ""
+
+    private fun isOtherLanguageWord(word: String) = word.length >= 4 && otherWords.contains(word.lowercase())
+
+    private fun loadOtherWords() {
+        val others = if (prefs.mixLanguages) prefs.enabledLanguages.filter { it != language } else emptyList()
+        val key = others.joinToString(",") { it.code }
+        if (key == otherWordsKey) return
+        otherWordsKey = key
+        if (others.isEmpty()) {
+            otherWords = emptySet()
+            return
+        }
+        worker.execute {
+            val set = HashSet<String>()
+            for (l in others) try { set.addAll(Dictionary.loadWordSet(this, l, 20_000)) } catch (_: Throwable) {}
+            mainHandler.post { if (otherWordsKey == key) otherWords = set }
+        }
+    }
 
     /** Vorschläge sofort berechnen (für Leerzeichen, Satzzeichen, Enter). */
     private fun suggestNow(d: Dictionary, word: String): Dictionary.Suggestions =
         dotAbbreviation(word) ?: current?.takeIf { it.typed == word }
-            ?: d.suggest(word, neighbors, ::isKnown, userDict.knownWords(), userDict.blockedWords().toHashSet())
+            ?: d.suggest(word, neighbors, ::isKnown, userDict.knownWords(), userDict.blockedWords().toHashSet(), contextFor(word))
 
     /** Ein Wort ist fertig getippt und blieb unverändert: unbekannte Wörter merken. */
     private fun noteWordEnd(word: String?) {
+        // Bekanntes Wort ohne Korrektur fertig: die Tipps dafür ins persönliche Tippmodell
+        if (word != null && dict?.let { it.contains(word) || isKnown(word) } == true) keyboard?.confirmTaps(word)
         if (word == null || !prefs.learnWords || word.length < 2) return
         val d = dict ?: return
         if (d.contains(word) || word.any { it.isDigit() }) return
@@ -580,8 +606,13 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
 
     /** "zb" → "z.B." (nur Deutsch). Am Satzanfang großgeschrieben: "Z.B.". */
     private fun dotAbbreviation(word: String): Dictionary.Suggestions? {
-        if (language != Language.DE || isKnown(word)) return null
-        val e = Dictionary.DOT_ABBREVIATIONS_DE[word.lowercase()] ?: return null
+        if (isKnown(word)) return null
+        val map = when (language) {
+            Language.DE -> Dictionary.DOT_ABBREVIATIONS_DE
+            Language.EN -> Dictionary.APOSTROPHES_EN
+            else -> return null
+        }
+        val e = map[word.lowercase()] ?: return null
         val cased = if (word[0].isUpperCase()) e.replaceFirstChar { it.uppercaseChar() } else e
         return Dictionary.Suggestions(word, cased, listOf("\"$word\"", cased, ""))
     }
@@ -710,6 +741,18 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     /** Vorhersagen für die Stelle hinter dem Cursor (nur direkt nach einem Leerzeichen). */
+    /** Was du nach dem Wort vor [word] oft schreibst (für die Korrektur mit Satzzusammenhang). */
+    private fun contextFor(word: String): List<String> {
+        val before = currentInputConnection?.getTextBeforeCursor(80, 0)?.toString() ?: return emptyList()
+        if (!before.endsWith(word)) return emptyList()
+        val rest = before.dropLast(word.length)
+        if (rest.isEmpty()) return nextWords.predict(language, "^", 30)
+        if (!rest.last().isWhitespace()) return emptyList()
+        val t = rest.trim().split(Regex("\\s+")).lastOrNull { it.isNotEmpty() } ?: return nextWords.predict(language, "^", 30)
+        val prev = if (t.last() in ".!?") "^" else t.trim { !it.isLetterOrDigit() }.ifEmpty { return emptyList() }
+        return nextWords.predict(language, prev, 30)
+    }
+
     private fun predictions(): List<String> {
         val before = currentInputConnection?.getTextBeforeCursor(80, 0)?.toString() ?: return emptyList()
         val ctx = when {
@@ -782,9 +825,14 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val ownLower = own.map { it.lowercase() }.toHashSet()
         val blocked = userDict.blockedWords().toHashSet()
         val ign = HashSet(ignored)
+        val ctx = contextFor(word)
+        val other = otherWords
         worker.execute {
             val s = try {
-                d.suggest(word, nb, { ign.contains(it.lowercase()) || ownLower.contains(it.lowercase()) }, own, blocked)
+                d.suggest(word, nb, {
+                    ign.contains(it.lowercase()) || ownLower.contains(it.lowercase()) ||
+                        (it.length >= 4 && other.contains(it.lowercase()))
+                }, own, blocked, ctx)
             } catch (_: Throwable) { null }
             mainHandler.post {
                 if (seq == suggestSeq && s != null) {

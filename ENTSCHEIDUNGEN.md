@@ -76,7 +76,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Treffsicherheit: Tipp nah an der Kante einer Nachbartaste (35 % Breite / 30 % Höhe) → Nachbartaste nur, wenn mit der getroffenen Taste kein Wort mehr möglich ist, mit der Nachbartaste schon; Leertaste, wenn das Wort fertig ist (z. B. „Hallov“ → „Hallo “). Nicht mitten im Wort, nicht am Wortanfang
 - Nummerierte Liste bei ↵ nur weiterzählen ab „1.“ oder wenn darüber die vorige Nummer steht (einzelnes „2.“ zählt nicht weiter)
 - Emoticons: ⌫ (zurück zur Tastatur) ganz links in der unteren Reihe, so breit wie eine Emoticon-Taste, dann ‹ Leertaste ›
-- Persönliches Tippmodell (abschaltbar, zurücksetzbar unter Tippen): lernt aus fertig getippten, bekannten Wörtern ohne Korrektur, wo du jede Buchstabentaste triffst; ab 15 Tipps wird die Trefferfläche verschoben (höchstens 30 %)
+- Persönliches Tippmodell (abschaltbar, zurücksetzbar unter Tippen, in der vollständigen Sicherung enthalten): lernt aus fertig getippten, bekannten Wörtern ohne Korrektur, wo du jede Buchstabentaste triffst; ab 15 Tipps wird die Trefferfläche verschoben (höchstens 30 %)
 - Korrektur mit Satzzusammenhang: unter fast gleich guten Korrekturen gewinnt die, die du nach dem vorigen Wort oft schreibst (aus den gelernten Wortfolgen)
 - Mehrere Sprachen gleichzeitig (Standard an, unter Sprachen): die 20 000 häufigsten Wörter der anderen angehakten Sprachen (ab 4 Buchstaben) werden nicht korrigiert; Hauptsprache wählbar (Standard Deutsch): ihre Wörter gelten in jeder Sprache als richtig, auch kurze (im bleibt im)
 - Englisch: Apostroph-Wörter wie bei den Abkürzungen (dont → don't, im → I'm …), nur eindeutige; Deutsch ohne (gehts bleibt gehts)

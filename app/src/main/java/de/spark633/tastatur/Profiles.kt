@@ -42,7 +42,7 @@ class Profiles(private val context: Context) {
     }
 }
 
-/** Sicherung als Datei: Einstellungen, Profile, eigene Wörter, gelernte Wortfolgen, Emoticons und gewählte Hintergrundbilder. */
+/** Sicherung als Datei: Einstellungen, Profile, eigene Wörter, gelernte Wortfolgen, Tippmodell, Emoticons und gewählte Hintergrundbilder. */
 object Backup {
 
     /** Gewählte Bilder (Dateinamen) samt ihren Werten in die Sicherung legen. */
@@ -95,6 +95,8 @@ object Backup {
         o.put("einstellungen", Prefs(context).snapshot())
         o.put("eigene_woerter", UserDictionary.get(context).export())
         o.put("wortfolgen", NextWordModel.get(context).export())
+        // Persönliches Tippmodell (wo du die Tasten triffst)
+        context.getSharedPreferences("tippmodell", Context.MODE_PRIVATE).getString("werte", null)?.let { o.put("tippmodell", it) }
         val profiles = JSONObject()
         val p = context.getSharedPreferences("profile", Context.MODE_PRIVATE)
         for ((k, v) in p.all) if (v is String) profiles.put(k, v)
@@ -175,6 +177,10 @@ object Backup {
             ed.apply()
         }
         Prefs(context).restore(settings)
+        o.optString("tippmodell").takeIf { it.isNotEmpty() }?.let {
+            context.getSharedPreferences("tippmodell", Context.MODE_PRIVATE).edit().putString("werte", it).apply()
+            Prefs(context).touchModelReset = System.currentTimeMillis() // Tastatur lädt das Tippmodell neu
+        }
         Background.trimHistory(context)
         true
     } catch (_: Exception) {

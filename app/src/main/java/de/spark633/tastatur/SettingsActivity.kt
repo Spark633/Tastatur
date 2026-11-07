@@ -1034,7 +1034,7 @@ class SettingsActivity : Activity() {
         root.addView(header("Sicherung als Datei"))
         root.addView(info(
             "Für ein neues Handy oder eine Neuinstallation: Einstellungen, Profile, eigene und gelernte Wörter, " +
-                "gelernte Vorhersagen, Emoticons und die gewählten Hintergrundbilder in einer Datei, z. B. in Google Drive. " +
+                "gelernte Vorhersagen, dein Tippverhalten, Emoticons und die gewählten Hintergrundbilder in einer Datei, z. B. in Google Drive. " +
                 "Der Zwischenablage-Verlauf wird aus Datenschutzgründen nicht gesichert."
         ))
         backupStatus = info("")

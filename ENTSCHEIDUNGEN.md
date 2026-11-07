@@ -78,5 +78,5 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Emoticons: ⌫ (zurück zur Tastatur) ganz links in der unteren Reihe, dann ‹ Leertaste ›
 - Persönliches Tippmodell (abschaltbar, zurücksetzbar unter Tippen): lernt aus fertig getippten, bekannten Wörtern ohne Korrektur, wo du jede Buchstabentaste triffst; ab 15 Tipps wird die Trefferfläche verschoben (höchstens 30 %)
 - Korrektur mit Satzzusammenhang: unter fast gleich guten Korrekturen gewinnt die, die du nach dem vorigen Wort oft schreibst (aus den gelernten Wortfolgen)
-- Mehrere Sprachen gleichzeitig (Standard an, unter Sprachen): die 20 000 häufigsten Wörter der anderen angehakten Sprachen (ab 4 Buchstaben) werden nicht korrigiert
+- Mehrere Sprachen gleichzeitig (Standard an, unter Sprachen): die 20 000 häufigsten Wörter der anderen angehakten Sprachen (ab 4 Buchstaben) werden nicht korrigiert; Hauptsprache wählbar (Standard Deutsch): ihre Wörter gelten in jeder Sprache als richtig, auch kurze (im bleibt im)
 - Englisch: Apostroph-Wörter wie bei den Abkürzungen (dont → don't, im → I'm …), nur eindeutige; Deutsch ohne (gehts bleibt gehts)

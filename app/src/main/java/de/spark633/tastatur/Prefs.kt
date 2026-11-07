@@ -101,6 +101,11 @@ class Prefs(context: Context) {
         get() = sp.getLong("touch_model_reset", 0L)
         set(v) = sp.edit().putLong("touch_model_reset", v).apply()
 
+    /** Hauptsprache: ihre Wörter (auch kurze wie „im“) gelten immer als richtig. */
+    var mainLanguage: Language
+        get() = Language.entries.firstOrNull { it.code == sp.getString("main_language", "de") } ?: Language.DE
+        set(v) = sp.edit().putString("main_language", v.code).apply()
+
     /** Wörter aus den anderen aktiven Sprachen erkennen und nicht korrigieren. */
     var mixLanguages: Boolean
         get() = sp.getBoolean("mix_languages", true)

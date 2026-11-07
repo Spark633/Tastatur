@@ -293,6 +293,10 @@ class SettingsActivity : Activity() {
         root.addView(switch("Mehrere Sprachen gleichzeitig: Wörter aus den anderen angehakten Sprachen werden erkannt und nicht korrigiert", prefs.mixLanguages) {
             prefs.mixLanguages = it
         })
+        root.addView(info("Hauptsprache: Ihre Wörter gelten immer als richtig, auch kurze (z. B. bleibt „im“ im englischen Modus „im“ statt „I'm“)."))
+        root.addView(radio(Language.entries.map { it.displayName }, Language.entries.indexOf(prefs.mainLanguage)) {
+            prefs.mainLanguage = Language.entries[it]
+        })
         root.addView(header("Sprachkürzel"))
         root.addView(info("Neben den Vorschlägen anzeigen bei:"))
         root.addView(LinearLayout(this).apply {

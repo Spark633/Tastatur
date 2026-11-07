@@ -564,21 +564,37 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     @Volatile private var otherWords: Set<String> = emptySet()
     private var otherWordsKey = ""
 
-    private fun isOtherLanguageWord(word: String) = word.length >= 4 && otherWords.contains(word.lowercase())
+    private fun isOtherLanguageWord(word: String) =
+        (word.length >= 4 && otherWords.contains(word.lowercase())) || mainWords.contains(word.lowercase())
+
+    /** Wörter der Hauptsprache (auch kurze), wenn gerade eine andere Sprache aktiv ist. */
+    @Volatile private var mainWords: Set<String> = emptySet()
 
     private fun loadOtherWords() {
         val others = if (prefs.mixLanguages) prefs.enabledLanguages.filter { it != language } else emptyList()
-        val key = others.joinToString(",") { it.code }
+        val main = prefs.mainLanguage.takeIf { prefs.mixLanguages && it != language && it in prefs.enabledLanguages }
+        val key = others.joinToString(",") { it.code } + "|" + (main?.code ?: "")
         if (key == otherWordsKey) return
         otherWordsKey = key
         if (others.isEmpty()) {
             otherWords = emptySet()
+            mainWords = emptySet()
             return
         }
         worker.execute {
             val set = HashSet<String>()
-            for (l in others) try { set.addAll(Dictionary.loadWordSet(this, l, 20_000)) } catch (_: Throwable) {}
-            mainHandler.post { if (otherWordsKey == key) otherWords = set }
+            var mainSet: Set<String> = emptySet()
+            for (l in others) try {
+                val words = Dictionary.loadWordSet(this, l, 20_000)
+                set.addAll(words)
+                if (l == main) mainSet = words
+            } catch (_: Throwable) {}
+            mainHandler.post {
+                if (otherWordsKey == key) {
+                    otherWords = set
+                    mainWords = mainSet
+                }
+            }
         }
     }
 
@@ -827,11 +843,12 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         val ign = HashSet(ignored)
         val ctx = contextFor(word)
         val other = otherWords
+        val mainW = mainWords
         worker.execute {
             val s = try {
                 d.suggest(word, nb, {
                     ign.contains(it.lowercase()) || ownLower.contains(it.lowercase()) ||
-                        (it.length >= 4 && other.contains(it.lowercase()))
+                        (it.length >= 4 && other.contains(it.lowercase())) || mainW.contains(it.lowercase())
                 }, own, blocked, ctx)
             } catch (_: Throwable) { null }
             mainHandler.post {

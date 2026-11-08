@@ -1514,9 +1514,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     }
 
     /**
-     * Shift auf das Wort direkt vor dem Cursor anwenden: 1 = Wort, 2 = WORT, 0 = wort.
+     * Shift auf das Wort direkt vor dem Cursor anwenden: jedes Antippen Wort → WORT → wort → Wort.
      * Nur am Wortende; mitten im Wort und am Wortanfang wie gewohnt (nächster Buchstabe groß).
-     * Ist das Wort schon groß geschrieben, macht Shift den nächsten Buchstaben groß (zusammengeschriebene Namen).
      */
     override fun onShiftChanged(state: Int): Boolean {
         own()
@@ -1534,12 +1533,15 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         if (after.isNotEmpty() && isWordChar(after[0])) return false
         val tail = ""
         val word = head
-        // Wort schon groß angefangen (Baron, BaronDer): Shift gilt dem nächsten Buchstaben → BaronDerNacht
-        if (state == 1 && word.first().isUpperCase() && word.any { it.isLowerCase() }) return false
-        val changed = when (state) {
-            1 -> word.lowercase().replaceFirstChar { it.uppercaseChar() }
-            2 -> word.replace("ß", "ẞ").uppercase()
-            else -> word.lowercase()
+        // Jedes Shift am Wortende schaltet weiter: Wort → WORT → wort → Wort (egal, wie das Wort gerade aussieht).
+        // Gleich weitertippen nimmt die Umwandlung zurück und schreibt den Buchstaben groß (BaronDerNacht).
+        val title = word.lowercase().replaceFirstChar { it.uppercaseChar() }
+        val upper = word.replace("ß", "ẞ").uppercase()
+        val lower = word.lowercase()
+        val changed = when (word) {
+            title -> if (upper != title) upper else lower
+            upper -> lower
+            else -> title
         }
         ic.beginBatchEdit()
         ic.deleteSurroundingText(head.length, tail.length)

@@ -1342,7 +1342,7 @@ class SettingsActivity : Activity() {
         root.addView(info(
             "• Nach oben wischen: kleines Zeichen über dem Buchstaben (z. B. q → 1)\n" +
                 "• Untere Reihe nach unten wischen: Zeichen unter dem Buchstaben (z. B. x → €)\n" +
-                "• Lange drücken: Umlaute und Akzente (a → ä, s → ß)\n" +
+                "• Lange drücken: das kleine Zeichen der Taste, daneben Umlaute (e → 3, a → ä, s → ß)\n" +
                 "• Leertaste seitlich wischen: Sprache wechseln\n" +
                 "• Leertaste kurz halten, dann ziehen: Cursor bewegen\n" +
                 "• Shift zweimal schnell: Feststelltaste\n" +

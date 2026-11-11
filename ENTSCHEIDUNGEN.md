@@ -6,7 +6,7 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 **Tasten**
 - QWERTZ für alle Sprachen (pro Sprache auf QWERTY umschaltbar)
 - Wischen: obere zwei Reihen nach oben (g → '), untere Buchstabenreihe nach unten (c → -, v → "); x lange drücken: € $ £ ¥ ¢
-- Lange drücken: nur Umlaute plus Wisch-Zeichen; beim e nur é (NL: é ë); keine weiteren Akzente
+- Lange drücken: zuerst das Wisch-Zeichen (e → 3, s → #, c → -), dann die Umlaute; beim e nur é (NL: é ë); keine weiteren Akzente
 - ß bleibt bei Shift ß (nicht SS), mit Feststelltaste ẞ
 - Shift wirkt nur am Wortende aufs Wort: jedes Antippen schaltet weiter Wort → WORT → wort → Wort (je nachdem, wie das Wort gerade aussieht); mitten im Wort und am Wortanfang wie gewohnt (nächster Buchstabe groß); nach Shift aufs Wort direkt weitertippen nimmt die Umwandlung zurück und schreibt den Buchstaben groß (baron ⇧ D → baronD); ⌫ direkt nach Shift aufs Wort nimmt nur die Umwandlung zurück
 - Shift bei markiertem Text: Erster Groß → ALLES GROSS → alles klein, Markierung bleibt

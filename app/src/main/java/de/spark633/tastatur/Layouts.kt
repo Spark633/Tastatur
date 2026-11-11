@@ -59,9 +59,9 @@ object Layouts {
         text = c.toString(),
         up = up,
         down = down,
-        // Umlaute/Akzente und zusätzlich das Wisch-Zeichen (u → ü 7); x: alle Währungen
+        // Zuerst das Zeichen, das klein auf der Taste steht (e → 3, s → #), dann Umlaute/Akzente; x: alle Währungen
         longPress = if (c == 'x') listOf("€", "$", "£", "¥", "¢")
-        else ((accents(lang)[c] ?: emptyList()) + listOfNotNull(up ?: down)).distinct(),
+        else (listOfNotNull(up ?: down) + (accents(lang)[c] ?: emptyList())).distinct(),
         cased = true,
     )
 

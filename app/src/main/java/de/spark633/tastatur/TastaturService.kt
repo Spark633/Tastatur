@@ -557,6 +557,30 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         insertAnchor = if (after.isNotEmpty() && isWordChar(after[0])) after else null
     }
 
+    /** Angetipptes Wort: Wort, Zeichen davor bis zum Cursor, Zeichen danach. */
+    private var touchedState: Triple<String, Int, Int>? = null
+
+    /** Wort, in dem der Cursor steht (nicht am Wortende – das ist das normale Tippen). Keine Links/Zahlen. */
+    private fun touchedWord(): Triple<String, Int, Int>? {
+        val ic = currentInputConnection ?: return null
+        if (!ic.getSelectedText(0).isNullOrEmpty()) return null
+        val before = ic.getTextBeforeCursor(48, 0)?.toString() ?: return null
+        val after = ic.getTextAfterCursor(48, 0)?.toString() ?: return null
+        var i = before.length
+        while (i > 0 && isWordChar(before[i - 1])) i--
+        var j = 0
+        while (j < after.length && isWordChar(after[j])) j++
+        if (j == 0) return null
+        val head = before.substring(i)
+        val word = head + after.substring(0, j)
+        if (word.length < 2 || !word[0].isLetter() || !word.last().isLetter()) return null
+        val prev = before.getOrNull(i - 1)
+        if (prev != null && (prev.isDigit() || prev in "@/._#\\")) return null
+        val next = after.getOrNull(j)
+        if (next != null && (next.isDigit() || next in "@/_#\\" || (next == '.' && after.getOrNull(j + 1)?.isLetterOrDigit() == true))) return null
+        return Triple(word, head.length, j)
+    }
+
     private fun isKnown(word: String) =
         ignored.contains(word.lowercase()) || userDict.isKnown(word) || isOtherLanguageWord(word)
 
@@ -821,6 +845,42 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             styled -> styledPlain.toString().ifEmpty { null }
             else -> currentWord()
         }
+        // In ein fertiges Wort getippt (Cursor mitten drin oder am Anfang): Vorschläge für das ganze Wort
+        val touched = if (word == null && d != null && suggestOn && !styled) touchedWord() else null
+        touchedState = touched
+        if (touched != null) {
+            val tw = touched.first
+            if (current?.typed == tw) return
+            dotAbbreviation(tw)?.let {
+                suggestSeq++
+                current = it
+                v.setSuggestions(it.slots)
+                return
+            }
+            val seq = ++suggestSeq
+            val nb = neighbors
+            val own = userDict.knownWords()
+            val ownLower = own.map { it.lowercase() }.toHashSet()
+            val blocked = userDict.blockedWords().toHashSet()
+            val ign = HashSet(ignored)
+            val other = otherWords
+            val mainW = mainWords
+            worker.execute {
+                val s = try {
+                    d!!.suggest(tw, nb, {
+                        ign.contains(it.lowercase()) || ownLower.contains(it.lowercase()) ||
+                            (it.length >= 4 && other.contains(it.lowercase())) || mainW.contains(it.lowercase())
+                    }, own, blocked)
+                } catch (_: Throwable) { null }
+                mainHandler.post {
+                    if (seq == suggestSeq && s != null) {
+                        current = s
+                        v.setSuggestions(s.slots)
+                    }
+                }
+            }
+            return
+        }
         if (word == null || d == null) {
             suggestSeq++
             val preds = if (suggestOn && prefs.predictNext && word == null) predictions() else emptyList()
@@ -1051,6 +1111,24 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
             current = null
             suggestionSpace = true
             lastSpaceTime = SystemClock.uptimeMillis()
+            return
+        }
+        touchedState?.let { (tw, head, tail) ->
+            // Vorschlag für ein angetipptes Wort: ganzes Wort ersetzen, Cursor ans Wortende
+            if (s.typed != tw || touchedWord()?.first != tw) return
+            val chosen = if (index == 0 && s.correction != null) {
+                ignored.add(tw.lowercase())
+                tw
+            } else {
+                s.slots.getOrNull(index)?.takeIf { it.isNotEmpty() } ?: return
+            }
+            val ic = currentInputConnection ?: return
+            ic.beginBatchEdit()
+            ic.deleteSurroundingText(head, tail)
+            ic.commitText(chosen, 1)
+            ic.endBatchEdit()
+            touchedState = null
+            current = null
             return
         }
         val word = currentWord() ?: return

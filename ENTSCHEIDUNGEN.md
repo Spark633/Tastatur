@@ -82,3 +82,4 @@ das genau so gewollt ist. Vor Änderungen hier nachsehen.
 - Englisch: Apostroph-Wörter wie bei den Abkürzungen (dont → don't, im → I'm …), nur eindeutige; Deutsch ohne (gehts bleibt gehts)
 - Zusammengeklebte Wörter auch erkennen, wenn statt des Leerzeichens ein Buchstabe über der Leertaste (x c v b n m) getroffen wurde: „mitvdrin“ → „mit drin“
 - In ein fertiges Wort tippen (Cursor mitten drin oder am Anfang): Vorschläge für das ganze Wort; Antippen ersetzt das ganze Wort, Cursor danach ans Wortende; nichts wird automatisch geändert; nicht bei Links/Zahlen
+- Klammern ( [ { schließen sich automatisch, Cursor in der Mitte; schließende Klammer, die schon dahinter steht: nur darüber springen; ⌫ im leeren Paar löscht beide. Nicht nach : ; = x (Smileys), nicht direkt nach oder vor einem Wort, nicht bei Markierung. < und Anführungszeichen ohne; ( ist auf Probe

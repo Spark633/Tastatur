@@ -997,7 +997,36 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         lastCorrection = null
         autoSpacePending = false
         forgetDeleted(false)
+        if (text.length == 1 && autoPair(text[0])) return
         ic.commitText(text, 1)
+    }
+
+    /**
+     * Klammern ( [ { automatisch schließen, Cursor in die Mitte. Schließende Klammer, die schon
+     * hinter dem Cursor steht: nur darüber springen. true = erledigt.
+     */
+    private fun autoPair(c: Char): Boolean {
+        val ic = currentInputConnection ?: return false
+        if (!ic.getSelectedText(0).isNullOrEmpty()) return false
+        val after = ic.getTextAfterCursor(1, 0)?.toString().orEmpty()
+        if (c in BRACKET_PAIRS.values) {
+            // Schon da (automatisch gesetzt): Cursor nur dahinter
+            if (after.firstOrNull() == c) {
+                sendDownUpKeyEvents(KeyEvent.KEYCODE_DPAD_RIGHT)
+                return true
+            }
+            return false
+        }
+        val close = BRACKET_PAIRS[c] ?: return false
+        val prev = ic.getTextBeforeCursor(1, 0)?.toString()?.firstOrNull()
+        if (prev != null && (prev in ":;=xX" || prev.isLetterOrDigit())) return false // Smiley oder mitten im Wort
+        val next = after.firstOrNull()
+        if (next != null && (next.isLetterOrDigit() || next in "([{\"„“'")) return false // vor einem Wort: nichts dazu
+        ic.beginBatchEdit()
+        ic.commitText(c.toString(), 1)
+        ic.commitText(close.toString(), 0) // Cursor bleibt vor der schließenden Klammer
+        ic.endBatchEdit()
+        return true
     }
 
     /**
@@ -1218,6 +1247,17 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
         }
         if (activeStyle != null) resetStyledWord()
         if (undoCorrection()) return
+        // Leeres Klammerpaar direkt nach dem Öffnen: beide löschen
+        currentInputConnection?.let { ic ->
+            if (ic.getSelectedText(0).isNullOrEmpty()) {
+                val b = ic.getTextBeforeCursor(1, 0)?.toString()?.firstOrNull()
+                val a = ic.getTextAfterCursor(1, 0)?.toString()?.firstOrNull()
+                if (b != null && a != null && BRACKET_PAIRS[b] == a) {
+                    ic.deleteSurroundingText(1, 1)
+                    return
+                }
+            }
+        }
         autoSpacePending = false
         val ic = currentInputConnection ?: return
         val selected = ic.getSelectedText(0)
@@ -1714,6 +1754,8 @@ class TastaturService : InputMethodService(), KeyboardView.Listener {
     companion object {
         private const val PUNCTUATION = ".,!?;:"
         private const val CHUNK_STOPS = "/\\"
+        /** Klammern, die automatisch geschlossen werden (( kommt evtl. später wieder raus). */
+        private val BRACKET_PAIRS = mapOf('(' to ')', '[' to ']', '{' to '}')
         private const val CLOSING_QUOTES = "\"“”»"
         private const val RESTORE_MIN_CHARS = 15
         private const val CLIP_OFFER_MS = 3 * 60 * 1000L
